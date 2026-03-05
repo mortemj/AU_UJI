@@ -1,0 +1,106 @@
+<svg viewBox="0 0 750 850" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+  <style>
+    .box-id { fill: #ebf8ff; stroke: #3182ce; stroke-width: 2; rx: 10; }
+    .box-ok { fill: #f0fff4; stroke: #38a169; stroke-width: 2; rx: 10; }
+    .box-ex { fill: #fff5f5; stroke: #e53e3e; stroke-width: 2; rx: 10; }
+    .box-target { fill: #fefcbf; stroke: #d69e2e; stroke-width: 2; rx: 10; }
+    .box-final { fill: #f0fff4; stroke: #276749; stroke-width: 3; rx: 12; }
+    .label-fase { fill: #2c5282; font-weight: bold; font-size: 14px; }
+    .label-titulo { fill: white; font-weight: bold; font-size: 13px; }
+    .label-dato { fill: #2d3748; font-size: 12px; }
+    .label-num { fill: #2c5282; font-weight: bold; font-size: 15px; }
+    .label-excl { fill: #e53e3e; font-weight: bold; font-size: 11px; }
+    .label-small { fill: #718096; font-size: 10px; }
+    .arrow { fill: #3182ce; }
+    .badge-blue { fill: #3182ce; rx: 4; }
+    .badge-red { fill: #e53e3e; rx: 4; }
+  </style>
+
+  <!-- Titulo -->
+  <text x="375" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#2d3748">Diagrama de Flujo PRISMA</text>
+  <text x="375" y="48" text-anchor="middle" font-size="11" fill="#718096">Seleccion de datos: desde fuentes originales hasta dataset final</text>
+
+  <!-- NIVEL 1: IDENTIFICACION -->
+  <rect x="200" y="65" width="350" height="28" rx="6" fill="#2c5282"/>
+  <text x="375" y="84" text-anchor="middle" class="label-titulo">IDENTIFICACION</text>
+
+  <!-- Excel principal -->
+  <rect x="80" y="110" width="250" height="70" class="box-id"/>
+  <text x="205" y="132" text-anchor="middle" font-weight="bold" font-size="12" fill="#2c5282">Excel Principal</text>
+  <text x="205" y="148" text-anchor="middle" class="label-small">8 hojas (expedientes, demograficos, becas...)</text>
+  <text x="205" y="168" text-anchor="middle" class="label-num">109.568 registros</text>
+
+  <!-- Excel preinscripcion -->
+  <rect x="420" y="110" width="250" height="70" class="box-id"/>
+  <text x="545" y="132" text-anchor="middle" font-weight="bold" font-size="12" fill="#2c5282">Excel Preinscripcion</text>
+  <text x="545" y="148" text-anchor="middle" class="label-small">1 hoja (via acceso, orden preferencia)</text>
+  <text x="545" y="168" text-anchor="middle" class="label-num">210.996 registros</text>
+
+  <!-- Flecha -->
+  <polygon points="375,190 365,200 370,200 370,215 380,215 380,200 385,200" class="arrow"/>
+
+  <!-- NIVEL 2: CRIBADO -->
+  <rect x="200" y="225" width="350" height="28" rx="6" fill="#2c5282"/>
+  <text x="375" y="244" text-anchor="middle" class="label-titulo">CRIBADO (Fase 1: Limpieza)</text>
+
+  <!-- Resultado cribado -->
+  <rect x="100" y="270" width="280" height="75" class="box-ok"/>
+  <text x="240" y="292" text-anchor="middle" font-weight="bold" font-size="12" fill="#276749">Estandarizacion y limpieza</text>
+  <text x="240" y="308" text-anchor="middle" class="label-small">Tipos de dato, nulos, codificacion, merge</text>
+  <text x="240" y="328" text-anchor="middle" class="label-num">9 tablas Parquet</text>
+
+  <!-- Excluidos cribado -->
+  <rect x="430" y="270" width="220" height="75" class="box-ex"/>
+  <text x="540" y="290" text-anchor="middle" class="label-excl">Excluidos</text>
+  <text x="540" y="308" text-anchor="middle" class="label-small">Valores nulos sistematicos</text>
+  <text x="540" y="322" text-anchor="middle" class="label-small">Registros duplicados</text>
+  <text x="540" y="336" text-anchor="middle" class="label-small">Codigos sin correspondencia</text>
+
+  <!-- Flecha -->
+  <polygon points="240,355 230,365 235,365 235,380 245,380 245,365 250,365" class="arrow"/>
+
+  <!-- NIVEL 3: ELEGIBILIDAD -->
+  <rect x="200" y="390" width="350" height="28" rx="6" fill="#2c5282"/>
+  <text x="375" y="409" text-anchor="middle" class="label-titulo">ELEGIBILIDAD (Fase 2-3: EDA + Feature Eng.)</text>
+
+  <!-- Resultado elegibilidad -->
+  <rect x="100" y="435" width="280" height="85" class="box-ok"/>
+  <text x="240" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#276749">Agregacion temporal</text>
+  <text x="240" y="473" text-anchor="middle" class="label-small">Multi-curso → 1 fila por expediente</text>
+  <text x="240" y="488" text-anchor="middle" class="label-small">Merge 9 tablas en dataset unico</text>
+  <text x="240" y="508" text-anchor="middle" class="label-num">30.872 estudiantes unicos</text>
+
+  <!-- Excluidos elegibilidad -->
+  <rect x="430" y="435" width="220" height="85" class="box-ex"/>
+  <text x="540" y="455" text-anchor="middle" class="label-excl">Excluidos</text>
+  <text x="540" y="473" text-anchor="middle" class="label-small">Egresados de hecho (~0.5%)</text>
+  <text x="540" y="488" text-anchor="middle" class="label-small">Estudiantes activos (&lt;2 anios)</text>
+  <text x="540" y="503" text-anchor="middle" class="label-small">Variables redundantes (16+)</text>
+
+  <!-- Flecha -->
+  <polygon points="240,530 230,540 235,540 235,555 245,555 245,540 250,540" class="arrow"/>
+
+  <!-- NIVEL 4: DEFINICION TARGET -->
+  <rect x="120" y="565" width="510" height="55" class="box-target"/>
+  <text x="375" y="585" text-anchor="middle" font-weight="bold" font-size="12" fill="#975a16">Definicion del Target</text>
+  <text x="375" y="605" text-anchor="middle" font-size="11" fill="#744210">abandono = (egresado='N') AND (egresado_de_hecho=0) AND (2021 - curso_ultimo ≥ 2)</text>
+
+  <!-- Flecha -->
+  <polygon points="375,630 365,640 370,640 370,655 380,655 380,640 385,640" class="arrow" style="fill:#276749"/>
+
+  <!-- NIVEL 5: INCLUSION -->
+  <rect x="200" y="665" width="350" height="28" rx="6" fill="#276749"/>
+  <text x="375" y="684" text-anchor="middle" class="label-titulo">INCLUSION (Dataset Final)</text>
+
+  <rect x="130" y="705" width="490" height="120" class="box-final"/>
+  <text x="375" y="732" text-anchor="middle" font-size="20" font-weight="bold" fill="#276749">33.621 expedientes</text>
+  <text x="375" y="755" text-anchor="middle" font-size="13" fill="#4a5568">21 variables (20 features + target) | 42 titulaciones | 5 ramas</text>
+
+  <!-- Badges abandono -->
+  <rect x="175" y="775" width="180" height="28" class="badge-blue"/>
+  <text x="265" y="794" text-anchor="middle" font-size="12" fill="white">No abandono: 23.788 (70,8%)</text>
+
+  <rect x="395" y="775" width="180" height="28" class="badge-red"/>
+  <text x="485" y="794" text-anchor="middle" font-size="12" fill="white">Abandono: 9.833 (29,2%)</text>
+
+</svg>

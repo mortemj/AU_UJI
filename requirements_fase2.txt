@@ -1,0 +1,34 @@
+# ============================================================================
+# TFM Abandono Universitario - Requirements Fase 2 (EDA)
++ # Usar este archivo para la Fase 2 (EDA)
++ # Nota: Incluye Altair para gráficos interactivos
+# ============================================================================
+
+# Manipulación de datos
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=14.0.0
+
+# Visualización interactiva (Altair + dependencias)
+altair>=5.0.0
+vegafusion>=1.0.0
+vegafusion-python-embed>=1.0.0
+vl-convert-python>=1.6.0
+
+# Visualización interactiva adicional
+plotly>=5.18.0
+hvplot>=0.9.0
+bokeh>=3.3.0
+
+# Visualización estática
+matplotlib>=3.7.0
+missingno>=0.5.0
+
+# Estadísticas
+scipy>=1.11.0
+
+# Utilidades
+tqdm>=4.65.0
+
+# --- PLANTILLAS HTML ---
+Jinja2>=3.1.0

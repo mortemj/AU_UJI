@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TFM: Predicción de Abandono Universitario</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>🎓 TFM: Predicción de Abandono Universitario</h1>
+                <p>Análisis y Modelado de Datos de Estudiantes UJI</p>
+            </div>
+            <img src="../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <a href="index.html" class="active">🏠 Inicio</a>
+        <a href="fase1/fase1_index.html">📥 Transformación</a>
+        <a href="fase2/fase2_index.html">📊 EDA Raw</a>
+        <a href="fase3/fase3_index.html">🔧 Features</a>
+        <a href="fase4/fase4_index.html">🔬 EDA Final</a>
+        <a href="fase5/fase5_index.html" class="disabled">🤖 Modelado</a>
+        <a href="fase6/fase6_index.html" class="disabled">📈 Evaluación</a>
+        <a href="fase7/fase7_index.html" class="disabled">🚀 Aplicación</a>
+        <a href="fase_automl/fase_automl_index.html">⚡ Pre-Modelado: AutoML</a>
+    </nav>
+
+    <div class="container">
+
+        <section class="seccion">
+            <h2>📋 Estructura del Proyecto</h2>
+            <p>Haz clic en una fase para explorar todos sus módulos.</p>
+            <div class="grid-tarjetas">
+                <a href="fase1/fase1_index.html" class="tarjeta" style="border-left-color:#3182ce">
+                    <h3 style="color:#3182ce">📥 Fase 1: Transformación</h3>
+                    <p>Limpieza, unificación de 9 tablas y creación de df_alumno.</p>
+                    <div class="link" style="color:#3182ce">Abrir fase →</div>
+                </a>
+                <a href="fase2/fase2_index.html" class="tarjeta" style="border-left-color:#38a169">
+                    <h3 style="color:#38a169">📊 Fase 2: EDA Raw</h3>
+                    <p>Análisis exploratorio de los datos originales.</p>
+                    <div class="link" style="color:#38a169">Abrir fase →</div>
+                </a>
+                <a href="fase3/fase3_index.html" class="tarjeta" style="border-left-color:#805ad5">
+                    <h3 style="color:#805ad5">🔧 Fase 3: Feature Engineering</h3>
+                    <p>Ingeniería de variables y preparación para modelado.</p>
+                    <div class="link" style="color:#805ad5">Abrir fase →</div>
+                </a>
+                <a href="fase4/fase4_index.html" class="tarjeta" style="border-left-color:#ed8936">
+                    <h3 style="color:#ed8936">🔬 Fase 4: EDA Final</h3>
+                    <p>Análisis exploratorio del dataset final de features.</p>
+                    <div class="link" style="color:#ed8936">Abrir fase →</div>
+                </a>
+                <a href="fase5/fase5_index.html" class="tarjeta" style="border-left-color:#e53e3e; opacity:0.6">
+                    <h3 style="color:#e53e3e">🤖 Fase 5: Modelado</h3>
+                    <p>Entrenamiento de modelos de clasificación supervisada.</p>
+                    <div class="link" style="color:#e53e3e">Próximamente</div>
+                </a>
+                <a href="fase6/fase6_index.html" class="tarjeta" style="border-left-color:#319795; opacity:0.6">
+                    <h3 style="color:#319795">📈 Fase 6: Evaluación</h3>
+                    <p>Comparativa de modelos, métricas e interpretabilidad.</p>
+                    <div class="link" style="color:#319795">Próximamente</div>
+                </a>
+                <a href="fase7/fase7_index.html" class="tarjeta" style="border-left-color:#2c5282; opacity:0.6">
+                    <h3 style="color:#2c5282">🚀 Fase 7: Aplicación</h3>
+                    <p>Dashboard, vistas por perfil y documentación final.</p>
+                    <div class="link" style="color:#2c5282">Próximamente</div>
+                </a>
+            </div>
+        </section>
+
+        <section class="seccion">
+            <h2>⚡ Pre-Modelado: AutoML</h2>
+            <div style="background:#FFFBEB; padding:20px; border-radius:10px; border-left:4px solid #D69E2E; margin-bottom:15px;">
+                <strong>⚠️ Requisito:</strong> Para usar AutoML, primero ejecuta las Fases 1, 2 y 3.
+            </div>
+            <a href="fase_automl/fase_automl_index.html"
+               style="display:inline-block; padding:12px 24px; background:#5B21B6; color:white;
+                      border-radius:8px; text-decoration:none; font-weight:bold;">
+                ⚡ Exploración de Frameworks AutoML →
+            </a>
+        </section>
+
+        <section class="seccion">
+            <h2>📊 Datos del Proyecto</h2>
+            <div style="background:#f8fafc; padding:20px; border-radius:10px; border-left:4px solid #3182ce; margin-bottom:20px;">
+                <p><strong>📁 Origen:</strong> 2 archivos Excel con 9 tablas</p>
+                <p><strong>📋 Tablas:</strong> Titulaciones, Recibos, Domicilios, Expedientes, Nac-Sexo_Nacionalidad, Circunstancias, Trabajo, Notas, Preinscripción</p>
+                <p><strong>📊 Registros totales (raw):</strong> 1,050,793</p>
+            </div>
+        </section>
+
+        <section class="seccion">
+            <h2>📈 Estadísticas del Proyecto</h2>
+            <div class="kpis">
+                <div class="kpi" style="">
+                    <div class="value" style="color:#3182ce">30.872</div>
+                    <div class="label">Expedientes únicos</div>
+                </div>
+                <div class="kpi" style="">
+                    <div class="value" style="color:#38a169">2010-2020 (11 años)</div>
+                    <div class="label">Período</div>
+                </div>
+                <div class="kpi" style="">
+                    <div class="value" style="color:#ed8936">49+</div>
+                    <div class="label">Variables finales</div>
+                </div>
+                <div class="kpi" style=" opacity:0.35;">
+                    <div class="value" style="color:#e53e3e">Pendiente</div>
+                    <div class="label">Tasa abandono</div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI" target="_blank">📓 GitHub</a>
+        <br>Generado: 03/03/2026
+    </footer>
+</body>
+</html>

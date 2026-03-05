@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_98c98f7a677ab4d8e0768110289e3ba9 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+                .leaflet-container { font-size: 1rem; }
+            </style>
+
+            <style>html, body {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            </style>
+
+            <style>#map {
+                position:absolute;
+                top:0;
+                bottom:0;
+                right:0;
+                left:0;
+                }
+            </style>
+
+            <script>
+                L_NO_TOUCH = false;
+                L_DISABLE_3D = false;
+            </script>
+
+        
+</head>
+<body>
+    
+    
+<div style="position:fixed;bottom:30px;left:30px;z-index:1000;
+background:white;padding:10px;border-radius:8px;border:1px solid #ccc;
+font-family:Arial;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,0.2);">
+<b>Universidad de origen</b><br>
+<span style="color:#e53e3e;">●</span> UJI — 20.129 (69,6%)<br>
+<span style="color:#3182ce;">●</span> UV — 4.451 (15,4%)<br>
+<span style="color:#38a169;">●</span> UPV — 3.617 (12,5%)<br>
+<span style="color:#ed8936;">●</span> UMH — 377 (1,3%)<br>
+<span style="color:#805ad5;">●</span> UA — 348 (1,2%)<br>
+<i>Tamaño ∝ nº alumnos</i>
+</div>
+    
+            <div class="folium-map" id="map_98c98f7a677ab4d8e0768110289e3ba9" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_98c98f7a677ab4d8e0768110289e3ba9 = L.map(
+                "map_98c98f7a677ab4d8e0768110289e3ba9",
+                {
+                    center: [39.1, -0.5],
+                    crs: L.CRS.EPSG3857,
+                    ...{
+  "zoom": 8,
+  "zoomControl": true,
+  "preferCanvas": false,
+}
+
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_8108052309141e63a8a1c504eaf7eb31 = L.tileLayer(
+                "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+                {
+  "minZoom": 0,
+  "maxZoom": 20,
+  "maxNativeZoom": 20,
+  "noWrap": false,
+  "attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors \u0026copy; \u003ca href=\"https://carto.com/attributions\"\u003eCARTO\u003c/a\u003e",
+  "subdomains": "abcd",
+  "detectRetina": false,
+  "tms": false,
+  "opacity": 1,
+}
+
+            );
+        
+    
+            tile_layer_8108052309141e63a8a1c504eaf7eb31.addTo(map_98c98f7a677ab4d8e0768110289e3ba9);
+        
+    
+            var circle_marker_65b6f86bfd08c4bb6a29b10a016f4c22 = L.circleMarker(
+                [39.994444, -0.068889],
+                {"bubblingMouseEvents": true, "color": "#e53e3e", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#e53e3e", "fillOpacity": 0.7, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 49.65684746336601, "stroke": true, "weight": 2}
+            ).addTo(map_98c98f7a677ab4d8e0768110289e3ba9);
+        
+    
+        var popup_bbe0eed19f4477f9252fc65ecf7d6aad = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_8efa689ba4b24d3b2792a795e39b78f4 = $(`<div id="html_8efa689ba4b24d3b2792a795e39b78f4" style="width: 100.0%; height: 100.0%;"><div style='font-family:Arial;'><b style='font-size:13px;'>UJI (Universitat Jaume I)</b><br>📍 Castellón<br>👥 20,129 alumnos<br>📊 69.6% del total</div></div>`)[0];
+                popup_bbe0eed19f4477f9252fc65ecf7d6aad.setContent(html_8efa689ba4b24d3b2792a795e39b78f4);
+            
+        
+
+        circle_marker_65b6f86bfd08c4bb6a29b10a016f4c22.bindPopup(popup_bbe0eed19f4477f9252fc65ecf7d6aad)
+        ;
+
+        
+    
+    
+            circle_marker_65b6f86bfd08c4bb6a29b10a016f4c22.bindTooltip(
+                `<div>
+                     UJI (Universitat Jaume I): 20,129 (69.6%)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_6feafde46d4104dd09a05de52b5db891 = L.circleMarker(
+                [39.467, -0.377],
+                {"bubblingMouseEvents": true, "color": "#3182ce", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#3182ce", "fillOpacity": 0.7, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 23.3505353257693, "stroke": true, "weight": 2}
+            ).addTo(map_98c98f7a677ab4d8e0768110289e3ba9);
+        
+    
+        var popup_1f90c8193681c0d08323ec8b0877b9ad = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_36dcfbb1b46132b6631c31da5cf15f30 = $(`<div id="html_36dcfbb1b46132b6631c31da5cf15f30" style="width: 100.0%; height: 100.0%;"><div style='font-family:Arial;'><b style='font-size:13px;'>UV (Universitat de València)</b><br>📍 Valencia<br>👥 4,451 alumnos<br>📊 15.4% del total</div></div>`)[0];
+                popup_1f90c8193681c0d08323ec8b0877b9ad.setContent(html_36dcfbb1b46132b6631c31da5cf15f30);
+            
+        
+
+        circle_marker_6feafde46d4104dd09a05de52b5db891.bindPopup(popup_1f90c8193681c0d08323ec8b0877b9ad)
+        ;
+
+        
+    
+    
+            circle_marker_6feafde46d4104dd09a05de52b5db891.bindTooltip(
+                `<div>
+                     UV (Universitat de València): 4,451 (15.4%)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_a3c97d20384f65e830c96611127157e8 = L.circleMarker(
+                [39.483, -0.32],
+                {"bubblingMouseEvents": true, "color": "#38a169", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#38a169", "fillOpacity": 0.7, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 21.04952493525685, "stroke": true, "weight": 2}
+            ).addTo(map_98c98f7a677ab4d8e0768110289e3ba9);
+        
+    
+        var popup_fe9fef5cd78183752482aaca2e7a8898 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_fc9ce8e2769559ffcb2288b1cbe24dea = $(`<div id="html_fc9ce8e2769559ffcb2288b1cbe24dea" style="width: 100.0%; height: 100.0%;"><div style='font-family:Arial;'><b style='font-size:13px;'>UPV (Universitat Politècnica)</b><br>📍 Valencia<br>👥 3,617 alumnos<br>📊 12.5% del total</div></div>`)[0];
+                popup_fe9fef5cd78183752482aaca2e7a8898.setContent(html_fc9ce8e2769559ffcb2288b1cbe24dea);
+            
+        
+
+        circle_marker_a3c97d20384f65e830c96611127157e8.bindPopup(popup_fe9fef5cd78183752482aaca2e7a8898)
+        ;
+
+        
+    
+    
+            circle_marker_a3c97d20384f65e830c96611127157e8.bindTooltip(
+                `<div>
+                     UPV (Universitat Politècnica): 3,617 (12.5%)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_edd7b80f52b635f2cc0506a13cce6cb1 = L.circleMarker(
+                [38.275, -0.684167],
+                {"bubblingMouseEvents": true, "color": "#ed8936", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#ed8936", "fillOpacity": 0.7, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6.7957707436316594, "stroke": true, "weight": 2}
+            ).addTo(map_98c98f7a677ab4d8e0768110289e3ba9);
+        
+    
+        var popup_144ae0a9c48830f07ab03a9c09d7dc85 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_0628038c62e456d1d1eb07ebcd7e996e = $(`<div id="html_0628038c62e456d1d1eb07ebcd7e996e" style="width: 100.0%; height: 100.0%;"><div style='font-family:Arial;'><b style='font-size:13px;'>UMH (Universitat Miguel Hernández)</b><br>📍 Elche<br>👥 377 alumnos<br>📊 1.3% del total</div></div>`)[0];
+                popup_144ae0a9c48830f07ab03a9c09d7dc85.setContent(html_0628038c62e456d1d1eb07ebcd7e996e);
+            
+        
+
+        circle_marker_edd7b80f52b635f2cc0506a13cce6cb1.bindPopup(popup_144ae0a9c48830f07ab03a9c09d7dc85)
+        ;
+
+        
+    
+    
+            circle_marker_edd7b80f52b635f2cc0506a13cce6cb1.bindTooltip(
+                `<div>
+                     UMH (Universitat Miguel Hernández): 377 (1.3%)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+    
+            var circle_marker_0f45ef7b26f8c27383bf289408fef215 = L.circleMarker(
+                [38.3841, -0.5079],
+                {"bubblingMouseEvents": true, "color": "#805ad5", "dashArray": null, "dashOffset": null, "fill": true, "fillColor": "#805ad5", "fillOpacity": 0.7, "fillRule": "evenodd", "lineCap": "round", "lineJoin": "round", "opacity": 1.0, "radius": 6.529165337162171, "stroke": true, "weight": 2}
+            ).addTo(map_98c98f7a677ab4d8e0768110289e3ba9);
+        
+    
+        var popup_5f254f9a8872cbce57b83e833ec0c062 = L.popup({
+  "maxWidth": 280,
+});
+
+        
+            
+                var html_9872e020ae507e08e770e4a69159f25e = $(`<div id="html_9872e020ae507e08e770e4a69159f25e" style="width: 100.0%; height: 100.0%;"><div style='font-family:Arial;'><b style='font-size:13px;'>UA (Universitat d'Alacant)</b><br>📍 Alicante<br>👥 348 alumnos<br>📊 1.2% del total</div></div>`)[0];
+                popup_5f254f9a8872cbce57b83e833ec0c062.setContent(html_9872e020ae507e08e770e4a69159f25e);
+            
+        
+
+        circle_marker_0f45ef7b26f8c27383bf289408fef215.bindPopup(popup_5f254f9a8872cbce57b83e833ec0c062)
+        ;
+
+        
+    
+    
+            circle_marker_0f45ef7b26f8c27383bf289408fef215.bindTooltip(
+                `<div>
+                     UA (Universitat d'Alacant): 348 (1.2%)
+                 </div>`,
+                {
+  "sticky": true,
+}
+            );
+        
+</script>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fase 2: EDA Datos Originales - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>📊 Fase 2: EDA Datos Originales</h1>
+                <p>Análisis Exploratorio de Datos Originales</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="active">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class=" disabled">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase2_index.html" class="active">📋 Índice</a>
+  <a href="m01_inspeccion.html" class="">🔍 Inspección</a>
+  <a href="m02_calidad.html" class="">✅ Calidad</a>
+  <a href="m03_nulos.html" class="">❓ Nulos</a>
+  <a href="m04_univariante_num.html" class="">📈 Univariante Num</a>
+  <a href="m05_univariante_cat.html" class="">📊 Univariante Cat</a>
+  <a href="m06_evolucion.html" class="">📈 Evolución</a>
+  <a href="m07_conclusiones.html" class="">📝 Conclusiones</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        <div class="kpis">
+
+    <div class="kpi">
+        <div class="value" style="color:#3182ce">109.568</div>
+        <div class="label">Registros</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#38a169">30.872</div>
+        <div class="label">Alumnos</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#ed8936">37</div>
+        <div class="label">Variables</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#e53e3e">2010-2020</div>
+        <div class="label">Período</div>
+    </div>
+    </div>
+    <section class="seccion">
+        <h2>🎯 Objetivo de la Fase</h2>
+        
+        <p>Esta fase realiza el <strong>Análisis Exploratorio de Datos (EDA)</strong> sobre los datos
+        originales, antes de cualquier transformación o agregación.</p>
+        <p>El objetivo es comprender la estructura, calidad y distribución de los datos para
+        identificar patrones, anomalías y guiar las decisiones de Feature Engineering en la Fase 3.</p>
+        <div style="background:#EBF8FF; padding:15px; border-radius:8px; margin-top:15px; border-left:4px solid #3182ce;">
+            <strong>📌 Nota:</strong> Los datos mantienen su estructura longitudinal
+            (múltiples filas por alumno). La agregación a 1 fila por alumno se realizará en Fase 3.
+        </div>
+    
+    </section>
+    
+    <section class="seccion">
+        <h2>📋 Módulos de la Fase</h2>
+        
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+
+    <!-- M01: Inspección -->
+    <a href="m01_inspeccion.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #3182ce; transition:all 0.2s;">
+            <h3 style="color:#3182ce; margin:0 0 8px 0;">🔍 M01: Inspección</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Estructura, tipos de datos, memoria, valores únicos</p>
+        </div>
+    </a>
+
+    <!-- M02: Calidad -->
+    <a href="m02_calidad.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #38a169; transition:all 0.2s;">
+            <h3 style="color:#38a169; margin:0 0 8px 0;">✅ M02: Calidad</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Duplicados, anomalías de texto, distribución general</p>
+        </div>
+    </a>
+
+    <!-- M03: Nulos -->
+    <a href="m03_nulos.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #ed8936; transition:all 0.2s;">
+            <h3 style="color:#ed8936; margin:0 0 8px 0;">❓ M03: Nulos</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Análisis de valores faltantes, patrones y correlaciones</p>
+        </div>
+    </a>
+
+    <!-- M04: Univariante Numérico -->
+    <a href="m04_univariante_num.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #805ad5; transition:all 0.2s;">
+            <h3 style="color:#805ad5; margin:0 0 8px 0;">📈 M04: Univariante Numérico</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Distribuciones, estadísticas, outliers de variables numéricas</p>
+        </div>
+    </a>
+
+    <!-- M05: Univariante Categórico -->
+    <a href="m05_univariante_cat.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #e53e3e; transition:all 0.2s;">
+            <h3 style="color:#e53e3e; margin:0 0 8px 0;">📊 M05: Univariante Categórico</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Frecuencias, cardinalidad, dominancia de variables categóricas</p>
+        </div>
+    </a>
+
+    <!-- M06: Evolución -->
+    <a href="m06_evolucion.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #319795; transition:all 0.2s;">
+            <h3 style="color:#319795; margin:0 0 8px 0;">📈 M06: Evolución</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Evolución temporal, tendencias por curso académico</p>
+        </div>
+    </a>
+
+    <!-- M07: Conclusiones -->
+    <a href="m07_conclusiones.html" style="text-decoration:none;">
+        <div style="background:#f8fafc; border-radius:10px; padding:20px; border-left:4px solid #2c5282; transition:all 0.2s;">
+            <h3 style="color:#2c5282; margin:0 0 8px 0;">📝 M07: Conclusiones</h3>
+            <p style="color:#718096; margin:0; font-size:0.9em;">Resumen de hallazgos, próximos pasos, reglas de negocio</p>
+        </div>
+    </a>
+
+    </a>
+
+    </a>
+
+    </a>
+
+</div>
+
+    </section>
+    
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase2_eda/f2_m00_indice.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 19/02/2026
+    </footer>
+
+    
+</body>
+</html>

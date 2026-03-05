@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Fase 3: Feature Engineering - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>🔧 🔧 Fase 3: Feature Engineering</h1>
+                <p>Ingeniería de Variables y Preparación para Modelado</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="active">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class=" disabled">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase3_index.html" class="active">📋 Índice</a>
+  <a href="m01_validacion.html" class="">✅ Validación</a>
+  <a href="m02_agregacion.html" class="">🔗 Agregación</a>
+  <a href="m03_features.html" class="">🧪 Features</a>
+  <a href="m04_encoding.html" class="">🏷️ Encoding</a>
+  <a href="m05_target_export.html" class="">🎯 Target y Export</a>
+  <a href="m06_alerta_temprana.html" class="">⚠️ Alerta Temprana</a>
+  <a href="m07_validacion.html" class="">✅ Validación</a>
+  <a href="m08_auditoria.html" class="">🔒 Auditoría</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        
+    <section class="seccion">
+        <h2>⚙️ Resumen de la Fase</h2>
+        
+        <p>
+            Transformación del dataset de <strong>33,621 expedientes</strong> 
+            a formato listo para modelado ML.
+        </p>
+        <p>
+            5 módulos: validación (con correcciones P1-P7), agregación, ingeniería de features, 
+            encoding de categóricas, cálculo del target abandono y export final.
+        </p>
+        <div style="background:#EBF8FF; padding:15px; border-radius:8px; margin-top:15px; border-left:4px solid #3182ce;">
+            <strong>🎯 Objetivo:</strong> Crear dataset listo para AutoML (Fase AutoML) y EDA Final (Fase 4).
+        </div>
+        <div style="background:#F0FFF4; padding:15px; border-radius:8px; margin-top:10px; border-left:4px solid #38a169;">
+            <strong>📁 Salidas:</strong><br>
+            • <code>data/03_features/</code> — Parquets intermedios (features, encoding)<br>
+            • <code>data/automl/</code> — Dataset 100% numérico con target para AutoML<br>
+            • <code>data/04_eda/</code> — Dataset mixto con target para EDA + Modelado
+        </div>
+    
+    </section>
+    
+    <section class="seccion">
+        <h2>📊 Métricas</h2>
+        <div class="kpis">
+
+    <div class="kpi">
+        <div class="value" style="color:#3182ce">33,621</div>
+        <div class="label">Expedientes</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#38a169">6</div>
+        <div class="label">Módulos</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#ed8936">+50</div>
+        <div class="label">Features</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#e53e3e">2021</div>
+        <div class="label">Año referencia</div>
+    </div>
+    </div>
+    </section>
+    
+    <section class="seccion">
+        <h2>📦 Módulos</h2>
+        <div class="grid-tarjetas">
+
+        <a href="m01_validacion.html" class="tarjeta" style="border-left-color: #3182ce">
+            <h3 style="color: #3182ce">✅ M01: Validación y Limpieza</h3>
+            <p>Verificación de datos, corrección de tipos, eliminación de campos redundantes (P1-P7).</p>
+            <div class="link" style="color: #3182ce">Abrir módulo →</div>
+        </a>
+        
+        <a href="m02_agregacion.html" class="tarjeta" style="border-left-color: #38a169">
+            <h3 style="color: #38a169">📊 M02: Agregación</h3>
+            <p>1 fila por expediente único. Longitudinal → Cross-sectional.</p>
+            <div class="link" style="color: #38a169">Abrir módulo →</div>
+        </a>
+        
+        <a href="m03_features.html" class="tarjeta" style="border-left-color: #805ad5">
+            <h3 style="color: #805ad5">⚙️ M03: Features</h3>
+            <p>Temporal, gaps, progreso académico, estabilidad, velocidad.</p>
+            <div class="link" style="color: #805ad5">Abrir módulo →</div>
+        </a>
+        
+        <a href="m04_encoding.html" class="tarjeta" style="border-left-color: #ed8936">
+            <h3 style="color: #ed8936">🔧 M04: Encoding Categóricas</h3>
+            <p>M04a: 100% numérico (AutoML). M04b: Mixto (EDA + CatBoost).</p>
+            <div class="link" style="color: #ed8936">Abrir módulo →</div>
+        </a>
+        
+        <a href="m05_target_export.html" class="tarjeta" style="border-left-color: #e53e3e">
+            <h3 style="color: #e53e3e">🎯 M05: Target + Export</h3>
+            <p>Calcular abandono (+ nota media/año para segundo estudio). Exportar a automl/ y 04_eda/.</p>
+            <div class="link" style="color: #e53e3e">Abrir módulo →</div>
+        </a>
+        </div>
+    </section>
+    
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase3_features/f3_m00_indice.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 03/03/2026
+    </footer>
+
+    
+</body>
+</html>

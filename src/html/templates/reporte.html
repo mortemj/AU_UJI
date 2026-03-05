@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- KPIs del reporte -->
+{% if datos.kpis %}
+<section>
+    <h2>📊 Resumen</h2>
+    <div class="kpis-grid">
+        {% for kpi in datos.kpis %}
+        <div class="kpi {{ kpi.estado|default('') }}">
+            <div class="kpi-valor">{{ kpi.valor }}</div>
+            <div class="kpi-titulo">{{ kpi.titulo }}</div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Estadísticas del DataFrame -->
+{% if datos.stats %}
+<section>
+    <h2>📋 Estadísticas del Dataset</h2>
+    <div class="kpis-grid">
+        <div class="kpi">
+            <div class="kpi-valor">{{ datos.stats.n_filas }}</div>
+            <div class="kpi-titulo">Filas</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-valor">{{ datos.stats.n_columnas }}</div>
+            <div class="kpi-titulo">Columnas</div>
+        </div>
+        <div class="kpi {{ 'ok' if datos.stats.pct_nulos == '0,0%' else 'alerta' }}">
+            <div class="kpi-valor">{{ datos.stats.pct_nulos }}</div>
+            <div class="kpi-titulo">Nulos</div>
+        </div>
+        <div class="kpi">
+            <div class="kpi-valor">{{ datos.stats.memoria_mb }} MB</div>
+            <div class="kpi-titulo">Memoria</div>
+        </div>
+    </div>
+    
+    {% if datos.stats.tipos_columnas %}
+    <h3>Tipos de datos</h3>
+    <div class="tabla-scroll">
+        <table>
+            <thead>
+                <tr><th>Tipo</th><th>Cantidad</th></tr>
+            </thead>
+            <tbody>
+                {% for tipo, cantidad in datos.stats.tipos_columnas.items() %}
+                <tr><td>{{ tipo }}</td><td>{{ cantidad }}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+
+<!-- Tabla de columnas -->
+{% if datos.columnas %}
+<section>
+    <h2>📝 Columnas del Dataset</h2>
+    <div class="tabla-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Columna</th>
+                    <th>Tipo</th>
+                    <th>Nulos</th>
+                    <th>% Nulos</th>
+                    <th>Únicos</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for col in datos.columnas %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ col.nombre }}</strong></td>
+                    <td><code>{{ col.tipo }}</code></td>
+                    <td>{{ col.n_nulos }}</td>
+                    <td>{{ col.pct_nulos }}</td>
+                    <td>{{ col.n_unicos }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<!-- Muestra de datos -->
+{% if datos.muestra_html %}
+<section>
+    <h2>👁️ Muestra de Datos</h2>
+    {{ datos.muestra_html|safe }}
+</section>
+{% endif %}
+
+<!-- Resumen de tablas -->
+{% if datos.tablas %}
+<section>
+    <h2>📁 Tablas Disponibles</h2>
+    <div class="tarjetas-grid">
+        {% for tabla in datos.tablas %}
+        <div class="tarjeta">
+            <h3>📊 {{ tabla.nombre }}</h3>
+            <p><strong>Filas:</strong> {{ tabla.filas }}</p>
+            <p><strong>Columnas:</strong> {{ tabla.columnas }}</p>
+            <p><strong>Nulos:</strong> {{ tabla.nulos }}</p>
+            <p><strong>Memoria:</strong> {{ tabla.memoria }} MB</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- Contenido adicional -->
+{{ contenido|safe }}
+
+{% endblock %}

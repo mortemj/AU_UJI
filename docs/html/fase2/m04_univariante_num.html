@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M04: Univariante Num - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>📈 M04: Univariante Num</h1>
+                <p>Fase 2: EDA Datos Originales | TFM Abandono Universitario</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="active">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class=" disabled">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase2_index.html" class="">📋 Índice</a>
+  <a href="m01_inspeccion.html" class="">🔍 Inspección</a>
+  <a href="m02_calidad.html" class="">✅ Calidad</a>
+  <a href="m03_nulos.html" class="">❓ Nulos</a>
+  <a href="m04_univariante_num.html" class="active">📈 Univariante Num</a>
+  <a href="m05_univariante_cat.html" class="">📊 Univariante Cat</a>
+  <a href="m06_evolucion.html" class="">📈 Evolución</a>
+  <a href="m07_conclusiones.html" class="">📝 Conclusiones</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        
+<style>
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90%;
+    overflow: auto;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    cursor: pointer;
+    color: #718096;
+}
+.modal-close:hover { color: #e53e3e; }
+.btn-modal {
+    padding: 12px 24px;
+    background: #E53E3E;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-modal:hover { background: #C53030; }
+</style>
+<div class="kpis">
+
+    <div class="kpi">
+        <div class="value" style="color:#3182ce">10</div>
+        <div class="label">Variables Numéricas</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#38a169">8</div>
+        <div class="label">Continuas</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#ed8936">2</div>
+        <div class="label">Discretas</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#e53e3e">7</div>
+        <div class="label">Con Outliers</div>
+    </div>
+    </div>
+    <section class="seccion">
+        <h2>ℹ️ Variables Excluidas</h2>
+        <div style="background:#EBF8FF; border-left:4px solid #3182ce; padding:15px; color:#2B6CB0;">
+        <strong>📌 Variables excluidas del análisis:</strong><br>
+        • IDs: per_id_ficticio, exp_tit_id<br>
+        • Fechas: curso_aca_ini, curso_aca, curso_aca_fin<br>
+        • Categóricas codificadas: sexo, orden_preferencia
+    </div>
+    </section>
+    
+    <section class="seccion">
+        <h2>📊 Clasificación por Naturaleza</h2>
+        <iframe src="graficos/m04_clasificacion.html" width="100%" height="420" frameborder="0"></iframe>
+    </section>
+    
+    <section class="seccion">
+        <h2>📦 Distribuciones (sin outliers extremos)</h2>
+        
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+    <iframe src="graficos/m04_boxplots.html" width="100%" height="440" frameborder="0"></iframe>
+    <div>
+        <div style="max-height:350px; overflow-y:auto; margin-bottom:15px;">
+            <table border="1" class="dataframe tabla-estadisticas">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Variable</th>
+      <th>Tipo</th>
+      <th>Valor Extremo</th>
+      <th>Mediana</th>
+      <th>Ratio</th>
+      <th>N Outliers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>cred_matriculados</td>
+      <td>MIN</td>
+      <td>0.00</td>
+      <td>60.00</td>
+      <td>0</td>
+      <td>26293</td>
+    </tr>
+    <tr>
+      <td>media_titulacion_alumno</td>
+      <td>MIN</td>
+      <td>0.00</td>
+      <td>6.25</td>
+      <td>0</td>
+      <td>551</td>
+    </tr>
+  </tbody>
+</table>
+        </div>
+        <div style="text-align:center;">
+            <button class="btn-modal" onclick="document.getElementById('modal-boxplots').style.display='flex'">
+                👁️ Ver gráfico con datos originales
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Boxplots -->
+<div id="modal-boxplots" class="modal-overlay" onclick="if(event.target==this)this.style.display='none'">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="margin:0;">📦 Distribuciones (con outliers)</h3>
+            <button class="modal-close" onclick="document.getElementById('modal-boxplots').style.display='none'">×</button>
+        </div>
+        <iframe src="graficos/m04_boxplots_full.html" width="100%" height="500" frameborder="0"></iframe>
+    </div>
+</div>
+
+    </section>
+    
+    <section class="seccion">
+        <h2>📐 Forma de las Distribuciones (sin outliers)</h2>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+            <iframe src="graficos/m04_forma.html" width="100%" height="420" frameborder="0"></iframe>
+            <div style="max-height:420px; overflow-y:auto;">
+                <table border="1" class="dataframe tabla-estadisticas">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Variable</th>
+      <th>Skew</th>
+      <th>Kurtosis</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>nota</td>
+      <td>0.32</td>
+      <td>-0.46</td>
+    </tr>
+    <tr>
+      <td>nota_selectividad</td>
+      <td>0.59</td>
+      <td>-0.38</td>
+    </tr>
+    <tr>
+      <td>nota_acceso</td>
+      <td>0.41</td>
+      <td>-0.34</td>
+    </tr>
+    <tr>
+      <td>cred_matriculados</td>
+      <td>-1.40</td>
+      <td>21.68</td>
+    </tr>
+    <tr>
+      <td>cred_superados</td>
+      <td>0.23</td>
+      <td>-1.06</td>
+    </tr>
+    <tr>
+      <td>media_curso</td>
+      <td>0.18</td>
+      <td>-0.49</td>
+    </tr>
+    <tr>
+      <td>cred_titulacion</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <td>media_titulacion_curso</td>
+      <td>0.03</td>
+      <td>-1.02</td>
+    </tr>
+    <tr>
+      <td>media_titulacion_alumno</td>
+      <td>-0.25</td>
+      <td>-0.46</td>
+    </tr>
+    <tr>
+      <td>numero_pagos</td>
+      <td>0.64</td>
+      <td>-1.47</td>
+    </tr>
+  </tbody>
+</table>
+            </div>
+        </div>
+    
+    </section>
+    
+    <section class="seccion">
+        <h2>📈 Distribución de Frecuencias</h2>
+        
+        <p style="color:#718096; margin-bottom:10px;">Leyenda: ── KDE (densidad) | <span style="color:red;">|</span> Media | <span style="color:green;">┊</span> Mediana</p>
+        <iframe src="graficos/m04_histogramas.html" width="100%" height="1000" frameborder="0"></iframe>
+    
+    </section>
+    
+    <section class="seccion">
+        <h2>📉 QQ-Plot: ¿Distribución Normal?</h2>
+        <iframe src="graficos/m04_qqplot.html" width="100%" height="1000" frameborder="0"></iframe>
+    </section>
+    
+    <section class="seccion">
+        <h2>🎻 Distribuciones por Curso (Violinplots)</h2>
+        <iframe src="graficos/m04_violinplots.html" width="100%" height="1150" frameborder="0"></iframe>
+    </section>
+    
+    <section class="seccion">
+        <h2>🔴 Outliers Reales (Stripplot)</h2>
+        <iframe src="graficos/m04_stripplot.html" width="100%" height="1150" frameborder="0"></iframe>
+    </section>
+    
+    <section class="seccion">
+        <h2>📋 Estadísticas Descriptivas</h2>
+        <div style="overflow-x:auto; max-height:400px; overflow-y:auto;"><table border="1" class="dataframe tabla-estadisticas">
+  <thead>
+    <tr style="text-align: right;">
+      <th>Variable</th>
+      <th>Count</th>
+      <th>Mean</th>
+      <th>Std</th>
+      <th>Min</th>
+      <th>25%</th>
+      <th>50%</th>
+      <th>75%</th>
+      <th>Max</th>
+      <th>Missing</th>
+      <th>Missing%</th>
+      <th>Skew</th>
+      <th>Kurtosis</th>
+      <th>Outliers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>nota</td>
+      <td>51997</td>
+      <td>7.26</td>
+      <td>0.70</td>
+      <td>5.45</td>
+      <td>6.72</td>
+      <td>7.21</td>
+      <td>7.74</td>
+      <td>9.71</td>
+      <td>57571</td>
+      <td>52.54</td>
+      <td>0.32</td>
+      <td>-0.46</td>
+      <td>149</td>
+    </tr>
+    <tr>
+      <td>nota_selectividad</td>
+      <td>99698</td>
+      <td>6.76</td>
+      <td>1.03</td>
+      <td>5.00</td>
+      <td>5.95</td>
+      <td>6.58</td>
+      <td>7.43</td>
+      <td>12.54</td>
+      <td>9870</td>
+      <td>9.01</td>
+      <td>0.59</td>
+      <td>-0.38</td>
+      <td>217</td>
+    </tr>
+    <tr>
+      <td>nota_acceso</td>
+      <td>101748</td>
+      <td>8.39</td>
+      <td>1.80</td>
+      <td>5.00</td>
+      <td>7.09</td>
+      <td>8.22</td>
+      <td>9.50</td>
+      <td>13.81</td>
+      <td>7820</td>
+      <td>7.14</td>
+      <td>0.41</td>
+      <td>-0.34</td>
+      <td>385</td>
+    </tr>
+    <tr>
+      <td>cred_matriculados</td>
+      <td>109568</td>
+      <td>58.42</td>
+      <td>22.75</td>
+      <td>0.00</td>
+      <td>58.00</td>
+      <td>60.00</td>
+      <td>60.00</td>
+      <td>264.00</td>
+      <td>0</td>
+      <td>0.00</td>
+      <td>-1.40</td>
+      <td>21.68</td>
+      <td>50681</td>
+    </tr>
+    <tr>
+      <td>cred_superados</td>
+      <td>109568</td>
+      <td>128.21</td>
+      <td>75.91</td>
+      <td>0.00</td>
+      <td>60.00</td>
+      <td>120.00</td>
+      <td>186.00</td>
+      <td>367.00</td>
+      <td>0</td>
+      <td>0.00</td>
+      <td>0.23</td>
+      <td>-1.06</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>media_curso</td>
+      <td>101653</td>
+      <td>7.06</td>
+      <td>1.00</td>
+      <td>5.00</td>
+      <td>6.32</td>
+      <td>7.01</td>
+      <td>7.75</td>
+      <td>10.00</td>
+      <td>7915</td>
+      <td>7.22</td>
+      <td>0.18</td>
+      <td>-0.49</td>
+      <td>117</td>
+    </tr>
+    <tr>
+      <td>cred_titulacion</td>
+      <td>109568</td>
+      <td>244.41</td>
+      <td>22.77</td>
+      <td>240.00</td>
+      <td>240.00</td>
+      <td>240.00</td>
+      <td>240.00</td>
+      <td>384.00</td>
+      <td>0</td>
+      <td>0.00</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>3969</td>
+    </tr>
+    <tr>
+      <td>media_titulacion_curso</td>
+      <td>104998</td>
+      <td>6.07</td>
+      <td>0.80</td>
+      <td>4.28</td>
+      <td>5.41</td>
+      <td>6.18</td>
+      <td>6.73</td>
+      <td>8.11</td>
+      <td>4570</td>
+      <td>4.17</td>
+      <td>0.03</td>
+      <td>-1.02</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>media_titulacion_alumno</td>
+      <td>104998</td>
+      <td>6.14</td>
+      <td>1.68</td>
+      <td>0.00</td>
+      <td>5.00</td>
+      <td>6.25</td>
+      <td>7.40</td>
+      <td>10.00</td>
+      <td>4570</td>
+      <td>4.17</td>
+      <td>-0.25</td>
+      <td>-0.46</td>
+      <td>551</td>
+    </tr>
+    <tr>
+      <td>numero_pagos</td>
+      <td>109556</td>
+      <td>3.25</td>
+      <td>2.65</td>
+      <td>1.00</td>
+      <td>1.00</td>
+      <td>2.00</td>
+      <td>7.00</td>
+      <td>7.00</td>
+      <td>12</td>
+      <td>0.01</td>
+      <td>0.64</td>
+      <td>-1.47</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table></div>
+    </section>
+    
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase2_eda/f2_m04_univariante_num.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 19/02/2026
+    </footer>
+
+    
+</body>
+</html>

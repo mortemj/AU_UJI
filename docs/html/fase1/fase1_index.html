@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📥 Fase 1: Transformación - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>📥 📥 Fase 1: Transformación</h1>
+                <p>Transformación de Datos Originales</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="active">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class="">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase1_index.html" class="active">📋 Índice</a>
+  <a href="m01_reportes_raw.html" class="">📋 Reportes Raw</a>
+  <a href="m02_limpieza.html" class="">🧹 Limpieza</a>
+  <a href="m03_reportes_clean.html" class="">✨ Reportes Clean</a>
+  <a href="m04_dataset_final.html" class="">🎯 Dataset Final</a>
+  <a href="m05_dashboard.html" class="">📊 Dashboard</a>
+  <a href="m06_grafo.html" class="">🕸️ Grafo</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        
+    <section class="seccion">
+        <h2>📥 Resumen de la Fase</h2>
+        <p>Limpieza, transformación y unificación de <strong>9 tablas</strong> (1.050.793 registros originales) provenientes de 2 archivos Excel en un único dataset <strong>df_alumno</strong>.</p><p>Incluye generación de reportes Sweetviz (antes/después), documentación de transformaciones y grafos interactivos de trazabilidad.</p>
+    </section>
+    
+    <section class="seccion">
+        <h2>📋 Datos Originales (sin tratar)</h2>
+        <div class="kpis">
+
+    <div class="kpi">
+        <div class="value" style="color:#3182ce">9</div>
+        <div class="label">Tablas origen</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#38a169">1.050.793</div>
+        <div class="label">Registros origen</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#ed8936">74</div>
+        <div class="label">Columnas origen</div>
+    </div>
+    </div>
+    </section>
+    
+    <section class="seccion">
+        <h2>🎯 Datos Finales (tras transformación)</h2>
+        <div class="kpis">
+
+    <div class="kpi">
+        <div class="value" style="color:#3182ce">109.568</div>
+        <div class="label">Registros finales</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#38a169">37</div>
+        <div class="label">Columnas finales</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#ed8936">30.872</div>
+        <div class="label">Alumnos únicos</div>
+    </div>
+    </div>
+    </section>
+    
+    <section class="seccion">
+        <h2>📦 Módulos</h2>
+        <div class="grid-tarjetas">
+
+        <a href="m01_reportes_raw.html" class="tarjeta" style="border-left-color: #3182ce">
+            <h3 style="color: #3182ce">📋 Reportes Raw</h3>
+            <p>9 reportes Sweetviz de los datos crudos antes de cualquier transformación.</p>
+            <div class="link" style="color: #3182ce">Abrir módulo →</div>
+        </a>
+        
+        <a href="m02_limpieza.html" class="tarjeta" style="border-left-color: #38a169">
+            <h3 style="color: #38a169">🧹 Limpieza</h3>
+            <p>Transformaciones aplicadas: snake_case, NaN, tipos de datos por cada tabla.</p>
+            <div class="link" style="color: #38a169">Abrir módulo →</div>
+        </a>
+        
+        <a href="m03_reportes_clean.html" class="tarjeta" style="border-left-color: #3182ce">
+            <h3 style="color: #3182ce">✨ Reportes Clean</h3>
+            <p>9 reportes Sweetviz de los datos limpios. Comparación antes/después.</p>
+            <div class="link" style="color: #3182ce">Abrir módulo →</div>
+        </a>
+        
+        <a href="m04_dataset_final.html" class="tarjeta" style="border-left-color: #805ad5">
+            <h3 style="color: #805ad5">🎯 Dataset Final</h3>
+            <p>Unión de las 9 tablas en df_alumno. Variables derivadas: vive_fuera, tiene_beca.</p>
+            <div class="link" style="color: #805ad5">Abrir módulo →</div>
+        </a>
+        
+        <a href="m05_dashboard.html" class="tarjeta" style="border-left-color: #ed8936">
+            <h3 style="color: #ed8936">📊 Dashboard</h3>
+            <p>Dashboard interactivo con resumen visual del proceso de transformación.</p>
+            <div class="link" style="color: #ed8936">Abrir módulo →</div>
+        </a>
+        
+        <a href="m06_grafo.html" class="tarjeta" style="border-left-color: #ed8936">
+            <h3 style="color: #ed8936">🕸️ Grafo</h3>
+            <p>Grafo interactivo con nodos arrastrables mostrando flujo de tablas a df_alumno.</p>
+            <div class="link" style="color: #ed8936">Abrir módulo →</div>
+        </a>
+        </div>
+    </section>
+    
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase1_transformacion/f1_m00_indice.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 03/03/2026
+    </footer>
+
+    
+</body>
+</html>

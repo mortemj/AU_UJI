@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    #vis.vega-embed {
+      width: 100%;
+      display: flex;
+    }
+
+    #vis.vega-embed details,
+    #vis.vega-embed details summary {
+      position: relative;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@6.1.0"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+</head>
+<body>
+  <div id="vis"></div>
+  <script>
+    (function(vegaEmbed) {
+      var spec = {"config": {"view": {"continuousWidth": 300, "continuousHeight": 300}, "title": {"fontSize": 14, "fontWeight": "bold"}}, "data": {"name": "data-9fec07c26e6a26f5b8611e553c508818"}, "mark": {"type": "bar"}, "encoding": {"color": {"field": "Grupo", "legend": {"title": "Cardinalidad"}, "scale": {"domain": ["\ud83d\udfe2 Baja (\u22645)", "\ud83d\udd35 Media (6-15)", "\ud83d\udfe0 Alta (>15)"], "range": ["#38a169", "#3182ce", "#ed8936"]}, "type": "nominal"}, "tooltip": [{"field": "Variable", "type": "nominal"}, {"field": "Categor\u00edas", "type": "quantitative"}, {"field": "Grupo", "type": "nominal"}, {"field": "Nulos", "type": "quantitative"}], "x": {"field": "Categor\u00edas", "title": "N\u00famero de categor\u00edas", "type": "quantitative"}, "y": {"field": "Variable", "sort": "-x", "title": "", "type": "nominal"}}, "height": 300, "title": "Cardinalidad de Variables Categ\u00f3ricas", "width": 550, "$schema": "https://vega.github.io/schema/vega-lite/v6.1.0.json", "datasets": {"data-9fec07c26e6a26f5b8611e553c508818": [{"Variable": "Sexo", "Categor\u00edas": 2, "Grupo": "\ud83d\udfe2 Baja (\u22645)", "Nulos": 0}, {"Variable": "Rama", "Categor\u00edas": 5, "Grupo": "\ud83d\udfe2 Baja (\u22645)", "Nulos": 0}, {"Variable": "Univ. origen", "Categor\u00edas": 5, "Grupo": "\ud83d\udfe2 Baja (\u22645)", "Nulos": 4699}, {"Variable": "Situaci\u00f3n laboral", "Categor\u00edas": 11, "Grupo": "\ud83d\udd35 Media (6-15)", "Nulos": 12740}, {"Variable": "V\u00eda acceso", "Categor\u00edas": 13, "Grupo": "\ud83d\udd35 Media (6-15)", "Nulos": 0}, {"Variable": "Titulaci\u00f3n", "Categor\u00edas": 40, "Grupo": "\ud83d\udfe0 Alta (>15)", "Nulos": 0}, {"Variable": "Provincia", "Categor\u00edas": 50, "Grupo": "\ud83d\udfe0 Alta (>15)", "Nulos": 0}, {"Variable": "Pa\u00eds", "Categor\u00edas": 77, "Grupo": "\ud83d\udfe0 Alta (>15)", "Nulos": 0}]}};
+      var embedOpt = {"mode": "vega-lite"};
+
+      function showError(el, error){
+          el.innerHTML = ('<div style="color:red;">'
+                          + '<p>JavaScript Error: ' + error.message + '</p>'
+                          + "<p>This usually means there's a typo in your chart specification. "
+                          + "See the javascript console for the full traceback.</p>"
+                          + '</div>');
+          throw error;
+      }
+      const el = document.getElementById('vis');
+      vegaEmbed("#vis", spec, embedOpt)
+        .catch(error => showError(el, error));
+    })(vegaEmbed);
+
+  </script>
+</body>
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M05: Dashboard - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>📊 M05: Dashboard</h1>
+                <p>Fase 1: Resumen de Transformación</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="active">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class=" disabled">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase1_index.html" class="">📋 Índice</a>
+  <a href="m01_reportes_raw.html" class="">📋 Reportes Raw</a>
+  <a href="m02_limpieza.html" class="">🧹 Limpieza</a>
+  <a href="m03_reportes_clean.html" class="">✨ Reportes Clean</a>
+  <a href="m04_dataset_final.html" class="">🎯 Dataset Final</a>
+  <a href="m05_dashboard.html" class="active">📊 Dashboard</a>
+  <a href="m06_grafo.html" class="">🕸️ Grafo</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        
+<div class="dashboard-kpis">
+    <div class="dash-kpi">
+        <div class="dash-kpi-valor">9</div>
+        <div class="dash-kpi-label">Tablas</div>
+        <div class="dash-kpi-icon" style="background:#3182ce">📊</div>
+    </div>
+    <div class="dash-kpi">
+        <div class="dash-kpi-valor">109.568</div>
+        <div class="dash-kpi-label">Registros</div>
+        <div class="dash-kpi-icon" style="background:#38a169">📋</div>
+    </div>
+    <div class="dash-kpi">
+        <div class="dash-kpi-valor">37</div>
+        <div class="dash-kpi-label">Variables</div>
+        <div class="dash-kpi-icon" style="background:#805ad5">📐</div>
+    </div>
+    <div class="dash-kpi">
+        <div class="dash-kpi-valor">30.872</div>
+        <div class="dash-kpi-label">Alumnos</div>
+        <div class="dash-kpi-icon" style="background:#ed8936">👤</div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="dash-card"><div class="dash-card-header"><h3>📊 Registros por Tabla</h3></div><div class="dash-card-body"><svg viewBox="0 0 700 190" style="width:100%;height:180px;"><g><rect x="30" y="110" width="55" height="50" fill="#38a169" rx="4"/><text x="57" y="175" text-anchor="middle" font-size="9" fill="#4a5568">becas</text><text x="57" y="105" text-anchor="middle" font-size="8" fill="#718096">70k</text></g><g><rect x="105" y="139" width="55" height="21" fill="#ed8936" rx="4"/><text x="132" y="175" text-anchor="middle" font-size="9" fill="#4a5568">demogr</text><text x="132" y="134" text-anchor="middle" font-size="8" fill="#718096">30k</text></g><g><rect x="180" y="11" width="55" height="149" fill="#e53e3e" rx="4"/><text x="207" y="175" text-anchor="middle" font-size="9" fill="#4a5568">domici</text><text x="207" y="6" text-anchor="middle" font-size="8" fill="#718096">210k</text></g><g><rect x="255" y="83" width="55" height="77" fill="#3182ce" rx="4"/><text x="282" y="175" text-anchor="middle" font-size="9" fill="#4a5568">expedi</text><text x="282" y="78" text-anchor="middle" font-size="8" fill="#718096">109k</text></g><g><rect x="330" y="84" width="55" height="76" fill="#d69e2e" rx="4"/><text x="357" y="175" text-anchor="middle" font-size="9" fill="#4a5568">notas</text><text x="357" y="79" text-anchor="middle" font-size="8" fill="#718096">107k</text></g><g><rect x="405" y="10" width="55" height="150" fill="#ed64a6" rx="4"/><text x="432" y="175" text-anchor="middle" font-size="9" fill="#4a5568">preins</text><text x="432" y="5" text-anchor="middle" font-size="8" fill="#718096">210k</text></g><g><rect x="480" y="79" width="55" height="81" fill="#667eea" rx="4"/><text x="507" y="175" text-anchor="middle" font-size="9" fill="#4a5568">recibo</text><text x="507" y="74" text-anchor="middle" font-size="8" fill="#718096">114k</text></g><g><rect x="555" y="160" width="55" height="0" fill="#805ad5" rx="4"/><text x="582" y="175" text-anchor="middle" font-size="9" fill="#4a5568">titula</text><text x="582" y="155" text-anchor="middle" font-size="8" fill="#718096">0k</text></g><g><rect x="630" y="21" width="55" height="139" fill="#319795" rx="4"/><text x="657" y="175" text-anchor="middle" font-size="9" fill="#4a5568">trabaj</text><text x="657" y="16" text-anchor="middle" font-size="8" fill="#718096">195k</text></g></svg></div></div>
+    <div class="dash-card"><div class="dash-card-header"><h3>📐 Columnas por Origen</h3></div><div class="dash-card-body dash-donut-container"><div class="dash-donut" style="--pct-1:67.56756756756756; --color-1:#3182ce; --color-2:#805ad5;"><div class="dash-donut-center"><span class="dash-donut-valor">74</span><span class="dash-donut-label">cols</span></div></div><div class="dash-donut-legend"><div class="dash-legend-item"><span style="background:#3182ce"></span>Excel (50)</div><div class="dash-legend-item"><span style="background:#805ad5"></span>Preins (24)</div></div></div></div>
+    <div class="dash-card"><div class="dash-card-header"><h3>🔄 Pipeline</h3></div><div class="dash-card-body"><div class="dash-pipeline"><div class="dash-pipe-step" style="--step-color:#e53e3e"><div class="dash-pipe-icon">📋</div><div class="dash-pipe-text">M01<br><small>Raw</small></div></div><div class="dash-pipe-arrow">→</div><div class="dash-pipe-step" style="--step-color:#ed8936"><div class="dash-pipe-icon">🧹</div><div class="dash-pipe-text">M02<br><small>Limpieza</small></div></div><div class="dash-pipe-arrow">→</div><div class="dash-pipe-step" style="--step-color:#ecc94b"><div class="dash-pipe-icon">✨</div><div class="dash-pipe-text">M03<br><small>Clean</small></div></div><div class="dash-pipe-arrow">→</div><div class="dash-pipe-step" style="--step-color:#38a169"><div class="dash-pipe-icon">🎯</div><div class="dash-pipe-text">M04<br><small>Final</small></div></div></div></div></div>
+    <div class="dash-card"><div class="dash-card-header"><h3>⚙️ Transformaciones</h3></div><div class="dash-card-body"><div class="dash-trans-grid"><div class="dash-trans"><span>📤</span> Normalización</div><div class="dash-trans"><span>🔢</span> Tipos datos</div><div class="dash-trans"><span>🌐</span> Codificación</div><div class="dash-trans"><span>🔗</span> Unión tablas</div><div class="dash-trans"><span>➕</span> Variables derivadas</div><div class="dash-trans"><span>✅</span> Validación</div></div></div></div>
+    <div class="dash-card dash-card-wide"><div class="dash-card-header"><h3>📁 Tablas Origen</h3></div><div class="dash-card-body"><div class="dash-tablas-grid"><div class="dash-tabla-item" style="border-left-color:#38a169"><span class="dash-tabla-emoji">💰</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">becas</div><div class="dash-tabla-stats">70.524 × 4</div></div></div><div class="dash-tabla-item" style="border-left-color:#ed8936"><span class="dash-tabla-emoji">👤</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">demograficos</div><div class="dash-tabla-stats">30.873 × 5</div></div></div><div class="dash-tabla-item" style="border-left-color:#e53e3e"><span class="dash-tabla-emoji">🏠</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">domicilios</div><div class="dash-tabla-stats">210.911 × 6</div></div></div><div class="dash-tabla-item" style="border-left-color:#3182ce"><span class="dash-tabla-emoji">📋</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">expedientes</div><div class="dash-tabla-stats">109.568 × 15</div></div></div><div class="dash-tabla-item" style="border-left-color:#d69e2e"><span class="dash-tabla-emoji">📝</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">notas</div><div class="dash-tabla-stats">107.908 × 5</div></div></div><div class="dash-tabla-item" style="border-left-color:#ed64a6"><span class="dash-tabla-emoji">📄</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">preinscripcion</div><div class="dash-tabla-stats">210.986 × 24</div></div></div><div class="dash-tabla-item" style="border-left-color:#667eea"><span class="dash-tabla-emoji">💳</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">recibos</div><div class="dash-tabla-stats">114.454 × 5</div></div></div><div class="dash-tabla-item" style="border-left-color:#805ad5"><span class="dash-tabla-emoji">🎓</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">titulaciones</div><div class="dash-tabla-stats">45 × 6</div></div></div><div class="dash-tabla-item" style="border-left-color:#319795"><span class="dash-tabla-emoji">💼</span><div class="dash-tabla-info"><div class="dash-tabla-nombre">trabajo</div><div class="dash-tabla-stats">195.524 × 4</div></div></div></div></div></div>
+</div>
+
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase1_transformacion/f1_m05_dashboard.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 19/02/2026
+    </footer>
+
+    
+</body>
+</html>

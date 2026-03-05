@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M06: Grafo PyVis - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+    <style>
+    <style>
+    #mynetwork { width: 100%; height: calc(100vh - 220px); min-height: 500px; background: #f7fafc; }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js"></script>
+    </style>
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>🕸️ M06: Grafo PyVis</h1>
+                <p>Trazabilidad Interactiva - Fase 1</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="active">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class=" disabled">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase1_index.html" class="">📋 Índice</a>
+  <a href="m01_reportes_raw.html" class="">📋 Reportes Raw</a>
+  <a href="m02_limpieza.html" class="">🧹 Limpieza</a>
+  <a href="m03_reportes_clean.html" class="">✨ Reportes Clean</a>
+  <a href="m04_dataset_final.html" class="">🎯 Dataset Final</a>
+  <a href="m05_dashboard.html" class="">📊 Dashboard</a>
+  <a href="m06_grafo.html" class="active">🕸️ Grafo</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        
+    <div class="grafo-leyenda">
+        <div class="leyenda-item"><div class="leyenda-color" style="background:#3182ce"></div>datos_proyecto (8)</div>
+        <div class="leyenda-item"><div class="leyenda-color" style="background:#805ad5"></div>preinscripcion (1)</div>
+        <div class="leyenda-item"><div class="leyenda-color" style="background:#38a169"></div>df_alumno</div>
+        <div style="margin-left:auto;color:#718096;font-size:0.85em">🖱️ Arrastra | 🔍 Zoom | 👆 Hover</div>
+    </div>
+    
+        <div class="card" style="width: 100%">
+            
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "becas", "label": "becas\n(4 cols)", "physics": false, "shape": "box", "title": "70.524 filas | 4 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 id_beca\n\u2022 nombre_beca\n\u2022 mat_curso_aca", "x": -400, "y": -250}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "demograficos", "label": "demograficos\n(5 cols)", "physics": false, "shape": "box", "title": "30.873 filas | 5 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 sexo\n\u2022 fecha_nacimiento\n\u2022 id_pais\n\u2022 pais_nombre", "x": -400, "y": -170}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "domicilios", "label": "domicilios\n(6 cols)", "physics": false, "shape": "box", "title": "210.911 filas | 6 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 poblacion\n\u2022 provincia\n\u2022 pais\n\u2022 curso_aca\n\u2022 tipo_domicilio", "x": -400, "y": -90}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "expedientes", "label": "expedientes\n(15 cols)", "physics": false, "shape": "box", "title": "109.568 filas | 15 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 exp_tit_id\n\u2022 curso_aca_ini\n\u2022 curso_aca\n\u2022 curso_aca_fin\n\u2022 nota\n\u2022 nombre\n\u2022 seguro\n\u2022 nota_selectividad\n\u2022 nota_acceso\n\u2022 cred_matriculados\n\u2022 cred_superados\n\u2022 egresado\n\u2022 nuevo\n\u2022 media_curso", "x": -400, "y": -10}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "notas", "label": "notas\n(5 cols)", "physics": false, "shape": "box", "title": "107.908 filas | 5 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 curso_aca\n\u2022 exp_tit_id\n\u2022 media_titulacion_curso\n\u2022 media_titulacion_alumno", "x": -400, "y": 70}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "recibos", "label": "recibos\n(5 cols)", "physics": false, "shape": "box", "title": "114.454 filas | 5 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 curso_aca\n\u2022 nombre_recibos\n\u2022 forma_de_pago\n\u2022 numero_pagos", "x": -400, "y": 150}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "titulaciones", "label": "titulaciones\n(6 cols)", "physics": false, "shape": "box", "title": "45 filas | 6 cols\n\nColumnas:\n\u2022 exp_tit_id\n\u2022 titulacion\n\u2022 rama\n\u2022 cred_titulacion\n\u2022 tipo\n\u2022 tipo_estudio", "x": -400, "y": 230}, {"color": "#3182ce", "font": {"color": "white", "size": 12}, "id": "trabajo", "label": "trabajo\n(4 cols)", "physics": false, "shape": "box", "title": "195.524 filas | 4 cols\n\nColumnas:\n\u2022 per_id_ficticio\n\u2022 exp_tit_id\n\u2022 nombre_trabajo\n\u2022 mat_curso_aca", "x": -400, "y": 310}, {"color": "#805ad5", "font": {"color": "white", "size": 12}, "id": "preinscripcion", "label": "preinscripcion\n(24 cols)", "physics": false, "shape": "box", "title": "210.986 filas | 24 cols", "x": -100, "y": 400}, {"color": "#38a169", "font": {"color": "white", "size": 14}, "id": "df_alumno", "label": "df_alumno\n(37 cols | 109.568)", "physics": false, "shape": "box", "title": "109.568 filas", "x": 250, "y": 100}]);
+                  edges = new vis.DataSet([{"arrows": "to", "color": "#3182ce", "from": "becas", "title": "4 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "demograficos", "title": "5 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "domicilios", "title": "6 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "expedientes", "title": "15 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "notas", "title": "5 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "recibos", "title": "5 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "titulaciones", "title": "6 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#3182ce", "from": "trabajo", "title": "4 cols", "to": "df_alumno", "width": 2}, {"arrows": "to", "color": "#ed8936", "dashes": true, "from": "preinscripcion", "title": "Preinscripci\u00f3n", "to": "df_alumno", "width": 1.5}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {"physics": {"enabled": false}, "interaction": {"hover": true}};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    
+    
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase1_transformacion/f1_m05_m06_trazabilidad.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 19/02/2026
+    </footer>
+
+    
+</body>
+</html>

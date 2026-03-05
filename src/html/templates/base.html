@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ titulo }} - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    {% if estilos_adicionales %}
+    <style>{{ estilos_adicionales|safe }}</style>
+    {% endif %}
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="{{ ruta_assets }}/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>{% if icono %}{{ icono }} {% endif %}{{ titulo }}</h1>
+                <p>{{ subtitulo }}</p>
+            </div>
+            <img src="{{ ruta_assets }}/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        {{ nav_fases|safe }}
+    </nav>
+
+    <nav class="nav-modulos">
+        {{ nav_modulos|safe }}
+    </nav>
+
+    <div class="container">
+        {{ contenido|safe }}
+    </div>
+
+    <footer>
+        <strong>{{ autora }}</strong> |
+        <a href="mailto:{{ email_uoc }}">{{ email_uoc }}</a> (UOC) |
+        <a href="mailto:{{ email_uji }}">{{ email_uji }}</a> (UJI)
+        {% if notebook_github_url %}
+        <br>
+        <a href="{{ notebook_github_url }}" target="_blank">📓 Ver Notebook</a>
+        {% endif %}
+        <br>Generado: {{ fecha_generacion }}
+    </footer>
+
+    {% if scripts_adicionales %}
+    <script>{{ scripts_adicionales|safe }}</script>
+    {% endif %}
+</body>
+</html>

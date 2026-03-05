@@ -1,0 +1,420 @@
+/* ============================================================
+   VARIABLES DE COLOR (PALETA INSTITUCIONAL)
+   ============================================================ */
+:root {
+    /* Azules institucionales */
+    --azul-claro: #3182ce;
+    --azul-medio: #2c5282;
+    --azul-oscuro: #2d3748;
+
+    /* Grises */
+    --gris-texto: #2d3748;
+    --gris-suave: #718096;
+    --gris-muy-suave: #cbd5e0;
+    --gris-fondo: #f7fafc;
+    --gris-tarjeta: #f8fafc;
+
+    /* Mensajes */
+    --info-fondo: #ebf8ff;
+    --info-borde: #3182ce;
+    --info-texto: #2c5282;
+
+    --aviso-fondo: #fffaf0;
+    --aviso-borde: #dd6b20;
+    --aviso-texto: #9c4221;
+
+    --ok-fondo: #f0fff4;
+    --ok-borde: #38a169;
+    --ok-texto: #276749;
+
+    --error-fondo: #fff5f5;
+    --error-borde: #e53e3e;
+    --error-texto: #9b2c2c;
+
+    /* Tablas */
+    --tabla-header: #2c5282;
+    --tabla-par: #f7fafc;
+
+    /* Otros */
+    --borde-suave: #e2e8f0;
+    --borde-azul: #bee3f8;
+}
+
+/* ============================================================
+   ESTILOS BASE
+   ============================================================ */
+body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--gris-texto);
+    background: var(--gris-fondo);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+header {
+    background: linear-gradient(135deg, var(--azul-claro) 0%, var(--azul-medio) 100%);
+    color: white;
+    padding: 18px 20px;
+    margin-bottom: 15px;
+}
+
+footer {
+    background: var(--azul-oscuro);
+    color: #e2e8f0;
+    padding: 18px 20px;
+    text-align: center;
+    font-size: 0.85rem;
+    border-top: 3px solid #1a202c;
+    margin-top: 40px;
+    border-radius: 0 0 8px 8px;
+}
+
+footer strong {
+    color: white;
+}
+
+/* ============================================================
+   CABECERA (LOGOS + TÍTULO)
+   ============================================================ */
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-title {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.header-logo {
+    height: 60px;
+    margin: 0 20px;
+}
+
+/* ============================================================
+   CONTENEDOR PRINCIPAL
+   ============================================================ */
+.container {
+    max-width: 1200px;
+    margin: 25px auto;
+    padding: 0 20px;
+}
+
+/* ============================================================
+   TARJETAS
+   ============================================================ */
+.tarjeta {
+    display: inline-block;
+    background: white;
+    padding: 18px 20px;
+    margin: 12px;
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    text-decoration: none;
+    color: var(--gris-texto);
+    width: 260px;
+    vertical-align: top;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tarjeta:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+.tarjeta h3 {
+    margin-top: 0;
+    color: var(--azul-medio);
+}
+
+.tarjeta p {
+    margin: 6px 0;
+    font-size: 0.9rem;
+}
+
+/* ============================================================
+   TÍTULOS
+   ============================================================ */
+h1 {
+    font-size: 2rem;
+    margin: 0;
+    color: white;
+}
+
+h2 {
+    font-size: 1.6rem;
+    margin-top: 30px;
+    margin-bottom: 12px;
+    color: var(--azul-medio);
+    border-bottom: 2px solid var(--borde-azul);
+    padding-bottom: 6px;
+}
+
+h3 {
+    font-size: 1.2rem;
+    margin-top: 10px;
+    margin-bottom: 6px;
+    color: #2b6cb0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    text-align: center;
+}
+
+/* ============================================================
+   TABLAS
+   ============================================================ */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+th {
+    background: var(--tabla-header);
+    color: white;
+    padding: 10px;
+    text-align: left;
+    font-weight: 600;
+}
+
+td {
+    padding: 10px;
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+tr:nth-child(even) {
+    background: var(--tabla-par);
+}
+h1, h2, h3, h4, h5, h6 {
+    text-align: center;
+}
+/* ============================================================
+   ENLACES
+   ============================================================ */
+.container a {
+    color: #2b6cb0;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.container a:hover {
+    text-decoration: underline;
+    color: #1a4f80;
+}
+
+/* ============================================================
+   NAVEGACIÓN SUPERIOR (FASES)
+   ============================================================ */
+.nav-fases {
+    background: var(--azul-medio);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.nav-fases .nav-container a {
+    margin: 0 12px;
+    padding: 8px 14px;
+    text-decoration: none;
+    color: white;
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+.nav-fases .nav-container a.activo {
+    background: white;
+    color: var(--azul-medio);
+}
+
+/* ============================================================
+   NAVEGACIÓN INFERIOR (MÓDULOS)
+   ============================================================ */
+.nav-modulos {
+    background: var(--azul-oscuro);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--borde-suave);
+}
+
+.nav-modulos .nav-container a {
+    margin: 0 10px;
+    padding: 6px 12px;
+    text-decoration: none;
+    color: #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.nav-modulos .nav-container a.activo {
+    background: var(--azul-claro);
+    color: white;
+}
+
+/* ============================================================
+   MENSAJES ESPECIALES
+   ============================================================ */
+.mensaje {
+    padding: 15px 18px;
+    margin: 18px 0;
+    border-radius: 8px;
+    border-left: 5px solid var(--info-borde);
+    background: var(--info-fondo);
+    color: var(--info-texto);
+}
+
+.mensaje-aviso {
+    border-left-color: var(--aviso-borde);
+    background: var(--aviso-fondo);
+    color: var(--aviso-texto);
+}
+
+.mensaje-ok {
+    border-left-color: var(--ok-borde);
+    background: var(--ok-fondo);
+    color: var(--ok-texto);
+}
+
+.mensaje-error {
+    border-left-color: var(--error-borde);
+    background: var(--error-fondo);
+    color: var(--error-texto);
+}
+
+/* ============================================================
+   BLOQUES DE CÓDIGO
+   ============================================================ */
+pre {
+    background: #1a202c;
+    color: #e2e8f0;
+    padding: 15px 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 20px 0;
+    font-size: 0.95rem;
+}
+
+code {
+    font-family: Consolas, "Courier New", monospace;
+}
+
+/* ============================================================
+   BLOQUE DESTACADO
+   ============================================================ */
+.destacado {
+    background: #edf2f7;
+    border-left: 6px solid var(--azul-medio);
+    padding: 18px 22px;
+    margin: 25px 0;
+    border-radius: 8px;
+    font-size: 1.05rem;
+    color: var(--gris-texto);
+}
+
+.destacado strong {
+    color: var(--azul-medio);
+    font-weight: 700;
+}
+
+/* ============================================================
+   CITAS
+   ============================================================ */
+blockquote {
+    background: var(--gris-fondo);
+    border-left: 5px solid #a0aec0;
+    padding: 15px 20px;
+    margin: 25px 0;
+    font-style: italic;
+    color: #4a5568;
+    border-radius: 6px;
+}
+
+blockquote strong {
+    color: var(--azul-medio);
+}
+
+/* ============================================================
+   IMÁGENES
+   ============================================================ */
+.container img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 20px auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* ============================================================
+   FORMULARIOS
+   ============================================================ */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+select,
+textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 10px 0 18px 0;
+    border: 1px solid var(--gris-muy-suave);
+    border-radius: 6px;
+    background: var(--gris-fondo);
+    font-size: 1rem;
+    color: var(--gris-texto);
+    transition: border 0.2s ease, background 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--azul-claro);
+    background: white;
+    outline: none;
+}
+
+button,
+input[type="submit"] {
+    background: #2b6cb0;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+
+button:hover,
+input[type="submit"]:hover {
+    background: var(--azul-medio);
+    transform: translateY(-2px);
+}
+
+/* ============================================================
+   MICRODETALLES
+   ============================================================ */
+hr {
+    border: none;
+    border-top: 1px solid var(--borde-suave);
+    margin: 25px 0;
+}
+
+small {
+    color: var(--gris-suave);
+    font-size: 0.85rem;
+}
+
+.container > *:first-child,
+section > *:first-child {
+    margin-top: 0;
+}
+
+.container > *:last-child,
+section > *:last-child {
+    margin-bottom: 0;
+}
