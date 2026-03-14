@@ -116,7 +116,7 @@ Dataset de trabajo: **D_strict** · 33.621 registros · 19 features + target `ab
 Máster en Ciencia de Datos — Universitat Oberta de Catalunya (UOC)  
 📧 morte@uji.es
 
-Tutora: Raúl Parada · rparada@uoc.edu
+Tutor: Raúl Parada · rparada@uoc.edu
 
 ---
 
