@@ -5,35 +5,198 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M04: Distribuciones Categóricas - TFM Abandono Universitario</title>
     <link rel="stylesheet" href="../style.css">
+    <style>
+    /* ================================================================
+       RESET Y BASE — garantiza tamaño uniforme en todas las fases
+       ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f7fafc;
+        color: #2d3748;
+        min-width: 320px;
+        /* Sin max-width en body — el .container lo limita */
+    }
+
+    /* ================================================================
+       WRAPPER GLOBAL — ancho fijo idéntico en todas las páginas
+       ================================================================ */
+    .page-wrapper {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    /* ================================================================
+       HEADER
+       ================================================================ */
+    header {
+        background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+        color: white;
+        padding: 14px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .header-logo {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+    .header-title { flex: 1; }
+    .header-title h1 {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0;
+    }
+    .header-title p {
+        font-size: 12px;
+        opacity: 0.85;
+        margin-top: 2px;
+    }
+
+    /* ================================================================
+       NAVEGACIÓN DE FASES
+       ================================================================ */
+    .nav-fases-wrapper {
+        background: #2d3748;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    nav.nav-fases {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+    }
+    nav.nav-fases a {
+        display: inline-block;
+        padding: 9px 14px;
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        border-bottom: 3px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    nav.nav-fases a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+    nav.nav-fases a.active { color: #fff; border-bottom-color: #3182ce; font-weight: 700; }
+    nav.nav-fases a.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ================================================================
+       NAVEGACIÓN DE MÓDULOS
+       ================================================================ */
+    .nav-modulos-wrapper {
+        background: #edf2f7;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+    nav.nav-modulos {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+    }
+    nav.nav-modulos a {
+        display: inline-block;
+        padding: 7px 12px;
+        color: #4a5568;
+        text-decoration: none;
+        font-size: 12px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    nav.nav-modulos a:hover { color: #2d3748; background: rgba(0,0,0,0.04); }
+    nav.nav-modulos a.active { color: #2b6cb0; border-bottom-color: #3182ce; font-weight: 700; }
+
+    /* ================================================================
+       CONTENEDOR PRINCIPAL — tamaño uniforme garantizado
+       ================================================================ */
+    .container {
+        max-width: 1280px;
+        margin: 24px auto;
+        padding: 0 24px;
+        /* sin min-height ni height fijo para evitar scroll vacío */
+    }
+
+    /* ================================================================
+       FOOTER
+       ================================================================ */
+    footer {
+        max-width: 1280px;
+        margin: 32px auto 0;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 12px;
+        color: #718096;
+        text-align: center;
+    }
+    footer a { color: #3182ce; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ================================================================
+       UTILIDADES COMUNES (tablas, badges, etc.)
+       ================================================================ */
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; }
+    img { max-width: 100%; height: auto; }
+    code {
+        background: #edf2f7;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+    }
+    </style>
     
 </head>
 <body>
+
     <header>
         <div class="header-content">
-            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo"
+                 onerror="this.style.display='none'">
             <div class="header-title">
                 <h1>📊 M04: Distribuciones Categóricas</h1>
                 <p>Fase 4: EDA Final | TFM Abandono Universitario</p>
             </div>
-            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo"
+                 onerror="this.style.display='none'">
         </div>
     </header>
 
-    <nav class="nav-fases">
+    <div class="nav-fases-wrapper">
         <nav class="nav-fases">
   <a href="../index.html" class="">🏠 Inicio</a>
   <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
   <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
   <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
   <a href="../fase4/fase4_index.html" class="active">🔬 EDA Final</a>
-  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
-  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase5/fase5_index.html" class="">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class="">🔍 Evaluación</a>
   <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
   <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
 </nav>
-    </nav>
+    </div>
 
-    <nav class="nav-modulos">
+    <div class="nav-modulos-wrapper">
         <nav class="nav-modulos">
   <a href="fase4_index.html" class="">📋 Índice</a>
   <a href="m01_inspeccion.html" class="">🔍 Inspección</a>
@@ -46,7 +209,7 @@
   <a href="m08_perfiles_riesgo.html" class="">📊 Comparativa Grupos</a>
   <a href="m09_conclusiones_eda.html" class="">📝 Conclusiones</a>
 </nav>
-    </nav>
+    </div>
 
     <div class="container">
         <div class="kpis">
@@ -119,9 +282,9 @@
 .btn-mapa:hover { background: #2c5282; }
 </style>
 <div style="max-width:600px;margin:0 auto;"><?xml version='1.0' encoding='utf-8'?>
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" id="chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc" class="pygal-chart" viewBox="0 0 600 400"><!--Generated with pygal 3.1.0 (etree) ©Kozea 2012-2025 on 2026-03-05--><!--http://pygal.org--><!--http://github.com/Kozea/pygal--><defs><style type="text/css">#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc{-webkit-user-select:none;-webkit-font-smoothing:antialiased;font-family:Arial}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .title{font-family:Arial;font-size:16px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .legends .legend text{font-family:Arial;font-size:14px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis text{font-family:Arial;font-size:11px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis text.major{font-family:Arial;font-size:10px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay text.value{font-family:Arial;font-size:11px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay text.label{font-family:Arial;font-size:10px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip{font-family:Arial;font-size:12px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc text.no_data{font-family:Arial;font-size:64px}
-#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc{background-color:transparent}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc path,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc rect,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc circle{-webkit-transition:150ms;-moz-transition:150ms;transition:150ms}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .graph &gt; .background{fill:transparent}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .plot &gt; .background{fill:rgba(255,255,255,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .graph{fill:rgba(0,0,0,.87)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc text.no_data{fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .title{fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .legends .legend text{fill:rgba(0,0,0,.87)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .legends .legend:hover text{fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .line{stroke:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .guide.line{stroke:rgba(0,0,0,.54)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .major.line{stroke:rgba(0,0,0,.87)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis text.major{fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y .guides:hover .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .line-graph .axis.x .guides:hover .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .stackedline-graph .axis.x .guides:hover .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .xy-graph .axis.x .guides:hover .guide.line{stroke:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .guides:hover text{fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .reactive{fill-opacity:.7;stroke-opacity:.8;stroke-width:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .ci{stroke:rgba(0,0,0,.87)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .reactive.active,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .active .reactive{fill-opacity:.8;stroke-opacity:.9;stroke-width:4}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .ci .reactive.active{stroke-width:1.5}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .series text{fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip rect{fill:rgba(255,255,255,1);stroke:rgba(0,0,0,1);-webkit-transition:opacity 150ms;-moz-transition:opacity 150ms;transition:opacity 150ms}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip .label{fill:rgba(0,0,0,.87)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip .label{fill:rgba(0,0,0,.87)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip .legend{font-size:.8em;fill:rgba(0,0,0,.54)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip .x_label{font-size:.6em;fill:rgba(0,0,0,1)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip .xlink{font-size:.5em;text-decoration:underline}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip .value{font-size:1.5em}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .bound{font-size:.5em}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .max-value{font-size:.75em;fill:rgba(0,0,0,.54)}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .map-element{fill:rgba(255,255,255,1);stroke:rgba(0,0,0,.54) !important}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .map-element .reactive{fill-opacity:inherit;stroke-opacity:inherit}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-0,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-0 a:visited{stroke:#e53e3e;fill:#e53e3e}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-1,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-1 a:visited{stroke:#3182ce;fill:#3182ce}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-2,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-2 a:visited{stroke:#38a169;fill:#38a169}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-3,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-3 a:visited{stroke:#ed8936;fill:#ed8936}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-4,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .color-4 a:visited{stroke:#805ad5;fill:#805ad5}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay .color-0 text{fill:black}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay .color-1 text{fill:black}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay .color-2 text{fill:black}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay .color-3 text{fill:black}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .text-overlay .color-4 text{fill:black}
-#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc text.no_data{text-anchor:middle}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .guide.line{fill:none}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .centered{text-anchor:middle}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .title{text-anchor:middle}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .legends .legend text{fill-opacity:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.x text{text-anchor:middle}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.x:not(.web) text[transform]{text-anchor:start}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.x:not(.web) text[transform].backwards{text-anchor:end}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y text{text-anchor:end}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y text[transform].backwards{text-anchor:start}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y2 text{text-anchor:start}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y2 text[transform].backwards{text-anchor:end}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .guide.line{stroke-dasharray:4,4;stroke:black}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .major.guide.line{stroke-dasharray:6,6;stroke:black}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .horizontal .axis.y .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .horizontal .axis.y2 .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .vertical .axis.x .guide.line{opacity:0}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .horizontal .axis.always_show .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .vertical .axis.always_show .guide.line{opacity:1 !important}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y .guides:hover .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.y2 .guides:hover .guide.line,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis.x .guides:hover .guide.line{opacity:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .axis .guides:hover text{opacity:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .nofill{fill:none}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .subtle-fill{fill-opacity:.2}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .dot{stroke-width:1px;fill-opacity:1;stroke-opacity:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .dot.active{stroke-width:5px}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .dot.negative{fill:transparent}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc text,#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc tspan{stroke:none !important}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .series text.active{opacity:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip rect{fill-opacity:.95;stroke-width:.5}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .tooltip text{fill-opacity:1}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .showable{visibility:hidden}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .showable.shown{visibility:visible}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .gauge-background{fill:rgba(229,229,229,1);stroke:none}#chart-b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc .bg-lines{stroke:transparent;stroke-width:2px}</style><script type="text/javascript">window.pygal = window.pygal || {};window.pygal.config = window.pygal.config || {};window.pygal.config['b9ad5037-4b74-4372-ad5b-cfc4aa3fd8fc'] = {"allow_interruptions": false, "box_mode": "extremes", "classes": ["pygal-chart"], "css": ["file://style.css", "file://graph.css"], "defs": [], "disable_xml_declaration": false, "dots_size": 2.5, "dynamic_print_values": false, "explicit_size": false, "fill": false, "force_uri_protocol": "https", "formatter": null, "half_pie": false, "height": 400, "include_x_axis": false, "inner_radius": 0.55, "interpolate": null, "interpolation_parameters": {}, "interpolation_precision": 250, "inverse_y_axis": false, "js": ["//kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"], "legend_at_bottom": false, "legend_at_bottom_columns": null, "legend_box_size": 12, "logarithmic": false, "margin": 20, "margin_bottom": null, "margin_left": null, "margin_right": null, "margin_top": null, "max_scale": 16, "min_scale": 4, "missing_value_fill_truncation": "x", "no_data_text": "No data", "no_prefix": false, "order_min": null, "pretty_print": false, "print_labels": false, "print_values": true, "print_values_position": "center", "print_zeroes": true, "range": null, "reverse_direction": false, "rounded_bars": null, "secondary_range": null, "show_dots": true, "show_legend": true, "show_minor_x_labels": true, "show_minor_y_labels": true, "show_only_major_dots": false, "show_x_guides": false, "show_x_labels": true, "show_y_guides": true, "show_y_labels": true, "spacing": 10, "stack_from_top": false, "strict": false, "stroke": true, "stroke_style": null, "style": {"background": "transparent", "ci_colors": [], "colors": ["#e53e3e", "#3182ce", "#38a169", "#ed8936", "#805ad5"], "dot_opacity": "1", "font_family": "Arial", "foreground": "rgba(0, 0, 0, .87)", "foreground_strong": "rgba(0, 0, 0, 1)", "foreground_subtle": "rgba(0, 0, 0, .54)", "guide_stroke_color": "black", "guide_stroke_dasharray": "4,4", "label_font_family": "Arial", "label_font_size": 11, "legend_font_family": "Arial", "legend_font_size": 14, "major_guide_stroke_color": "black", "major_guide_stroke_dasharray": "6,6", "major_label_font_family": "Arial", "major_label_font_size": 10, "no_data_font_family": "Arial", "no_data_font_size": 64, "opacity": ".7", "opacity_hover": ".8", "plot_background": "rgba(255, 255, 255, 1)", "stroke_opacity": ".8", "stroke_opacity_hover": ".9", "stroke_width": "1", "stroke_width_hover": "4", "title_font_family": "Arial", "title_font_size": 16, "tooltip_font_family": "Arial", "tooltip_font_size": 12, "transition": "150ms", "value_background": "rgba(229, 229, 229, 1)", "value_colors": [], "value_font_family": "Arial", "value_font_size": 11, "value_label_font_family": "Arial", "value_label_font_size": 10}, "title": "Universidad de Origen (N=28.922, sin dato=4.699)", "tooltip_border_radius": 0, "tooltip_fancy_mode": true, "truncate_label": null, "truncate_legend": null, "width": 600, "x_label_rotation": 0, "x_labels": null, "x_labels_major": null, "x_labels_major_count": null, "x_labels_major_every": null, "x_title": null, "xrange": null, "y_label_rotation": 0, "y_labels": null, "y_labels_major": null, "y_labels_major_count": null, "y_labels_major_every": null, "y_title": null, "zero": 0, "legends": ["UJI (20.129)", "UV (4.451)", "UPV (3.617)", "UMH (377)", "UA (348)"]}</script><script type="text/javascript" xlink:href="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js" /></defs><title>Universidad de Origen (N=28.922, sin dato=4.699)</title><g class="graph pie-graph vertical"><rect x="0" y="0" width="600" height="400" class="background" /><g transform="translate(142, 46)" class="plot"><rect x="0" y="0" width="437.20000000000005" height="334" class="background" /><g class="series serie-0 color-0"><g class="slices"><g class="slice"><path d="M218.600000 16.700000 A150.300000 150.300000 0 1 1 76.868522 217.022778 L131.986319 197.569475 A91.850000 91.850000 0 1 0 218.600000 75.150000 z" class="slice reactive tooltip-trigger" /><desc class="value">69.6%</desc><desc class="x centered">317.43827478058313</desc><desc class="y centered">236.92961506685106</desc></g></g></g><g class="series serie-1 color-1"><g class="slices"><g class="slice"><path d="M76.868522 217.022778 A150.300000 150.300000 0 0 1 97.004746 78.655877 L144.291789 113.011925 A91.850000 91.850000 0 0 0 131.986319 197.569475 z" class="slice reactive tooltip-trigger" /><desc class="value">15.4%</desc><desc class="x centered">98.78707144018404</desc><desc class="y centered">149.5638945024861</desc></g></g></g><g class="series serie-2 color-2"><g class="slices"><g class="slice"><path d="M97.004746 78.655877 A150.300000 150.300000 0 0 1 195.087900 18.550442 L204.231494 76.280826 A91.850000 91.850000 0 0 0 144.291789 113.011925 z" class="slice reactive tooltip-trigger" /><desc class="value">12.5%</desc><desc class="x centered">155.33848627701653</desc><desc class="y centered">63.76659210082826</desc></g></g></g><g class="series serie-3 color-3"><g class="slices"><g class="slice"><path d="M195.087900 18.550442 A150.300000 150.300000 0 0 1 207.278381 17.127017 L211.681233 75.410955 A91.850000 91.850000 0 0 0 204.231494 76.280826 z" class="slice reactive tooltip-trigger" /><desc class="value">1.3%</desc><desc class="x centered">204.558042977255</desc><desc class="y centered">46.74203116644874</desc></g></g></g><g class="series serie-4 color-4"><g class="slices"><g class="slice"><path d="M207.278381 17.127017 A150.300000 150.300000 0 0 1 218.600000 16.700000 L218.600000 75.150000 A91.850000 91.850000 0 0 0 211.681233 75.410955 z" class="slice reactive tooltip-trigger" /><desc class="value">1.2%</desc><desc class="x centered">214.03666113323774</desc><desc class="y centered">46.01102710004065</desc></g></g></g></g><g class="titles"><text x="300.0" y="26" class="title plot_title">Universidad de Origen (N=28.922, sin dato=4.699)</text></g><g transform="translate(142, 46)" class="plot overlay"><g class="series serie-0 color-0" /><g class="series serie-1 color-1" /><g class="series serie-2 color-2" /><g class="series serie-3 color-3" /><g class="series serie-4 color-4" /></g><g transform="translate(142, 46)" class="plot text-overlay"><g class="series serie-0 color-0"><text text-anchor="left" x="317.43827478058313" y="240.5962817335177" class="value">69.6%</text></g><g class="series serie-1 color-1"><text text-anchor="left" x="98.78707144018404" y="153.23056116915276" class="value">15.4%</text></g><g class="series serie-2 color-2"><text text-anchor="left" x="155.33848627701653" y="67.43325876749493" class="value">12.5%</text></g><g class="series serie-3 color-3" /><g class="series serie-4 color-4" /></g><g transform="translate(142, 46)" class="plot tooltip-overlay"><g transform="translate(0 0)" style="opacity: 0" class="tooltip"><rect rx="0" ry="0" width="0" height="0" class="tooltip-box" /><g class="text" /></g></g><g transform="translate(10, 56)" class="legends"><g id="activate-serie-0" class="legend reactive activate-serie"><rect x="0.0" y="1.0" width="12" height="12" class="color-0 reactive" /><text x="17.0" y="11.2">UJI (20.129)</text></g><g id="activate-serie-1" class="legend reactive activate-serie"><rect x="0.0" y="22.0" width="12" height="12" class="color-1 reactive" /><text x="17.0" y="32.2">UV (4.451)</text></g><g id="activate-serie-2" class="legend reactive activate-serie"><rect x="0.0" y="43.0" width="12" height="12" class="color-2 reactive" /><text x="17.0" y="53.2">UPV (3.617)</text></g><g id="activate-serie-3" class="legend reactive activate-serie"><rect x="0.0" y="64.0" width="12" height="12" class="color-3 reactive" /><text x="17.0" y="74.2">UMH (377)</text></g><g id="activate-serie-4" class="legend reactive activate-serie"><rect x="0.0" y="85.0" width="12" height="12" class="color-4 reactive" /><text x="17.0" y="95.2">UA (348)</text></g></g><g transform="translate(590, 56)" class="legends" /></g></svg></div><div style="text-align:center;margin-top:10px;"><button class="btn-mapa" onclick="document.getElementById('modal-mapa').style.display='flex'">🗺️ Ver en mapa de la Comunitat Valenciana</button></div><div id="modal-mapa" class="modal-overlay" onclick="if(event.target==this)this.style.display='none'"><div class="modal-content"><button class="modal-close" onclick="document.getElementById('modal-mapa').style.display='none'">×</button><h3 style="margin-top:0;">Universidades de Origen — Comunitat Valenciana</h3><iframe src="graficos/m04_mapa_universidades.html" width="100%" height="500" frameborder="0" style="border-radius:8px;"></iframe></div></div><div style="background:#ebf8ff;padding:8px;border-radius:8px;border-left:4px solid #3182ce;margin-top:8px;font-size:0.85em;"><strong>Lectura:</strong> 69,6% de la propia UJI. Las 5 universidades son de la Comunitat Valenciana. 14% sin dato.</div>
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" id="chart-85d33832-24bf-4bc5-b605-3fff67131ff8" class="pygal-chart" viewBox="0 0 600 400"><!--Generated with pygal 3.1.0 (etree) ©Kozea 2012-2025 on 2026-03-23--><!--http://pygal.org--><!--http://github.com/Kozea/pygal--><defs><style type="text/css">#chart-85d33832-24bf-4bc5-b605-3fff67131ff8{-webkit-user-select:none;-webkit-font-smoothing:antialiased;font-family:Arial}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .title{font-family:Arial;font-size:16px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .legends .legend text{font-family:Arial;font-size:14px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis text{font-family:Arial;font-size:11px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis text.major{font-family:Arial;font-size:10px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay text.value{font-family:Arial;font-size:11px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay text.label{font-family:Arial;font-size:10px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip{font-family:Arial;font-size:12px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 text.no_data{font-family:Arial;font-size:64px}
+#chart-85d33832-24bf-4bc5-b605-3fff67131ff8{background-color:transparent}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 path,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 rect,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 circle{-webkit-transition:150ms;-moz-transition:150ms;transition:150ms}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .graph &gt; .background{fill:transparent}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .plot &gt; .background{fill:rgba(255,255,255,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .graph{fill:rgba(0,0,0,.87)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 text.no_data{fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .title{fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .legends .legend text{fill:rgba(0,0,0,.87)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .legends .legend:hover text{fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .line{stroke:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .guide.line{stroke:rgba(0,0,0,.54)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .major.line{stroke:rgba(0,0,0,.87)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis text.major{fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y .guides:hover .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .line-graph .axis.x .guides:hover .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .stackedline-graph .axis.x .guides:hover .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .xy-graph .axis.x .guides:hover .guide.line{stroke:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .guides:hover text{fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .reactive{fill-opacity:.7;stroke-opacity:.8;stroke-width:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .ci{stroke:rgba(0,0,0,.87)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .reactive.active,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .active .reactive{fill-opacity:.8;stroke-opacity:.9;stroke-width:4}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .ci .reactive.active{stroke-width:1.5}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .series text{fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip rect{fill:rgba(255,255,255,1);stroke:rgba(0,0,0,1);-webkit-transition:opacity 150ms;-moz-transition:opacity 150ms;transition:opacity 150ms}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip .label{fill:rgba(0,0,0,.87)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip .label{fill:rgba(0,0,0,.87)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip .legend{font-size:.8em;fill:rgba(0,0,0,.54)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip .x_label{font-size:.6em;fill:rgba(0,0,0,1)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip .xlink{font-size:.5em;text-decoration:underline}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip .value{font-size:1.5em}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .bound{font-size:.5em}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .max-value{font-size:.75em;fill:rgba(0,0,0,.54)}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .map-element{fill:rgba(255,255,255,1);stroke:rgba(0,0,0,.54) !important}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .map-element .reactive{fill-opacity:inherit;stroke-opacity:inherit}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-0,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-0 a:visited{stroke:#e53e3e;fill:#e53e3e}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-1,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-1 a:visited{stroke:#3182ce;fill:#3182ce}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-2,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-2 a:visited{stroke:#38a169;fill:#38a169}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-3,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-3 a:visited{stroke:#ed8936;fill:#ed8936}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-4,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .color-4 a:visited{stroke:#805ad5;fill:#805ad5}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay .color-0 text{fill:black}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay .color-1 text{fill:black}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay .color-2 text{fill:black}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay .color-3 text{fill:black}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .text-overlay .color-4 text{fill:black}
+#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 text.no_data{text-anchor:middle}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .guide.line{fill:none}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .centered{text-anchor:middle}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .title{text-anchor:middle}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .legends .legend text{fill-opacity:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.x text{text-anchor:middle}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.x:not(.web) text[transform]{text-anchor:start}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.x:not(.web) text[transform].backwards{text-anchor:end}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y text{text-anchor:end}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y text[transform].backwards{text-anchor:start}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y2 text{text-anchor:start}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y2 text[transform].backwards{text-anchor:end}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .guide.line{stroke-dasharray:4,4;stroke:black}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .major.guide.line{stroke-dasharray:6,6;stroke:black}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .horizontal .axis.y .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .horizontal .axis.y2 .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .vertical .axis.x .guide.line{opacity:0}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .horizontal .axis.always_show .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .vertical .axis.always_show .guide.line{opacity:1 !important}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y .guides:hover .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.y2 .guides:hover .guide.line,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis.x .guides:hover .guide.line{opacity:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .axis .guides:hover text{opacity:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .nofill{fill:none}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .subtle-fill{fill-opacity:.2}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .dot{stroke-width:1px;fill-opacity:1;stroke-opacity:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .dot.active{stroke-width:5px}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .dot.negative{fill:transparent}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 text,#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 tspan{stroke:none !important}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .series text.active{opacity:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip rect{fill-opacity:.95;stroke-width:.5}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .tooltip text{fill-opacity:1}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .showable{visibility:hidden}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .showable.shown{visibility:visible}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .gauge-background{fill:rgba(229,229,229,1);stroke:none}#chart-85d33832-24bf-4bc5-b605-3fff67131ff8 .bg-lines{stroke:transparent;stroke-width:2px}</style><script type="text/javascript">window.pygal = window.pygal || {};window.pygal.config = window.pygal.config || {};window.pygal.config['85d33832-24bf-4bc5-b605-3fff67131ff8'] = {"allow_interruptions": false, "box_mode": "extremes", "classes": ["pygal-chart"], "css": ["file://style.css", "file://graph.css"], "defs": [], "disable_xml_declaration": false, "dots_size": 2.5, "dynamic_print_values": false, "explicit_size": false, "fill": false, "force_uri_protocol": "https", "formatter": null, "half_pie": false, "height": 400, "include_x_axis": false, "inner_radius": 0.55, "interpolate": null, "interpolation_parameters": {}, "interpolation_precision": 250, "inverse_y_axis": false, "js": ["//kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js"], "legend_at_bottom": false, "legend_at_bottom_columns": null, "legend_box_size": 12, "logarithmic": false, "margin": 20, "margin_bottom": null, "margin_left": null, "margin_right": null, "margin_top": null, "max_scale": 16, "min_scale": 4, "missing_value_fill_truncation": "x", "no_data_text": "No data", "no_prefix": false, "order_min": null, "pretty_print": false, "print_labels": false, "print_values": true, "print_values_position": "center", "print_zeroes": true, "range": null, "reverse_direction": false, "rounded_bars": null, "secondary_range": null, "show_dots": true, "show_legend": true, "show_minor_x_labels": true, "show_minor_y_labels": true, "show_only_major_dots": false, "show_x_guides": false, "show_x_labels": true, "show_y_guides": true, "show_y_labels": true, "spacing": 10, "stack_from_top": false, "strict": false, "stroke": true, "stroke_style": null, "style": {"background": "transparent", "ci_colors": [], "colors": ["#e53e3e", "#3182ce", "#38a169", "#ed8936", "#805ad5"], "dot_opacity": "1", "font_family": "Arial", "foreground": "rgba(0, 0, 0, .87)", "foreground_strong": "rgba(0, 0, 0, 1)", "foreground_subtle": "rgba(0, 0, 0, .54)", "guide_stroke_color": "black", "guide_stroke_dasharray": "4,4", "label_font_family": "Arial", "label_font_size": 11, "legend_font_family": "Arial", "legend_font_size": 14, "major_guide_stroke_color": "black", "major_guide_stroke_dasharray": "6,6", "major_label_font_family": "Arial", "major_label_font_size": 10, "no_data_font_family": "Arial", "no_data_font_size": 64, "opacity": ".7", "opacity_hover": ".8", "plot_background": "rgba(255, 255, 255, 1)", "stroke_opacity": ".8", "stroke_opacity_hover": ".9", "stroke_width": "1", "stroke_width_hover": "4", "title_font_family": "Arial", "title_font_size": 16, "tooltip_font_family": "Arial", "tooltip_font_size": 12, "transition": "150ms", "value_background": "rgba(229, 229, 229, 1)", "value_colors": [], "value_font_family": "Arial", "value_font_size": 11, "value_label_font_family": "Arial", "value_label_font_size": 10}, "title": "Universidad de Origen (N=28.922, sin dato=4.699)", "tooltip_border_radius": 0, "tooltip_fancy_mode": true, "truncate_label": null, "truncate_legend": null, "width": 600, "x_label_rotation": 0, "x_labels": null, "x_labels_major": null, "x_labels_major_count": null, "x_labels_major_every": null, "x_title": null, "xrange": null, "y_label_rotation": 0, "y_labels": null, "y_labels_major": null, "y_labels_major_count": null, "y_labels_major_every": null, "y_title": null, "zero": 0, "legends": ["UJI (20.129)", "UV (4.451)", "UPV (3.617)", "UMH (377)", "UA (348)"]}</script><script type="text/javascript" xlink:href="https://kozea.github.io/pygal.js/2.0.x/pygal-tooltips.min.js" /></defs><title>Universidad de Origen (N=28.922, sin dato=4.699)</title><g class="graph pie-graph vertical"><rect x="0" y="0" width="600" height="400" class="background" /><g transform="translate(142, 46)" class="plot"><rect x="0" y="0" width="437.20000000000005" height="334" class="background" /><g class="series serie-0 color-0"><g class="slices"><g class="slice"><path d="M218.600000 16.700000 A150.300000 150.300000 0 1 1 76.868522 217.022778 L131.986319 197.569475 A91.850000 91.850000 0 1 0 218.600000 75.150000 z" class="slice reactive tooltip-trigger" /><desc class="value">69.6%</desc><desc class="x centered">317.43827478058313</desc><desc class="y centered">236.92961506685106</desc></g></g></g><g class="series serie-1 color-1"><g class="slices"><g class="slice"><path d="M76.868522 217.022778 A150.300000 150.300000 0 0 1 97.004746 78.655877 L144.291789 113.011925 A91.850000 91.850000 0 0 0 131.986319 197.569475 z" class="slice reactive tooltip-trigger" /><desc class="value">15.4%</desc><desc class="x centered">98.78707144018404</desc><desc class="y centered">149.5638945024861</desc></g></g></g><g class="series serie-2 color-2"><g class="slices"><g class="slice"><path d="M97.004746 78.655877 A150.300000 150.300000 0 0 1 195.087900 18.550442 L204.231494 76.280826 A91.850000 91.850000 0 0 0 144.291789 113.011925 z" class="slice reactive tooltip-trigger" /><desc class="value">12.5%</desc><desc class="x centered">155.33848627701653</desc><desc class="y centered">63.76659210082826</desc></g></g></g><g class="series serie-3 color-3"><g class="slices"><g class="slice"><path d="M195.087900 18.550442 A150.300000 150.300000 0 0 1 207.278381 17.127017 L211.681233 75.410955 A91.850000 91.850000 0 0 0 204.231494 76.280826 z" class="slice reactive tooltip-trigger" /><desc class="value">1.3%</desc><desc class="x centered">204.558042977255</desc><desc class="y centered">46.74203116644874</desc></g></g></g><g class="series serie-4 color-4"><g class="slices"><g class="slice"><path d="M207.278381 17.127017 A150.300000 150.300000 0 0 1 218.600000 16.700000 L218.600000 75.150000 A91.850000 91.850000 0 0 0 211.681233 75.410955 z" class="slice reactive tooltip-trigger" /><desc class="value">1.2%</desc><desc class="x centered">214.03666113323774</desc><desc class="y centered">46.01102710004065</desc></g></g></g></g><g class="titles"><text x="300.0" y="26" class="title plot_title">Universidad de Origen (N=28.922, sin dato=4.699)</text></g><g transform="translate(142, 46)" class="plot overlay"><g class="series serie-0 color-0" /><g class="series serie-1 color-1" /><g class="series serie-2 color-2" /><g class="series serie-3 color-3" /><g class="series serie-4 color-4" /></g><g transform="translate(142, 46)" class="plot text-overlay"><g class="series serie-0 color-0"><text text-anchor="left" x="317.43827478058313" y="240.5962817335177" class="value">69.6%</text></g><g class="series serie-1 color-1"><text text-anchor="left" x="98.78707144018404" y="153.23056116915276" class="value">15.4%</text></g><g class="series serie-2 color-2"><text text-anchor="left" x="155.33848627701653" y="67.43325876749493" class="value">12.5%</text></g><g class="series serie-3 color-3" /><g class="series serie-4 color-4" /></g><g transform="translate(142, 46)" class="plot tooltip-overlay"><g transform="translate(0 0)" style="opacity: 0" class="tooltip"><rect rx="0" ry="0" width="0" height="0" class="tooltip-box" /><g class="text" /></g></g><g transform="translate(10, 56)" class="legends"><g id="activate-serie-0" class="legend reactive activate-serie"><rect x="0.0" y="1.0" width="12" height="12" class="color-0 reactive" /><text x="17.0" y="11.2">UJI (20.129)</text></g><g id="activate-serie-1" class="legend reactive activate-serie"><rect x="0.0" y="22.0" width="12" height="12" class="color-1 reactive" /><text x="17.0" y="32.2">UV (4.451)</text></g><g id="activate-serie-2" class="legend reactive activate-serie"><rect x="0.0" y="43.0" width="12" height="12" class="color-2 reactive" /><text x="17.0" y="53.2">UPV (3.617)</text></g><g id="activate-serie-3" class="legend reactive activate-serie"><rect x="0.0" y="64.0" width="12" height="12" class="color-3 reactive" /><text x="17.0" y="74.2">UMH (377)</text></g><g id="activate-serie-4" class="legend reactive activate-serie"><rect x="0.0" y="85.0" width="12" height="12" class="color-4 reactive" /><text x="17.0" y="95.2">UA (348)</text></g></g><g transform="translate(590, 56)" class="legends" /></g></svg></div><div style="text-align:center;margin-top:10px;"><button class="btn-mapa" onclick="document.getElementById('modal-mapa').style.display='flex'">🗺️ Ver en mapa de la Comunitat Valenciana</button></div><div id="modal-mapa" class="modal-overlay" onclick="if(event.target==this)this.style.display='none'"><div class="modal-content"><button class="modal-close" onclick="document.getElementById('modal-mapa').style.display='none'">×</button><h3 style="margin-top:0;">Universidades de Origen — Comunitat Valenciana</h3><iframe src="graficos/m04_mapa_universidades.html" width="100%" height="500" frameborder="0" style="border-radius:8px;"></iframe></div></div><div style="background:#ebf8ff;padding:8px;border-radius:8px;border-left:4px solid #3182ce;margin-top:8px;font-size:0.85em;"><strong>Lectura:</strong> 69,6% de la propia UJI. Las 5 universidades son de la Comunitat Valenciana. 14% sin dato.</div>
     </section>
     
     <section class="seccion">
@@ -938,12 +1101,13 @@
         <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
         <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
         
-        <br>
+        &nbsp;·&nbsp;
         <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase4_eda/f4_m04_distribuciones_cat.ipynb" target="_blank">📓 Ver Notebook</a>
         
-        <br>Generado: 05/03/2026
+        &nbsp;·&nbsp; Generado: 23/03/2026
     </footer>
 
     
+
 </body>
 </html>

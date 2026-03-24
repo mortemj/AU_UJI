@@ -3,21 +3,25 @@
 # ============================================================================
 # TFM: Predicción de Abandono Universitario
 #
-# Genera páginas HTML completas usando la plantilla base.html de Jinja2.
-# Cada página incluye: cabecera con logos, navegación de fases y módulos,
-# contenido dinámico y footer con enlaces al notebook y GitHub.
+# Este módulo expone TRES funciones para generar páginas HTML del proyecto.
+# Elige la que mejor encaje con tu caso:
 #
-# ¿Cómo se usa desde un notebook?
-#   from src.html.render import render_base_html
-#   html = render_base_html(
-#       titulo="📊 Mi módulo",
-#       subtitulo="Fase 1: Transformación",
-#       nav_fases=nav_fases_html,
-#       nav_modulos=nav_modulos_html,
-#       contenido=mi_contenido_html,
-#       notebook_nombre='f1_m05_dashboard.ipynb',
-#       notebook_carpeta='fase1_transformacion'
-#   )
+#   1. render_base_html(titulo, subtitulo, nav_fases, nav_modulos, contenido, ...)
+#      → Nivel bajo. Control total. Tú construyes título, subtítulo y navegación.
+#        Usada en los notebooks de la Fase AutoML (fautoml_m01 … fautoml_m06)
+#        donde la navegación se genera manualmente con generar_html_navegacion_completa.
+#        Devuelve el HTML como string — hay que guardarlo con .write_text().
+#
+#   2. render_pagina_desde_fichero(nombre_fichero, contenido, carpeta_notebook, ...)
+#      → Nivel medio. Infiere título, fase y módulo del nombre del fichero
+#        siguiendo la convención f5_m01_preparacion.ipynb → "Preparacion", fase5, m01.
+#        Devuelve el HTML como string — hay que guardarlo con .write_text().
+#
+#   3. render_pagina(nombre_fichero, contenido, ruta_salida, carpeta_notebook, ...)  ← RECOMENDADA
+#      → Nivel alto. Igual que (2) pero además guarda el fichero directamente.
+#        Uso estándar desde Fase 5 en adelante. Una sola línea en el notebook:
+#            render_pagina('f5_m01_preparacion.ipynb', secciones_html, RUTA_HTML_SALIDA)
+#
 # ============================================================================
 
 from jinja2 import Environment, FileSystemLoader
@@ -62,7 +66,12 @@ env = Environment(
 
 
 # ============================================================================
-# FUNCIÓN PRINCIPAL
+# 1. FUNCIÓN DE NIVEL BAJO — control total
+# ============================================================================
+# Cuándo usarla: cuando necesitas título, subtítulo o navegación personalizados
+# que no se pueden inferir del nombre del fichero. Actualmente en uso en:
+#   · fautoml_m01_baselines.ipynb … fautoml_m06_comparativa.ipynb
+# Devuelve str. Guarda con: ruta.write_text(html, encoding='utf-8')
 # ============================================================================
 
 def render_base_html(
@@ -143,7 +152,12 @@ def render_base_html(
 
 
 # ============================================================================
-# FUNCIÓN DE CONVENIENCIA
+# 2. FUNCIÓN DE NIVEL MEDIO — infiere título y navegación del nombre del fichero
+# ============================================================================
+# Cuándo usarla: cuando el notebook sigue la convención de nombres del proyecto
+# (f5_m01_preparacion.ipynb) pero quieres el HTML como string para procesarlo
+# antes de guardarlo (ej: añadir metadatos, combinar con otro HTML, tests).
+# Devuelve str. Guarda con: ruta.write_text(html, encoding='utf-8')
 # ============================================================================
 
 def render_pagina_desde_fichero(
@@ -177,8 +191,8 @@ def render_pagina_desde_fichero(
     str
         HTML completo de la página
     """
-    titulo = extraer_titulo_de_fichero(nombre_fichero)
-    fase_id = extraer_fase_de_fichero(nombre_fichero)
+    titulo    = extraer_titulo_de_fichero(nombre_fichero)
+    fase_id   = extraer_fase_de_fichero(nombre_fichero)
     modulo_id = extraer_modulo_de_fichero(nombre_fichero)
     subtitulo = obtener_subtitulo_fase(fase_id)
 
@@ -198,3 +212,58 @@ def render_pagina_desde_fichero(
         notebook_nombre=nombre_fichero,
         notebook_carpeta=carpeta_notebook
     )
+
+
+# ============================================================================
+# 3. FUNCIÓN DE NIVEL ALTO — infiere + guarda directamente  ← RECOMENDADA
+# ============================================================================
+# Cuándo usarla: uso estándar desde Fase 5 en adelante en todos los notebooks
+# que siguen la convención de nombres. Una sola línea lo hace todo.
+# Ejemplo en notebook:
+#   render_pagina('f5_m01_preparacion.ipynb', secciones_html, RUTA_HTML_SALIDA)
+# ============================================================================
+
+def render_pagina(
+    nombre_fichero: str,
+    contenido: str,
+    ruta_salida: Path,
+    carpeta_notebook: str = None,
+    ruta_assets: str = '../../assets',
+    ruta_base_nav: str = '..'
+) -> None:
+    """
+    Renderiza y guarda directamente la página HTML del módulo.
+
+    Combina render_pagina_desde_fichero() + .write_text() en una sola llamada.
+    Estándar recomendado para todos los notebooks de Fase 5 en adelante.
+
+    Parameters
+    ----------
+    nombre_fichero : str
+        Nombre del notebook siguiendo la convención del proyecto
+        (ej: 'f5_m01_preparacion.ipynb')
+    contenido : str
+        HTML del contenido principal de la página
+    ruta_salida : Path
+        Ruta completa del fichero HTML de salida
+        (ej: RUTA_HTML_FASE5 / 'm01_preparacion.html')
+    carpeta_notebook : str, optional
+        Carpeta del notebook para enlace GitHub (ej: 'fase5_modelado')
+    ruta_assets : str, optional
+        Ruta relativa a la carpeta de assets
+    ruta_base_nav : str, optional
+        Ruta base para la navegación entre módulos
+
+    Returns
+    -------
+    None
+        Guarda el fichero en ruta_salida. No devuelve nada.
+    """
+    html = render_pagina_desde_fichero(
+        nombre_fichero   = nombre_fichero,
+        contenido        = contenido,
+        carpeta_notebook = carpeta_notebook,
+        ruta_assets      = ruta_assets,
+        ruta_base_nav    = ruta_base_nav
+    )
+    Path(ruta_salida).write_text(html, encoding='utf-8')

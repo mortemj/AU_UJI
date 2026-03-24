@@ -5,29 +5,192 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ titulo }} - TFM Abandono Universitario</title>
     <link rel="stylesheet" href="../style.css">
+    <style>
+    /* ================================================================
+       RESET Y BASE — garantiza tamaño uniforme en todas las fases
+       ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f7fafc;
+        color: #2d3748;
+        min-width: 320px;
+        /* Sin max-width en body — el .container lo limita */
+    }
+
+    /* ================================================================
+       WRAPPER GLOBAL — ancho fijo idéntico en todas las páginas
+       ================================================================ */
+    .page-wrapper {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    /* ================================================================
+       HEADER
+       ================================================================ */
+    header {
+        background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+        color: white;
+        padding: 14px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .header-logo {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+    .header-title { flex: 1; }
+    .header-title h1 {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0;
+    }
+    .header-title p {
+        font-size: 12px;
+        opacity: 0.85;
+        margin-top: 2px;
+    }
+
+    /* ================================================================
+       NAVEGACIÓN DE FASES
+       ================================================================ */
+    .nav-fases-wrapper {
+        background: #2d3748;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    nav.nav-fases {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+    }
+    nav.nav-fases a {
+        display: inline-block;
+        padding: 9px 14px;
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        border-bottom: 3px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    nav.nav-fases a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+    nav.nav-fases a.active { color: #fff; border-bottom-color: #3182ce; font-weight: 700; }
+    nav.nav-fases a.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ================================================================
+       NAVEGACIÓN DE MÓDULOS
+       ================================================================ */
+    .nav-modulos-wrapper {
+        background: #edf2f7;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+    nav.nav-modulos {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+    }
+    nav.nav-modulos a {
+        display: inline-block;
+        padding: 7px 12px;
+        color: #4a5568;
+        text-decoration: none;
+        font-size: 12px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    nav.nav-modulos a:hover { color: #2d3748; background: rgba(0,0,0,0.04); }
+    nav.nav-modulos a.active { color: #2b6cb0; border-bottom-color: #3182ce; font-weight: 700; }
+
+    /* ================================================================
+       CONTENEDOR PRINCIPAL — tamaño uniforme garantizado
+       ================================================================ */
+    .container {
+        max-width: 1280px;
+        margin: 24px auto;
+        padding: 0 24px;
+        /* sin min-height ni height fijo para evitar scroll vacío */
+    }
+
+    /* ================================================================
+       FOOTER
+       ================================================================ */
+    footer {
+        max-width: 1280px;
+        margin: 32px auto 0;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 12px;
+        color: #718096;
+        text-align: center;
+    }
+    footer a { color: #3182ce; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ================================================================
+       UTILIDADES COMUNES (tablas, badges, etc.)
+       ================================================================ */
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; }
+    img { max-width: 100%; height: auto; }
+    code {
+        background: #edf2f7;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+    }
+    </style>
     {% if estilos_adicionales %}
     <style>{{ estilos_adicionales|safe }}</style>
     {% endif %}
 </head>
 <body>
+
     <header>
         <div class="header-content">
-            <img src="{{ ruta_assets }}/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <img src="{{ ruta_assets }}/logo_uoc.png" alt="UOC" class="header-logo"
+                 onerror="this.style.display='none'">
             <div class="header-title">
                 <h1>{% if icono %}{{ icono }} {% endif %}{{ titulo }}</h1>
                 <p>{{ subtitulo }}</p>
             </div>
-            <img src="{{ ruta_assets }}/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+            <img src="{{ ruta_assets }}/logo_uji.jpg" alt="UJI" class="header-logo"
+                 onerror="this.style.display='none'">
         </div>
     </header>
 
-    <nav class="nav-fases">
+    <div class="nav-fases-wrapper">
         {{ nav_fases|safe }}
-    </nav>
+    </div>
 
-    <nav class="nav-modulos">
+    <div class="nav-modulos-wrapper">
         {{ nav_modulos|safe }}
-    </nav>
+    </div>
 
     <div class="container">
         {{ contenido|safe }}
@@ -38,14 +201,15 @@
         <a href="mailto:{{ email_uoc }}">{{ email_uoc }}</a> (UOC) |
         <a href="mailto:{{ email_uji }}">{{ email_uji }}</a> (UJI)
         {% if notebook_github_url %}
-        <br>
+        &nbsp;·&nbsp;
         <a href="{{ notebook_github_url }}" target="_blank">📓 Ver Notebook</a>
         {% endif %}
-        <br>Generado: {{ fecha_generacion }}
+        &nbsp;·&nbsp; Generado: {{ fecha_generacion }}
     </footer>
 
     {% if scripts_adicionales %}
     <script>{{ scripts_adicionales|safe }}</script>
     {% endif %}
+
 </body>
 </html>

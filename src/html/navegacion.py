@@ -4,6 +4,11 @@
 # TFM: Predicción de Abandono Universitario
 # Autora: María José Morte
 # ============================================================================
+# Cambios v2 (2026-03-11):
+#   - Fase 6 actualizada: nueva estructura con principales + submodulos
+#   - extraer_modulo_de_fichero() soporta submodulos con letra (m01a, m01b...)
+#   - extraer_fase_de_fichero() soporta f6_m01a_, f6_m01b_...
+# ============================================================================
 
 from typing import Dict, List, Any
 import re
@@ -27,13 +32,13 @@ FASES: Dict[str, Dict[str, Any]] = {
         'carpeta': 'fase1',
         'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase1_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Reportes Raw', 'archivo': 'm01_reportes_raw.html', 'emoji': '📋'},
-            {'id': 'm02', 'nombre': 'Limpieza', 'archivo': 'm02_limpieza.html', 'emoji': '🧹'},
-            {'id': 'm03', 'nombre': 'Reportes Clean', 'archivo': 'm03_reportes_clean.html', 'emoji': '✨'},
-            {'id': 'm04', 'nombre': 'Dataset Final', 'archivo': 'm04_dataset_final.html', 'emoji': '🎯'},
-            {'id': 'm05', 'nombre': 'Dashboard', 'archivo': 'm05_dashboard.html', 'emoji': '📊'},
-            {'id': 'm06', 'nombre': 'Grafo', 'archivo': 'm06_grafo.html', 'emoji': '🕸️'},
+            {'id': 'indice', 'nombre': 'Índice',          'archivo': 'fase1_index.html',        'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Reportes Raw',     'archivo': 'm01_reportes_raw.html',   'emoji': '📋'},
+            {'id': 'm02',    'nombre': 'Limpieza',         'archivo': 'm02_limpieza.html',       'emoji': '🧹'},
+            {'id': 'm03',    'nombre': 'Reportes Clean',   'archivo': 'm03_reportes_clean.html', 'emoji': '✨'},
+            {'id': 'm04',    'nombre': 'Dataset Final',    'archivo': 'm04_dataset_final.html',  'emoji': '🎯'},
+            {'id': 'm05',    'nombre': 'Dashboard',        'archivo': 'm05_dashboard.html',      'emoji': '📊'},
+            {'id': 'm06',    'nombre': 'Grafo',            'archivo': 'm06_grafo.html',          'emoji': '🕸️'},
         ]
     },
     'fase2': {
@@ -43,14 +48,14 @@ FASES: Dict[str, Dict[str, Any]] = {
         'carpeta': 'fase2',
         'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase2_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Inspección', 'archivo': 'm01_inspeccion.html', 'emoji': '🔍'},
-            {'id': 'm02', 'nombre': 'Calidad', 'archivo': 'm02_calidad.html', 'emoji': '✅'},
-            {'id': 'm03', 'nombre': 'Nulos', 'archivo': 'm03_nulos.html', 'emoji': '❓'},
-            {'id': 'm04', 'nombre': 'Univariante Num', 'archivo': 'm04_univariante_num.html', 'emoji': '📈'},
-            {'id': 'm05', 'nombre': 'Univariante Cat', 'archivo': 'm05_univariante_cat.html', 'emoji': '📊'},
-            {'id': 'm06', 'nombre': 'Evolución', 'archivo': 'm06_evolucion.html', 'emoji': '📈'},
-            {'id': 'm07', 'nombre': 'Conclusiones', 'archivo': 'm07_conclusiones.html', 'emoji': '📝'},
+            {'id': 'indice', 'nombre': 'Índice',           'archivo': 'fase2_index.html',          'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Inspección',       'archivo': 'm01_inspeccion.html',       'emoji': '🔍'},
+            {'id': 'm02',    'nombre': 'Calidad',          'archivo': 'm02_calidad.html',          'emoji': '✅'},
+            {'id': 'm03',    'nombre': 'Nulos',            'archivo': 'm03_nulos.html',            'emoji': '❓'},
+            {'id': 'm04',    'nombre': 'Univariante Num',  'archivo': 'm04_univariante_num.html',  'emoji': '📈'},
+            {'id': 'm05',    'nombre': 'Univariante Cat',  'archivo': 'm05_univariante_cat.html',  'emoji': '📊'},
+            {'id': 'm06',    'nombre': 'Evolución',        'archivo': 'm06_evolucion.html',        'emoji': '📈'},
+            {'id': 'm07',    'nombre': 'Conclusiones',     'archivo': 'm07_conclusiones.html',     'emoji': '📝'},
         ]
     },
     'fase3': {
@@ -60,15 +65,15 @@ FASES: Dict[str, Dict[str, Any]] = {
         'carpeta': 'fase3',
         'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase3_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Validación', 'archivo': 'm01_validacion.html', 'emoji': '✅'},
-            {'id': 'm02', 'nombre': 'Agregación', 'archivo': 'm02_agregacion.html', 'emoji': '🔗'},
-            {'id': 'm03', 'nombre': 'Features', 'archivo': 'm03_features.html', 'emoji': '🧪'},
-            {'id': 'm04', 'nombre': 'Encoding', 'archivo': 'm04_encoding.html', 'emoji': '🏷️'},
-            {'id': 'm05', 'nombre': 'Target y Export', 'archivo': 'm05_target_export.html', 'emoji': '🎯'},
-            {'id': 'm06', 'nombre': 'Alerta Temprana', 'archivo': 'm06_alerta_temprana.html', 'emoji': '⚠️'},
-            {'id': 'm07', 'nombre': 'Validación', 'archivo': 'm07_validacion.html', 'emoji': '✅'},
-            {'id': 'm08', 'nombre': 'Perfiles',     'archivo': 'm08_perfiles_riesgo.html', 'emoji': '👤'},
+            {'id': 'indice', 'nombre': 'Índice',           'archivo': 'fase3_index.html',           'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Validación',       'archivo': 'm01_validacion.html',        'emoji': '✅'},
+            {'id': 'm02',    'nombre': 'Agregación',       'archivo': 'm02_agregacion.html',        'emoji': '🔗'},
+            {'id': 'm03',    'nombre': 'Features',         'archivo': 'm03_features.html',          'emoji': '🧪'},
+            {'id': 'm04',    'nombre': 'Encoding',         'archivo': 'm04_encoding.html',          'emoji': '🏷️'},
+            {'id': 'm05',    'nombre': 'Target y Export',  'archivo': 'm05_target_export.html',     'emoji': '🎯'},
+            {'id': 'm06',    'nombre': 'Alerta Temprana',  'archivo': 'm06_alerta_temprana.html',   'emoji': '⚠️'},
+            {'id': 'm07',    'nombre': 'Validación',       'archivo': 'm07_validacion.html',        'emoji': '✅'},
+            {'id': 'm08',    'nombre': 'Perfiles',         'archivo': 'm08_perfiles_riesgo.html',   'emoji': '👤'},
         ]
     },
     'fase4': {
@@ -78,16 +83,16 @@ FASES: Dict[str, Dict[str, Any]] = {
         'carpeta': 'fase4',
         'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase4_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Inspección', 'archivo': 'm01_inspeccion.html', 'emoji': '🔍'},
-            {'id': 'm02', 'nombre': 'Target', 'archivo': 'm02_target.html', 'emoji': '🎯'},
-            {'id': 'm03', 'nombre': 'Distrib. Num', 'archivo': 'm03_distribuciones_num.html', 'emoji': '📊'},
-            {'id': 'm04', 'nombre': 'Distrib. Cat', 'archivo': 'm04_distribuciones_cat.html', 'emoji': '📈'},
-            {'id': 'm05', 'nombre': 'Bivariante', 'archivo': 'm05_bivariante.html', 'emoji': '🔗'},
-            {'id': 'm06', 'nombre': 'Correlaciones', 'archivo': 'm06_correlaciones.html', 'emoji': '🔥'},
-            {'id': 'm07', 'nombre': 'Selección', 'archivo': 'm07_seleccion_features.html', 'emoji': '🎯'},
-            {'id': 'm08', 'nombre': 'Comparativa Grupos', 'archivo': 'm08_perfiles_riesgo.html', 'emoji': '📊'},
-            {'id': 'm09', 'nombre': 'Conclusiones', 'archivo': 'm09_conclusiones_eda.html', 'emoji': '📝'},
+            {'id': 'indice', 'nombre': 'Índice',             'archivo': 'fase4_index.html',               'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Inspección',         'archivo': 'm01_inspeccion.html',            'emoji': '🔍'},
+            {'id': 'm02',    'nombre': 'Target',             'archivo': 'm02_target.html',                'emoji': '🎯'},
+            {'id': 'm03',    'nombre': 'Distrib. Num',       'archivo': 'm03_distribuciones_num.html',    'emoji': '📊'},
+            {'id': 'm04',    'nombre': 'Distrib. Cat',       'archivo': 'm04_distribuciones_cat.html',    'emoji': '📈'},
+            {'id': 'm05',    'nombre': 'Bivariante',         'archivo': 'm05_bivariante.html',            'emoji': '🔗'},
+            {'id': 'm06',    'nombre': 'Correlaciones',      'archivo': 'm06_correlaciones.html',         'emoji': '🔥'},
+            {'id': 'm07',    'nombre': 'Selección',          'archivo': 'm07_seleccion_features.html',    'emoji': '🎯'},
+            {'id': 'm08',    'nombre': 'Comparativa Grupos', 'archivo': 'm08_perfiles_riesgo.html',       'emoji': '📊'},
+            {'id': 'm09',    'nombre': 'Conclusiones',       'archivo': 'm09_conclusiones_eda.html',      'emoji': '📝'},
         ]
     },
     'fase5': {
@@ -95,30 +100,53 @@ FASES: Dict[str, Dict[str, Any]] = {
         'emoji': '🤖',
         'archivo': 'fase5_index.html',
         'carpeta': 'fase5',
-        'estado': 'pendiente',
+        'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase5_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Baseline', 'archivo': 'm01_baseline.html', 'emoji': '📏'},
-            {'id': 'm02', 'nombre': 'Logistic Regression', 'archivo': 'm02_logistic.html', 'emoji': '📈'},
-            {'id': 'm03', 'nombre': 'Random Forest', 'archivo': 'm03_random_forest.html', 'emoji': '🌲'},
-            {'id': 'm04', 'nombre': 'XGBoost', 'archivo': 'm04_xgboost.html', 'emoji': '🚀'},
-            {'id': 'm05', 'nombre': 'Redes Neuronales', 'archivo': 'm05_neural.html', 'emoji': '🧠'},
-            {'id': 'm06', 'nombre': 'Ensemble', 'archivo': 'm06_ensemble.html', 'emoji': '🎭'},
+            {'id': 'indice', 'nombre': 'Índice',            'archivo': 'fase5_index.html',    'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Modelos Lineales',  'archivo': 'm01_lineales.html',   'emoji': '📈'},
+            {'id': 'm02',    'nombre': 'Árboles',           'archivo': 'm02_arboles.html',    'emoji': '🌲'},
+            {'id': 'm03',    'nombre': 'Gradient Boosting', 'archivo': 'm03_boosting.html',   'emoji': '🚀'},
+            {'id': 'm04',    'nombre': 'Otros Algoritmos',  'archivo': 'm04_otros.html',      'emoji': '🧪'},
+            {'id': 'm05',    'nombre': 'MLP + EBM',         'archivo': 'm05_mlp_ebm.html',    'emoji': '🧠'},
+            {'id': 'm06',    'nombre': 'Ensambles',         'archivo': 'm06_ensambles.html',  'emoji': '🔗'},
+            {'id': 'm07',    'nombre': 'Comparativa Final', 'archivo': 'm07_comparacion.html','emoji': '🏆'},
         ]
     },
+    # -----------------------------------------------------------------------
+    # FASE 6: Interpretabilidad + Evaluación Final
+    # Estructura: 3 gestión + 5 principales + 12 submodulos (con letra)
+    # -----------------------------------------------------------------------
     'fase6': {
         'nombre': 'Evaluación',
-        'emoji': '📈',
+        'emoji': '🔍',
         'archivo': 'fase6_index.html',
         'carpeta': 'fase6',
-        'estado': 'pendiente',
+        'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase6_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Comparativa', 'archivo': 'm01_comparativa.html', 'emoji': '⚖️'},
-            {'id': 'm02', 'nombre': 'Métricas', 'archivo': 'm02_metricas.html', 'emoji': '📊'},
-            {'id': 'm03', 'nombre': 'SHAP', 'archivo': 'm03_shap.html', 'emoji': '🔍'},
-            {'id': 'm04', 'nombre': 'Modelo Final', 'archivo': 'm04_modelo_final.html', 'emoji': '🏆'},
-            {'id': 'm05', 'nombre': 'Conclusiones', 'archivo': 'm05_conclusiones.html', 'emoji': '📝'},
+            # --- Gestión ---
+            {'id': 'indice',     'nombre': 'Índice',                    'archivo': 'fase6_index.html',                       'emoji': '📋'},
+            {'id': 'm00_ejec',   'nombre': 'Ejecución',                 'archivo': 'm00_ejecucion.html',                     'emoji': '▶️'},
+            # --- Principales ---
+            {'id': 'm01',        'nombre': 'SHAP',                      'archivo': 'm01_interpretabilidad_shap.html', 'emoji': '🔍'},
+            {'id': 'm02',        'nombre': 'Interp. Alternativa',       'archivo': 'm02_interpretabilidad_alternativa.html', 'emoji': '🧩'},
+            {'id': 'm03',        'nombre': 'Fairness y Errores',        'archivo': 'm03_fairness_errores.html', 'emoji': '⚖️'},
+            {'id': 'm04',        'nombre': 'Robustez y Calibración',    'archivo': 'm04_robustez_calibracion.html', 'emoji': '🛡️'},
+            {'id': 'm05',        'nombre': 'Informe Final',             'archivo': 'm05_informe_final.html',                  'emoji': '📝'},
+            # --- Submodulos SHAP ---
+            {'id': 'm01a',       'nombre': 'SHAP Global',               'archivo': 'm01a_shap_global.html',                  'emoji': '🌍'},
+            {'id': 'm01b',       'nombre': 'SHAP Local',                'archivo': 'm01b_shap_local.html',                   'emoji': '🔬'},
+            {'id': 'm01c',       'nombre': 'SHAP Cohortes',             'archivo': 'm01c_shap_cohortes.html',                'emoji': '👥'},
+            {'id': 'm01d',       'nombre': 'Shapash',                   'archivo': 'm01d_shapash.html',                      'emoji': '📊'},
+            # --- Submodulos Interpretabilidad Alternativa ---
+            {'id': 'm02a',       'nombre': 'LIME',                      'archivo': 'm02a_lime.html',                         'emoji': '🍋'},
+            {'id': 'm02b',       'nombre': 'DiCE',                      'archivo': 'm02b_dice.html',                         'emoji': '🎲'},
+            # --- Submodulos Fairness y Errores ---
+            {'id': 'm03a',       'nombre': 'Fairness',                  'archivo': 'm03a_fairness.html',                     'emoji': '⚖️'},
+            {'id': 'm03b',       'nombre': 'Errores FP/FN',             'archivo': 'm03b_errores_fpfn.html',                 'emoji': '❌'},
+            # --- Submodulos Robustez y Calibración ---
+            {'id': 'm04a',       'nombre': 'Stress Testing',            'archivo': 'm04a_stress.html',                       'emoji': '💪'},
+            {'id': 'm04b',       'nombre': 'Calibración',               'archivo': 'm04b_calibracion.html',                  'emoji': '🎯'},
+            {'id': 'm04c',       'nombre': 'Sostenibilidad',            'archivo': 'm04c_sostenibilidad.html',               'emoji': '🌱'},
         ]
     },
     'fase7': {
@@ -128,12 +156,12 @@ FASES: Dict[str, Dict[str, Any]] = {
         'carpeta': 'fase7',
         'estado': 'pendiente',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase7_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Dashboard Gestor', 'archivo': 'm01_dashboard_gestor.html', 'emoji': '📊'},
-            {'id': 'm02', 'nombre': 'Vista Profesor', 'archivo': 'm02_vista_profesor.html', 'emoji': '👨‍🏫'},
-            {'id': 'm03', 'nombre': 'Vista Alumno', 'archivo': 'm03_vista_alumno.html', 'emoji': '🎓'},
-            {'id': 'm04', 'nombre': 'API', 'archivo': 'm04_api.html', 'emoji': '🔌'},
-            {'id': 'm05', 'nombre': 'Documentación', 'archivo': 'm05_documentacion.html', 'emoji': '📖'},
+            {'id': 'indice', 'nombre': 'Índice',           'archivo': 'fase7_index.html',        'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Dashboard Gestor', 'archivo': 'm01_dashboard_gestor.html','emoji': '📊'},
+            {'id': 'm02',    'nombre': 'Vista Profesor',   'archivo': 'm02_vista_profesor.html',  'emoji': '👨‍🏫'},
+            {'id': 'm03',    'nombre': 'Vista Alumno',     'archivo': 'm03_vista_alumno.html',    'emoji': '🎓'},
+            {'id': 'm04',    'nombre': 'API',              'archivo': 'm04_api.html',             'emoji': '🔌'},
+            {'id': 'm05',    'nombre': 'Documentación',    'archivo': 'm05_documentacion.html',   'emoji': '📖'},
         ]
     },
     # ------------------------------------------------------------------
@@ -146,13 +174,13 @@ FASES: Dict[str, Dict[str, Any]] = {
         'carpeta': 'fase_automl',
         'estado': 'activo',
         'modulos': [
-            {'id': 'indice', 'nombre': 'Índice', 'archivo': 'fase_automl_index.html', 'emoji': '📋'},
-            {'id': 'm01', 'nombre': 'Baselines', 'archivo': 'm01_baselines.html', 'emoji': '📊'},
-            {'id': 'm02', 'nombre': 'LazyPredict', 'archivo': 'm02_lazypredict.html', 'emoji': '⚡'},
-            {'id': 'm03', 'nombre': 'PyCaret', 'archivo': 'm03_pycaret.html', 'emoji': '🤖'},
-            {'id': 'm04', 'nombre': 'H2O', 'archivo': 'm04_h2o.html', 'emoji': '💧'},
-            {'id': 'm05', 'nombre': 'AutoGluon', 'archivo': 'm05_autogluon.html', 'emoji': '🚀'},
-            {'id': 'm06', 'nombre': 'Comparativa', 'archivo': 'm06_comparativa.html', 'emoji': '🏆'},
+            {'id': 'indice', 'nombre': 'Índice',      'archivo': 'fase_automl_index.html', 'emoji': '📋'},
+            {'id': 'm01',    'nombre': 'Baselines',   'archivo': 'm01_baselines.html',     'emoji': '📊'},
+            {'id': 'm02',    'nombre': 'LazyPredict', 'archivo': 'm02_lazypredict.html',   'emoji': '⚡'},
+            {'id': 'm03',    'nombre': 'PyCaret',     'archivo': 'm03_pycaret.html',       'emoji': '🤖'},
+            {'id': 'm04',    'nombre': 'H2O',         'archivo': 'm04_h2o.html',           'emoji': '💧'},
+            {'id': 'm05',    'nombre': 'AutoGluon',   'archivo': 'm05_autogluon.html',     'emoji': '🚀'},
+            {'id': 'm06',    'nombre': 'Comparativa', 'archivo': 'm06_comparativa.html',   'emoji': '🏆'},
         ]
     },
 }
@@ -185,22 +213,22 @@ def obtener_fase_siguiente(fase_id: str) -> Dict:
 def extraer_titulo_de_fichero(nombre_fichero: str) -> str:
     """
     Extrae título legible del nombre del fichero.
-    
+
     Ejemplos:
-        'f1_m03_reportes_clean.ipynb' -> 'Reportes Clean'
-        'f2_m01_inspeccion.ipynb' -> 'Inspección'
-        'f3_m00_indice.ipynb' -> 'Índice'
-        'fautoml_m00_indice.ipynb' -> 'Índice'
-        'fautoml_m03_pycaret.ipynb' -> 'Pycaret'
+        'f1_m03_reportes_clean.ipynb'    -> 'Reportes Clean'
+        'f6_m01a_shap_global.ipynb'      -> 'Shap Global'
+        'f6_m01_interpretabilidad_shap'  -> 'Interpretabilidad Shap'
+        'f3_m00_indice.ipynb'            -> 'Índice'
+        'fautoml_m03_pycaret.ipynb'      -> 'Pycaret'
     """
     nombre = nombre_fichero.replace('.ipynb', '').replace('.html', '')
-    # Soportar fautoml_mXX_ además del patrón numérico fN_mXX_
-    patron = r'^(?:f\d+|fautoml)_m\d+_'
+    # Soportar fautoml_mXX_, fN_mXXa_, fN_mXX_ (submodulos con letra incluidos)
+    patron = r'^(?:f\d+|fautoml)_m\d+[a-z]?_'
     nombre = re.sub(patron, '', nombre)
-    
+
     if nombre.lower() in ['indice', 'resumen', 'index']:
         return 'Índice'
-    
+
     titulo = nombre.replace('_', ' ').title()
     return titulo
 
@@ -208,16 +236,14 @@ def extraer_titulo_de_fichero(nombre_fichero: str) -> str:
 def extraer_fase_de_fichero(nombre_fichero: str) -> str:
     """
     Extrae el ID de fase del nombre del fichero.
-    
+
     Ejemplos:
-        'f1_m03_reportes_clean.ipynb' -> 'fase1'
-        'f3_m01_validacion.ipynb' -> 'fase3'
-        'fautoml_m00_indice.ipynb' -> 'fase_automl'
+        'f1_m03_reportes_clean.ipynb'  -> 'fase1'
+        'f6_m01a_shap_global.ipynb'    -> 'fase6'
+        'fautoml_m00_indice.ipynb'     -> 'fase_automl'
     """
-    # Primero intentar patrón fautoml_
     if nombre_fichero.startswith('fautoml_'):
         return 'fase_automl'
-    # Patrón numérico normal
     match = re.match(r'^f(\d+)_', nombre_fichero)
     if match:
         return f'fase{match.group(1)}'
@@ -227,41 +253,51 @@ def extraer_fase_de_fichero(nombre_fichero: str) -> str:
 def extraer_modulo_de_fichero(nombre_fichero: str) -> str:
     """
     Extrae el ID de módulo del nombre del fichero.
-    
+    Soporta submodulos con letra: m01a, m01b, m02a...
+
     Ejemplos:
-        'f1_m03_reportes_clean.ipynb' -> 'm03'
-        'f3_m00_indice.ipynb' -> 'indice'
-        'fautoml_m01_baselines.ipynb' -> 'm01'
-        'fautoml_m00_indice.ipynb' -> 'indice'
+        'f1_m03_reportes_clean.ipynb'         -> 'm03'
+        'f6_m01_interpretabilidad_shap.ipynb' -> 'm01'
+        'f6_m01a_shap_global.ipynb'           -> 'm01a'
+        'f6_m01b_shap_local.ipynb'            -> 'm01b'
+        'f6_m04c_sostenibilidad.ipynb'        -> 'm04c'
+        'f3_m00_indice.ipynb'                 -> 'indice'
+        'fautoml_m01_baselines.ipynb'         -> 'm01'
     """
-    # Soportar fautoml_mXX_
-    match = re.match(r'^(?:f\d+|fautoml)_m(\d+)_', nombre_fichero)
+    # Soportar fautoml_mXX_ y fN_mXXa_ (con letra opcional)
+    match = re.match(r'^(?:f\d+|fautoml)_m(\d+)([a-z]?)_', nombre_fichero)
     if match:
-        num = match.group(1)
-        if num == '00':
+        num  = match.group(1)
+        letra = match.group(2)   # '' si no hay letra
+        if num == '00' and not letra:
+            # m00_indice -> 'indice', m00_preparacion -> 'm00_prep', m00_ejecucion -> 'm00_ejec'
+            nombre_lower = nombre_fichero.lower()
+            if 'preparacion' in nombre_lower:
+                return 'm00_prep'
+            if 'ejecucion' in nombre_lower:
+                return 'm00_ejec'
             return 'indice'
-        return f'm{num}'
+        return f'm{num}{letra}'
     return 'indice'
 
 
 def obtener_subtitulo_fase(fase_id: str) -> str:
     """
     Devuelve el subtítulo de la fase.
-    
+
     Ejemplo:
-        'fase3' -> 'Fase 3: Features | TFM Abandono Universitario'
-        'fase_automl' -> 'Pre-Modelado: AutoML | TFM Abandono Universitario'
+        'fase3'        -> 'Fase 3: Features | TFM Abandono Universitario'
+        'fase_automl'  -> 'Pre-Modelado: AutoML | TFM Abandono Universitario'
     """
     if fase_id not in FASES:
         return 'TFM Abandono Universitario'
-    
+
     fase = FASES[fase_id]
     nombre = fase['nombre']
-    
-    # Caso especial: fase_automl no tiene número
+
     if fase_id == 'fase_automl':
         return f'{nombre} | TFM Abandono Universitario'
-    
+
     num = fase_id.replace('fase', '')
     return f'Fase {num}: {nombre} | TFM Abandono Universitario'
 
@@ -290,7 +326,7 @@ def obtener_modulos_para_nav(fase_id: str, modulo_activo: str = None) -> List[Di
     """Devuelve lista de módulos para la navegación secundaria."""
     if fase_id not in FASES or 'modulos' not in FASES[fase_id]:
         return []
-    
+
     nav = []
     for mod in FASES[fase_id]['modulos']:
         nav.append({
@@ -325,48 +361,95 @@ def obtener_info_modulo(fase_id: str, modulo_id: str) -> Dict:
 def generar_html_nav_fases(fase_activa: str = None, ruta_base: str = '..') -> str:
     """Genera HTML de navegación de fases."""
     fases = obtener_fases_para_nav(fase_activa)
-    
+
     html = '<nav class="nav-fases">\n'
     for fase in fases:
         clase = 'active' if fase['activo'] else ''
         if fase['estado'] == 'pendiente':
             clase += ' disabled'
-        
+
         if fase['id'] == 'inicio':
             href = f'{ruta_base}/index.html'
         else:
             href = f'{ruta_base}/{fase["carpeta"]}/{fase["archivo"]}'
-        
+
         html += f'  <a href="{href}" class="{clase}">{fase["emoji"]} {fase["nombre"]}</a>\n'
-    
+
     html += '</nav>'
     return html
 
 
 def generar_html_nav_modulos(fase_id: str, modulo_activo: str = None) -> str:
-    """Genera HTML de navegación de módulos de una fase."""
+    """
+    Genera HTML de navegación de módulos de una fase.
+    Para fase6: muestra solo los módulos principales (sin submodulos con letra).
+    Los submodulos aparecen en la navegación interna de cada principal.
+    """
     modulos = obtener_modulos_para_nav(fase_id, modulo_activo)
-    
+
     if not modulos:
         return ''
-    
+
     html = '<nav class="nav-modulos">\n'
     for mod in modulos:
+        # En fase6 ocultar submodulos (ids con letra al final: m01a, m01b...)
+        if fase_id == 'fase6' and re.match(r'^m\d+[a-z]$', mod['id']):
+            continue
         clase = 'active' if mod['activo'] else ''
         html += f'  <a href="{mod["archivo"]}" class="{clase}">{mod["emoji"]} {mod["nombre"]}</a>\n'
-    
+
     html += '</nav>'
     return html
 
 
-def generar_html_navegacion_completa(fase_activa: str, modulo_activo: str = None, ruta_base: str = '..') -> tuple:
+def generar_html_nav_submodulos(fase_id: str, modulo_padre: str, modulo_activo: str = None) -> str:
+    """
+    Genera HTML de navegación de submodulos dentro de un módulo principal.
+    Solo relevante para fase6.
+
+    Ejemplo: modulo_padre='m01' devuelve navegación de m01a, m01b, m01c, m01d
+
+    Parameters
+    ----------
+    fase_id : str
+        ID de la fase (ej. 'fase6')
+    modulo_padre : str
+        ID del módulo principal (ej. 'm01')
+    modulo_activo : str, optional
+        ID del submodulo activo (ej. 'm01b')
+    """
+    if fase_id not in FASES or 'modulos' not in FASES[fase_id]:
+        return ''
+
+    # Extraer número del padre para filtrar sus submodulos
+    match = re.match(r'^m(\d+)$', modulo_padre)
+    if not match:
+        return ''
+    num_padre = match.group(1)
+
+    html = '<nav class="nav-submodulos">\n'
+    encontrado = False
+    for mod in FASES[fase_id]['modulos']:
+        # Submodulo del padre: mXXa, mXXb, mXXc...
+        if re.match(rf'^m{num_padre}[a-z]$', mod['id']):
+            clase = 'active' if mod['id'] == modulo_activo else ''
+            html += f'  <a href="{mod["archivo"]}" class="{clase}">{mod["emoji"]} {mod["nombre"]}</a>\n'
+            encontrado = True
+
+    html += '</nav>'
+    return html if encontrado else ''
+
+
+def generar_html_navegacion_completa(fase_activa: str, modulo_activo: str = None,
+                                      ruta_base: str = '..') -> tuple:
     """
     Genera HTML completo de navegación (fases + módulos).
-    
-    Returns:
-        tuple: (nav_fases_html, nav_modulos_html)
+
+    Returns
+    -------
+    tuple : (nav_fases_html, nav_modulos_html)
     """
-    nav_fases = generar_html_nav_fases(fase_activa, ruta_base)
+    nav_fases   = generar_html_nav_fases(fase_activa, ruta_base)
     nav_modulos = generar_html_nav_modulos(fase_activa, modulo_activo)
-    
+
     return nav_fases, nav_modulos

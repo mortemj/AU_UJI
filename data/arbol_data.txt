@@ -1,0 +1,2661 @@
+ El volumen de la unidad C es Windows-SSD
+ El n£mero de serie del volumen es: 3848-26E4
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data
+
+20/03/2026  19:04    <DIR>          .
+11/03/2026  15:45    <DIR>          ..
+04/03/2026  18:40    <DIR>          00_raw
+19/02/2026  18:55    <DIR>          01_interim
+19/02/2026  19:21    <DIR>          02_processed
+05/03/2026  11:04    <DIR>          03_features
+05/03/2026  16:24    <DIR>          04_eda
+11/03/2026  15:03    <DIR>          05_modelado
+11/03/2026  15:03    <DIR>          06_evaluacion
+19/02/2026  14:34    <DIR>          07_aplicacion
+20/03/2026  20:03                90 arbol_data.txt
+20/03/2026  19:02                 0 arbol_FASE6.txt
+05/03/2026  16:24    <DIR>          automl
+19/02/2026  22:27             8.123 muestra_5_alumnos.xlsx
+19/02/2026  22:27            10.169 muestra_alumnos_v2.xlsx
+               4 archivos         18.382 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\00_raw
+
+04/03/2026  18:40    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+11/12/2025  17:05        29.506.550 datos_proyecto_sin_preinscrip.ORIGINALxlsx
+04/03/2026  18:40        29.226.665 datos_proyecto_sin_preinscrip.xlsx
+18/02/2026  10:01        24.465.824 preinscripcion_si.xlsx
+               3 archivos     83.199.039 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\01_interim
+
+19/02/2026  18:55    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+19/02/2026  18:53           334.346 becas.parquet
+19/02/2026  18:53           318.010 demograficos.parquet
+19/02/2026  18:53           570.948 domicilios.parquet
+19/02/2026  18:53         1.301.338 expedientes.parquet
+19/02/2026  18:54           788.537 notas.parquet
+19/02/2026  18:55         2.735.847 preinscripcion.parquet
+19/02/2026  18:52           442.328 recibos.parquet
+19/02/2026  18:52             5.299 titulaciones.parquet
+19/02/2026  18:53           591.293 trabajo.parquet
+               9 archivos      7.087.946 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\02_processed
+
+19/02/2026  19:21    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+19/02/2026  19:22        32.544.683 df_alumno.csv
+19/02/2026  19:22         2.380.023 df_alumno.parquet
+19/02/2026  19:21         2.284.409 df_alumno_base.parquet
+               3 archivos     37.209.115 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\03_features
+
+05/03/2026  11:04    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+03/03/2026  15:09         2.554.746 df_alumno_limpio.parquet
+03/03/2026  16:16           864.196 df_eda_con_target.parquet
+03/03/2026  15:12         1.178.699 df_expediente_base.parquet
+03/03/2026  15:14        12.462.301 df_expediente_features.csv
+03/03/2026  15:14         1.663.295 df_expediente_features.parquet
+03/03/2026  15:15         1.136.863 df_exp_automl_target.parquet
+03/03/2026  15:16         1.170.812 df_exp_target_eda.parquet
+05/03/2026  15:58             7.317 f4_m06_correlaciones_tabla.parquet
+05/03/2026  15:57             1.685 f4_m07_features_seleccionadas.csv
+05/03/2026  15:57             6.198 f4_m07_features_seleccionadas.parquet
+05/03/2026  15:57             1.356 f4_m07_listas_features.json
+05/03/2026  15:53               762 resultados_bivariante_categoricas.csv
+05/03/2026  15:53             1.439 resultados_bivariante_numericas.csv
+03/03/2026  21:27    <DIR>          validacion
+              13 archivos     21.049.669 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\03_features\validacion
+
+03/03/2026  21:27    <DIR>          .
+05/03/2026  11:04    <DIR>          ..
+03/03/2026  16:20            62.016 comparativa_baselines_D.png
+03/03/2026  16:20            52.000 estabilidad_seeds.png
+03/03/2026  16:20            97.599 feature_importance_casoD.png
+03/03/2026  16:20            94.209 feature_importance_casoD_strict.png
+03/03/2026  16:20             8.823 validacion_baselines_D.xlsx
+03/03/2026  16:20             5.361 validacion_estabilidad.xlsx
+               6 archivos        320.008 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\04_eda
+
+05/03/2026  16:24    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+03/03/2026  16:22         5.609.672 df_eda_final.csv
+03/03/2026  16:22        20.824.681 df_eda_final.json
+03/03/2026  16:22           370.373 df_eda_final.parquet
+03/03/2026  16:22         3.069.957 df_eda_final.xlsx
+24/02/2026  10:50         5.811.452 df_exp_eda_D_strict.csv
+24/02/2026  10:50        19.210.872 df_exp_eda_D_strict.json
+24/02/2026  16:43           370.807 df_exp_eda_D_strict.parquet
+24/02/2026  10:50         3.385.466 df_exp_eda_D_strict.xlsx
+05/03/2026  09:15             7.317 f4_m05_correlaciones_tabla.parquet
+05/03/2026  15:58             7.317 f4_m06_correlaciones_tabla.parquet
+              10 archivos     58.667.914 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\05_modelado
+
+11/03/2026  15:03    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+05/03/2026  20:26             1.573 meta_preparacion.json
+20/03/2026  11:42    <DIR>          models
+05/03/2026  20:26             3.512 pipeline_preprocesamiento.pkl
+10/03/2026  21:58    <DIR>          results
+05/03/2026  20:26           125.136 X_test.parquet
+05/03/2026  20:26           131.627 X_test_prep.parquet
+05/03/2026  20:26           448.099 X_train.parquet
+05/03/2026  20:26           452.200 X_train_prep.parquet
+05/03/2026  20:26            41.934 y_test.parquet
+05/03/2026  20:26           167.937 y_train.parquet
+               8 archivos      1.372.018 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\05_modelado\models
+
+20/03/2026  11:42    <DIR>          .
+11/03/2026  15:03    <DIR>          ..
+10/03/2026  12:41           303.360 AdaBoost__balanced.pkl
+10/03/2026  12:40           303.360 AdaBoost__none.pkl
+10/03/2026  12:42         1.503.596 AdaBoost__smote.pkl
+20/03/2026  11:42            17.772 arbol_models.txt
+10/03/2026  12:39           573.361 Bagging__balanced.pkl
+10/03/2026  12:39           573.361 Bagging__none.pkl
+10/03/2026  12:40         1.749.309 Bagging__smote.pkl
+10/03/2026  21:33             2.072 BernoulliNB__balanced.pkl
+10/03/2026  21:33             2.072 BernoulliNB__none.pkl
+10/03/2026  21:33         1.198.813 BernoulliNB__smote.pkl
+10/03/2026  21:28         1.198.813 BernoulliNB_{estrategia}.pkl
+09/03/2026  17:17         1.753.173 CatBoost__balanced.pkl
+09/03/2026  17:17         1.760.821 CatBoost__none.pkl
+09/03/2026  17:18         2.024.880 CatBoost__smote.pkl
+09/03/2026  15:01            33.226 DecisionTree__balanced.pkl
+09/03/2026  15:01            34.026 DecisionTree__none.pkl
+09/03/2026  15:01         1.227.359 DecisionTree__smote.pkl
+09/03/2026  23:05           582.531 EBM__balanced.pkl
+09/03/2026  22:59           582.531 EBM__none.pkl
+09/03/2026  23:22         2.905.160 EBM__smote.pkl
+09/03/2026  15:03        32.431.186 ExtraTrees__balanced.pkl
+09/03/2026  15:03        32.724.946 ExtraTrees__none.pkl
+09/03/2026  15:03        35.407.374 ExtraTrees__smote.pkl
+10/03/2026  21:33             2.040 GaussianNB__balanced.pkl
+10/03/2026  21:33             2.040 GaussianNB__none.pkl
+10/03/2026  21:33         1.198.749 GaussianNB__smote.pkl
+10/03/2026  21:28         1.198.749 GaussianNB_{estrategia}.pkl
+09/03/2026  17:16           376.002 GradientBoosting__balanced.pkl
+09/03/2026  17:16           376.002 GradientBoosting__none.pkl
+09/03/2026  17:16           632.974 GradientBoosting__smote.pkl
+10/03/2026  21:33         4.304.821 KNN__balanced.pkl
+10/03/2026  21:33         4.304.821 KNN__none.pkl
+10/03/2026  21:33         7.287.621 KNN__smote.pkl
+10/03/2026  21:28         7.287.621 KNN_{estrategia}.pkl
+06/03/2026  02:48             7.956 LDA__balanced.pkl
+06/03/2026  02:48             7.956 LDA__none.pkl
+06/03/2026  02:48         1.204.713 LDA__smote.pkl
+09/03/2026  17:17         1.307.229 LightGBM__balanced.pkl
+09/03/2026  17:16         1.305.981 LightGBM__none.pkl
+09/03/2026  17:17         1.536.338 LightGBM__smote.pkl
+06/03/2026  02:47             1.656 LogReg__balanced.pkl
+06/03/2026  02:47             1.656 LogReg__none.pkl
+06/03/2026  02:47         1.198.381 LogReg__smote.pkl
+09/03/2026  22:53           179.921 MLP__balanced.pkl
+09/03/2026  22:52           179.921 MLP__none.pkl
+09/03/2026  22:54         1.377.821 MLP__smote.pkl
+09/03/2026  15:04             5.498 Perceptron__balanced.pkl
+09/03/2026  15:04             5.482 Perceptron__none.pkl
+09/03/2026  15:04         1.202.166 Perceptron__smote.pkl
+09/03/2026  15:02        39.511.826 RandomForest__balanced.pkl
+09/03/2026  15:01        39.013.746 RandomForest__none.pkl
+09/03/2026  15:03        43.013.486 RandomForest__smote.pkl
+09/03/2026  15:05             5.106 Ridge__balanced.pkl
+09/03/2026  15:05             5.090 Ridge__none.pkl
+09/03/2026  15:05         1.201.774 Ridge__smote.pkl
+09/03/2026  15:05             1.924 SGD__balanced.pkl
+09/03/2026  15:05             1.908 SGD__none.pkl
+09/03/2026  15:05         1.198.633 SGD__smote.pkl
+10/03/2026  11:16        92.204.048 Stacking__balanced.pkl
+10/03/2026  10:44        92.204.048 Stacking__none.pkl
+10/03/2026  12:39        92.165.868 Stacking__smote.pkl
+06/03/2026  02:54         2.102.996 SVM_lineal__balanced.pkl
+06/03/2026  02:51         1.787.876 SVM_lineal__none.pkl
+06/03/2026  03:00         4.030.857 SVM_lineal__smote.pkl
+06/03/2026  03:13         1.889.364 SVM_RBF__balanced.pkl
+06/03/2026  03:04         1.614.148 SVM_RBF__none.pkl
+06/03/2026  03:24         3.603.609 SVM_RBF__smote.pkl
+10/03/2026  09:27        92.203.391 Voting__balanced.pkl
+10/03/2026  09:16        92.203.391 Voting__none.pkl
+10/03/2026  10:06        92.165.227 Voting__smote.pkl
+09/03/2026  17:16           394.029 XGBoost__balanced.pkl
+09/03/2026  17:16           380.835 XGBoost__none.pkl
+09/03/2026  17:16           621.024 XGBoost__smote.pkl
+              73 archivos    848.911.421 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\05_modelado\results
+
+10/03/2026  21:58    <DIR>          .
+11/03/2026  15:03    <DIR>          ..
+10/03/2026  21:33             1.390 emissions.csv
+06/03/2026  07:47             1.352 emissions.csv.bak
+09/03/2026  15:05             1.399 emissions.csv_0.bak
+09/03/2026  23:22             1.396 emissions.csv_1.bak
+10/03/2026  21:12             1.398 emissions.csv_2.bak
+10/03/2026  22:03            30.303 resultados_maestro.json
+10/03/2026  22:03            16.800 resultados_maestro.parquet
+10/03/2026  22:03            14.160 resultados_maestro.xlsx
+09/03/2026  22:31             1.114 results_arboles.json
+09/03/2026  17:01            12.732 results_arboles.parquet
+09/03/2026  22:31             6.667 results_arboles.xlsx
+10/03/2026  21:11             1.402 results_boosting.json
+10/03/2026  21:11            12.950 results_boosting.parquet
+10/03/2026  21:11             7.084 results_boosting.xlsx
+09/03/2026  22:29             1.409 results_boosting_prueba.json
+09/03/2026  17:18            12.960 results_boosting_prueba.parquet
+09/03/2026  22:29             7.087 results_boosting_prueba.xlsx
+10/03/2026  13:23               933 results_ensambles.json
+10/03/2026  13:23            13.281 results_ensambles.parquet
+10/03/2026  13:23             6.886 results_ensambles.xlsx
+09/03/2026  13:05               905 results_lineales.json
+06/03/2026  08:43            12.924 results_lineales.parquet
+09/03/2026  13:05             7.051 results_lineales.xlsx
+09/03/2026  22:17               905 results_lineales_basico.json
+09/03/2026  14:57            12.926 results_lineales_basico.parquet
+09/03/2026  22:17             7.041 results_lineales_basico.xlsx
+09/03/2026  22:20            14.619 results_lineales_completo.parquet
+09/03/2026  22:20             8.636 results_lineales_completo.xlsx
+09/03/2026  22:19               868 results_lineales_ext.json
+09/03/2026  15:12            12.715 results_lineales_ext.parquet
+09/03/2026  22:19             6.651 results_lineales_ext.xlsx
+10/03/2026  09:07             1.009 results_mlp_ebm.json
+09/03/2026  23:29            12.545 results_mlp_ebm.parquet
+10/03/2026  09:07             6.023 results_mlp_ebm.xlsx
+10/03/2026  21:43               825 results_otros.json
+10/03/2026  21:34            12.285 results_otros.parquet
+10/03/2026  21:43             6.392 results_otros.xlsx
+10/03/2026  22:03               515 top3_fase6.json
+              38 archivos        277.538 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\06_evaluacion
+
+11/03/2026  15:03    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+11/03/2026  15:03           117.764 meta_test.parquet
+               1 archivos        117.764 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\07_aplicacion
+
+19/02/2026  14:34    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+               0 archivos              0 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl
+
+05/03/2026  16:24    <DIR>          .
+20/03/2026  19:04    <DIR>          ..
+03/03/2026  16:22             7.482 auditoria_features_D_strict.xlsx
+25/02/2026  10:49    <DIR>          autogluon_models
+25/02/2026  10:49    <DIR>          autogluon_models_D
+25/02/2026  10:49    <DIR>          autogluon_models_D_strict
+24/02/2026  23:19            46.272 automl_comparativa_final.json
+24/02/2026  23:19            43.551 automl_comparativa_final.xlsx
+24/02/2026  23:19             8.790 automl_top_modelos.parquet
+03/03/2026  15:57            62.016 comparativa_baselines_D.png
+03/03/2026  16:22           336.787 dataset_final_tfm.parquet
+03/03/2026  16:15         4.143.197 df_exp_automl_C.csv
+03/03/2026  16:16        25.497.011 df_exp_automl_C.json
+03/03/2026  16:15           785.397 df_exp_automl_C.parquet
+03/03/2026  16:16         4.604.213 df_exp_automl_C.xlsx
+03/03/2026  16:21         2.260.796 df_exp_automl_D.csv
+03/03/2026  16:22        14.068.605 df_exp_automl_D.json
+03/03/2026  16:21           409.779 df_exp_automl_D.parquet
+03/03/2026  16:22         2.687.792 df_exp_automl_D.xlsx
+03/03/2026  16:22         1.963.178 df_exp_automl_D_strict.csv
+03/03/2026  16:22        12.436.379 df_exp_automl_D_strict.json
+03/03/2026  16:22           336.787 df_exp_automl_D_strict.parquet
+03/03/2026  16:22         2.383.200 df_exp_automl_D_strict.xlsx
+03/03/2026  16:22             7.196 diccionario_columnas.json
+03/03/2026  15:57            52.000 estabilidad_seeds.png
+03/03/2026  16:20            66.953 feature_importance_casoD.png
+03/03/2026  16:20            65.217 feature_importance_casoD_strict.png
+03/03/2026  16:22           152.835 grafico_de_la_verdad.png
+24/02/2026  19:49           355.999 mejor_modelo_pycaret.pkl
+03/03/2026  16:20             6.788 quick_baseline_casoD.parquet
+03/03/2026  16:20             8.510 quick_baseline_casoD.xlsx
+05/03/2026  15:59             8.578 ranking_final_fase4.parquet
+24/02/2026  22:03            10.163 results_autogluon.parquet
+24/02/2026  17:44             8.820 results_baselines.parquet
+24/02/2026  20:29             9.874 results_h2o.parquet
+24/02/2026  19:40            12.191 results_lazypredict.parquet
+24/02/2026  19:49            10.055 results_pycaret.parquet
+              32 archivos     72.856.411 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models
+
+25/02/2026  10:49    <DIR>          .
+05/03/2026  16:24    <DIR>          ..
+24/02/2026  08:03            14.938 learner.pkl
+24/02/2026  08:03             8.659 metadata.json
+25/02/2026  10:49    <DIR>          models
+24/02/2026  08:03             8.251 predictor.pkl
+25/02/2026  10:49    <DIR>          utils
+24/02/2026  08:03                 5 version.txt
+               4 archivos         31.853 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          CatBoost_BAG_L1
+25/02/2026  10:49    <DIR>          CatBoost_BAG_L2
+25/02/2026  10:49    <DIR>          ExtraTreesEntr_BAG_L1
+25/02/2026  10:49    <DIR>          ExtraTreesEntr_BAG_L2
+25/02/2026  10:49    <DIR>          ExtraTreesGini_BAG_L1
+25/02/2026  10:49    <DIR>          ExtraTreesGini_BAG_L2
+25/02/2026  10:49    <DIR>          LightGBMXT_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBMXT_BAG_L2
+25/02/2026  10:49    <DIR>          LightGBM_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBM_BAG_L2
+25/02/2026  10:49    <DIR>          NeuralNetFastAI_BAG_L1
+25/02/2026  10:49    <DIR>          NeuralNetFastAI_BAG_L2
+25/02/2026  10:49    <DIR>          RandomForestEntr_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestEntr_BAG_L2
+25/02/2026  10:49    <DIR>          RandomForestGini_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestGini_BAG_L2
+24/02/2026  08:03             9.113 trainer.pkl
+25/02/2026  10:49    <DIR>          WeightedEnsemble_L2
+25/02/2026  10:49    <DIR>          WeightedEnsemble_L3
+25/02/2026  10:49    <DIR>          XGBoost_BAG_L1
+               1 archivos          9.113 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59             4.454 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.454 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58         1.181.625 model.pkl
+               1 archivos      1.181.625 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59         4.079.249 model.pkl
+               1 archivos      4.079.249 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58           537.929 model.pkl
+               1 archivos        537.929 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58           393.793 model.pkl
+               1 archivos        393.793 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58           698.024 model.pkl
+               1 archivos        698.024 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58             1.208 model_template.pkl
+24/02/2026  07:59           212.085 oof.pkl
+               2 archivos        213.293 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.915 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.915 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           626.559 model.pkl
+               1 archivos        626.559 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           751.967 model.pkl
+               1 archivos        751.967 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           968.647 model.pkl
+               1 archivos        968.647 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           248.134 model.pkl
+               1 archivos        248.134 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           334.406 model.pkl
+               1 archivos        334.406 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\CatBoost_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.208 model_template.pkl
+24/02/2026  08:02           212.085 oof.pkl
+               2 archivos        213.293 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesEntr_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59             4.145 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.145 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesEntr_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59        91.159.021 model.pkl
+               1 archivos     91.159.021 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesEntr_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59             1.252 model_template.pkl
+24/02/2026  07:59           117.949 oof.pkl
+               2 archivos        119.201 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesEntr_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.621 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.621 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesEntr_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02         1.150.454 model.pkl
+               1 archivos      1.150.454 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesEntr_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.252 model_template.pkl
+24/02/2026  08:02           117.949 oof.pkl
+               2 archivos        119.201 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesGini_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59             4.145 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.145 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesGini_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59        95.711.391 model.pkl
+               1 archivos     95.711.391 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesGini_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59             1.249 model_template.pkl
+24/02/2026  07:59           117.949 oof.pkl
+               2 archivos        119.198 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesGini_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.621 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.621 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesGini_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02         1.188.520 model.pkl
+               1 archivos      1.188.520 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\ExtraTreesGini_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.249 model_template.pkl
+24/02/2026  08:02           117.949 oof.pkl
+               2 archivos        119.198 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57             4.443 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.443 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57         2.230.354 model.pkl
+               1 archivos      2.230.354 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57         2.127.244 model.pkl
+               1 archivos      2.127.244 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57         2.624.482 model.pkl
+               1 archivos      2.624.482 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57         2.142.420 model.pkl
+               1 archivos      2.142.420 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57         2.420.750 model.pkl
+               1 archivos      2.420.750 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:56             1.259 model_template.pkl
+24/02/2026  07:57           212.085 oof.pkl
+               2 archivos        213.344 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.916 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.916 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           881.209 model.pkl
+               1 archivos        881.209 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02         1.363.250 model.pkl
+               1 archivos      1.363.250 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           912.470 model.pkl
+               1 archivos        912.470 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02         1.877.351 model.pkl
+               1 archivos      1.877.351 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           666.340 model.pkl
+               1 archivos        666.340 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBMXT_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             1.259 model_template.pkl
+24/02/2026  08:02           212.085 oof.pkl
+               2 archivos        213.344 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58             4.439 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.439 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58           581.406 model.pkl
+               1 archivos        581.406 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58         1.019.449 model.pkl
+               1 archivos      1.019.449 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58         1.465.979 model.pkl
+               1 archivos      1.465.979 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58           546.851 model.pkl
+               1 archivos        546.851 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58         1.123.816 model.pkl
+               1 archivos      1.123.816 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:57             1.243 model_template.pkl
+24/02/2026  07:58           212.085 oof.pkl
+               2 archivos        213.328 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.912 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.912 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           801.647 model.pkl
+               1 archivos        801.647 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           550.074 model.pkl
+               1 archivos        550.074 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           890.657 model.pkl
+               1 archivos        890.657 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           893.597 model.pkl
+               1 archivos        893.597 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           503.881 model.pkl
+               1 archivos        503.881 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\LightGBM_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.243 model_template.pkl
+24/02/2026  08:02           212.085 oof.pkl
+               2 archivos        213.328 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.513 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.513 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           204.449 model-internals.pkl
+24/02/2026  08:01             5.337 model.pkl
+               2 archivos        209.786 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           204.449 model-internals.pkl
+24/02/2026  08:01             5.337 model.pkl
+               2 archivos        209.786 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           204.449 model-internals.pkl
+24/02/2026  08:01             5.337 model.pkl
+               2 archivos        209.786 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           204.449 model-internals.pkl
+24/02/2026  08:01             5.337 model.pkl
+               2 archivos        209.786 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01           204.513 model-internals.pkl
+24/02/2026  08:01             5.337 model.pkl
+               2 archivos        209.850 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:59             1.358 model_template.pkl
+24/02/2026  08:01           212.085 oof.pkl
+               2 archivos        213.443 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03             5.970 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.970 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03           252.641 model-internals.pkl
+24/02/2026  08:03             6.173 model.pkl
+               2 archivos        258.814 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03           248.161 model-internals.pkl
+24/02/2026  08:03             6.173 model.pkl
+               2 archivos        254.334 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03           239.073 model-internals.pkl
+24/02/2026  08:03             6.173 model.pkl
+               2 archivos        245.246 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03           257.185 model-internals.pkl
+24/02/2026  08:03             6.173 model.pkl
+               2 archivos        263.358 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03           257.185 model-internals.pkl
+24/02/2026  08:03             6.173 model.pkl
+               2 archivos        263.358 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\NeuralNetFastAI_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.358 model_template.pkl
+24/02/2026  08:03           212.085 oof.pkl
+               2 archivos        213.443 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestEntr_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58             4.149 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.149 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestEntr_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58        36.527.317 model.pkl
+               1 archivos     36.527.317 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestEntr_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58             1.252 model_template.pkl
+24/02/2026  07:58           117.949 oof.pkl
+               2 archivos        119.201 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestEntr_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.625 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.625 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestEntr_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           719.835 model.pkl
+               1 archivos        719.835 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestEntr_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.252 model_template.pkl
+24/02/2026  08:02           117.949 oof.pkl
+               2 archivos        119.201 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestGini_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58             4.149 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.149 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestGini_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58        41.418.349 model.pkl
+               1 archivos     41.418.349 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestGini_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:58             1.249 model_template.pkl
+24/02/2026  07:58           117.949 oof.pkl
+               2 archivos        119.198 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestGini_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             5.625 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.625 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestGini_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02           779.531 model.pkl
+               1 archivos        779.531 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\RandomForestGini_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:02             1.249 model_template.pkl
+24/02/2026  08:02           117.949 oof.pkl
+               2 archivos        119.198 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\WeightedEnsemble_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01            11.400 model.pkl
+25/02/2026  10:49    <DIR>          utils
+               1 archivos         11.400 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\WeightedEnsemble_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             1.373 model_template.pkl
+24/02/2026  08:01           117.949 oof.pkl
+               2 archivos        119.322 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\WeightedEnsemble_L3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03            11.381 model.pkl
+25/02/2026  10:49    <DIR>          utils
+               1 archivos         11.381 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\WeightedEnsemble_L3\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:03             1.373 model_template.pkl
+24/02/2026  08:03           117.949 oof.pkl
+               2 archivos        119.322 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.449 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.449 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.610 model.pkl
+24/02/2026  08:01           243.353 xgb.ubj
+               2 archivos        247.963 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.610 model.pkl
+24/02/2026  08:01            89.664 xgb.ubj
+               2 archivos         94.274 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.610 model.pkl
+24/02/2026  08:01            84.392 xgb.ubj
+               2 archivos         89.002 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.610 model.pkl
+24/02/2026  08:01            79.608 xgb.ubj
+               2 archivos         84.218 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             4.610 model.pkl
+24/02/2026  08:01            74.040 xgb.ubj
+               2 archivos         78.650 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\models\XGBoost_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  08:01             1.228 model_template.pkl
+24/02/2026  08:01           212.085 oof.pkl
+               2 archivos        213.313 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          data
+               0 archivos              0 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models\utils\data
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  07:56         6.120.598 X.pkl
+24/02/2026  07:56           400.761 y.pkl
+               2 archivos      6.521.359 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D
+
+25/02/2026  10:49    <DIR>          .
+05/03/2026  16:24    <DIR>          ..
+24/02/2026  21:43            10.730 learner.pkl
+24/02/2026  21:43             8.685 metadata.json
+25/02/2026  10:49    <DIR>          models
+24/02/2026  21:43             8.251 predictor.pkl
+25/02/2026  10:49    <DIR>          utils
+24/02/2026  21:43                 5 version.txt
+               4 archivos         27.671 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          CatBoost_BAG_L1
+25/02/2026  10:49    <DIR>          CatBoost_BAG_L2
+25/02/2026  10:49    <DIR>          ExtraTreesEntr_BAG_L1
+25/02/2026  10:49    <DIR>          ExtraTreesGini_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBMXT_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBMXT_BAG_L2
+25/02/2026  10:49    <DIR>          LightGBM_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBM_BAG_L2
+25/02/2026  10:49    <DIR>          NeuralNetFastAI_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestEntr_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestEntr_BAG_L2
+25/02/2026  10:49    <DIR>          RandomForestGini_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestGini_BAG_L2
+24/02/2026  21:43            10.402 trainer.pkl
+25/02/2026  10:49    <DIR>          WeightedEnsemble_L2
+25/02/2026  10:49    <DIR>          WeightedEnsemble_L3
+               1 archivos         10.402 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39             4.174 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.174 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39         1.462.194 model.pkl
+               1 archivos      1.462.194 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39         1.172.450 model.pkl
+               1 archivos      1.172.450 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39         1.245.594 model.pkl
+               1 archivos      1.245.594 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39         1.273.138 model.pkl
+               1 archivos      1.273.138 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39           869.674 model.pkl
+               1 archivos        869.674 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39         1.194.170 model.pkl
+               1 archivos      1.194.170 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39           987.513 model.pkl
+               1 archivos        987.513 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39           933.097 model.pkl
+               1 archivos        933.097 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:38             1.212 model_template.pkl
+24/02/2026  21:39           212.085 oof.pkl
+               2 archivos        213.297 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43             5.455 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.455 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           252.664 model.pkl
+               1 archivos        252.664 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           149.528 model.pkl
+               1 archivos        149.528 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           155.920 model.pkl
+               1 archivos        155.920 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           164.536 model.pkl
+               1 archivos        164.536 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           159.480 model.pkl
+               1 archivos        159.480 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           173.928 model.pkl
+               1 archivos        173.928 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           191.967 model.pkl
+               1 archivos        191.967 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43           177.951 model.pkl
+               1 archivos        177.951 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\CatBoost_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42             1.212 model_template.pkl
+24/02/2026  21:43           212.085 oof.pkl
+               2 archivos        213.297 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\ExtraTreesEntr_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39             3.820 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.820 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\ExtraTreesEntr_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39       224.888.802 model.pkl
+               1 archivos    224.888.802 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\ExtraTreesEntr_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39             1.256 model_template.pkl
+24/02/2026  21:39           117.949 oof.pkl
+               2 archivos        119.205 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\ExtraTreesGini_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39             3.820 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.820 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\ExtraTreesGini_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39       228.073.594 model.pkl
+               1 archivos    228.073.594 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\ExtraTreesGini_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39             1.253 model_template.pkl
+24/02/2026  21:39           117.949 oof.pkl
+               2 archivos        119.202 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36             4.163 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.163 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         2.308.392 model.pkl
+               1 archivos      2.308.392 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         2.715.759 model.pkl
+               1 archivos      2.715.759 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         2.202.318 model.pkl
+               1 archivos      2.202.318 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         1.847.457 model.pkl
+               1 archivos      1.847.457 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         2.600.078 model.pkl
+               1 archivos      2.600.078 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         1.788.910 model.pkl
+               1 archivos      1.788.910 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         2.191.478 model.pkl
+               1 archivos      2.191.478 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36         2.035.859 model.pkl
+               1 archivos      2.035.859 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:35             1.263 model_template.pkl
+24/02/2026  21:36           212.085 oof.pkl
+               2 archivos        213.348 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41             5.456 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.456 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           518.222 model.pkl
+               1 archivos        518.222 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           389.770 model.pkl
+               1 archivos        389.770 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           399.998 model.pkl
+               1 archivos        399.998 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           576.742 model.pkl
+               1 archivos        576.742 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           382.801 model.pkl
+               1 archivos        382.801 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           337.562 model.pkl
+               1 archivos        337.562 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           413.764 model.pkl
+               1 archivos        413.764 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           455.283 model.pkl
+               1 archivos        455.283 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBMXT_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41             1.263 model_template.pkl
+24/02/2026  21:41           212.085 oof.pkl
+               2 archivos        213.348 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37             4.159 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.159 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37           918.679 model.pkl
+               1 archivos        918.679 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37           987.530 model.pkl
+               1 archivos        987.530 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37         1.162.197 model.pkl
+               1 archivos      1.162.197 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37         1.017.894 model.pkl
+               1 archivos      1.017.894 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37         1.093.188 model.pkl
+               1 archivos      1.093.188 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37         1.004.195 model.pkl
+               1 archivos      1.004.195 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37         1.110.213 model.pkl
+               1 archivos      1.110.213 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37         1.247.275 model.pkl
+               1 archivos      1.247.275 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:36             1.247 model_template.pkl
+24/02/2026  21:37           212.085 oof.pkl
+               2 archivos        213.332 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42             5.452 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.452 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           499.578 model.pkl
+               1 archivos        499.578 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42           447.790 model.pkl
+               1 archivos        447.790 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           358.680 model.pkl
+               1 archivos        358.680 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           341.604 model.pkl
+               1 archivos        341.604 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           313.999 model.pkl
+               1 archivos        313.999 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42           355.476 model.pkl
+               1 archivos        355.476 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42           389.638 model.pkl
+               1 archivos        389.638 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42           413.861 model.pkl
+               1 archivos        413.861 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\LightGBM_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41             1.247 model_template.pkl
+24/02/2026  21:42           212.085 oof.pkl
+               2 archivos        213.332 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41             4.233 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.233 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           157.409 model-internals.pkl
+24/02/2026  21:41             4.347 model.pkl
+               2 archivos        161.756 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:40           167.329 model-internals.pkl
+24/02/2026  21:40             4.347 model.pkl
+               2 archivos        171.676 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:40           157.409 model-internals.pkl
+24/02/2026  21:40             4.347 model.pkl
+               2 archivos        161.756 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           167.329 model-internals.pkl
+24/02/2026  21:41             4.347 model.pkl
+               2 archivos        171.676 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           157.345 model-internals.pkl
+24/02/2026  21:41             4.347 model.pkl
+               2 archivos        161.692 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           167.329 model-internals.pkl
+24/02/2026  21:41             4.347 model.pkl
+               2 archivos        171.676 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           167.329 model-internals.pkl
+24/02/2026  21:41             4.347 model.pkl
+               2 archivos        171.676 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41           167.393 model-internals.pkl
+24/02/2026  21:41             4.347 model.pkl
+               2 archivos        171.740 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\NeuralNetFastAI_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:39             1.362 model_template.pkl
+24/02/2026  21:41           212.085 oof.pkl
+               2 archivos        213.447 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestEntr_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:38             3.824 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.824 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestEntr_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:38       124.376.328 model.pkl
+               1 archivos    124.376.328 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestEntr_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37             1.256 model_template.pkl
+24/02/2026  21:38           117.949 oof.pkl
+               2 archivos        119.205 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestEntr_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          utils
+               0 archivos              0 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestEntr_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42             1.256 model_template.pkl
+               1 archivos          1.256 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestGini_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37             3.824 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.824 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestGini_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37       129.718.880 model.pkl
+               1 archivos    129.718.880 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestGini_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:37             1.253 model_template.pkl
+24/02/2026  21:37           117.949 oof.pkl
+               2 archivos        119.202 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestGini_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42             5.123 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.123 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestGini_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42        83.880.174 model.pkl
+               1 archivos     83.880.174 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\RandomForestGini_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:42             1.253 model_template.pkl
+24/02/2026  21:42           117.949 oof.pkl
+               2 archivos        119.202 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\WeightedEnsemble_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41            12.042 model.pkl
+25/02/2026  10:49    <DIR>          utils
+               1 archivos         12.042 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\WeightedEnsemble_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:41             1.377 model_template.pkl
+24/02/2026  21:41           117.949 oof.pkl
+               2 archivos        119.326 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\WeightedEnsemble_L3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43            11.736 model.pkl
+25/02/2026  10:49    <DIR>          utils
+               1 archivos         11.736 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\models\WeightedEnsemble_L3\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:43             1.377 model_template.pkl
+24/02/2026  21:43           117.949 oof.pkl
+               2 archivos        119.326 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          data
+               0 archivos              0 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D\utils\data
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:35         3.649.148 X.pkl
+24/02/2026  21:35           400.761 y.pkl
+               2 archivos      4.049.909 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict
+
+25/02/2026  10:49    <DIR>          .
+05/03/2026  16:24    <DIR>          ..
+24/02/2026  21:59            10.326 learner.pkl
+24/02/2026  21:59             8.685 metadata.json
+25/02/2026  10:49    <DIR>          models
+24/02/2026  21:59             8.251 predictor.pkl
+25/02/2026  10:49    <DIR>          utils
+24/02/2026  21:59                 5 version.txt
+               4 archivos         27.267 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          CatBoost_BAG_L1
+25/02/2026  10:49    <DIR>          CatBoost_BAG_L2
+25/02/2026  10:49    <DIR>          ExtraTreesEntr_BAG_L1
+25/02/2026  10:49    <DIR>          ExtraTreesGini_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBMXT_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBMXT_BAG_L2
+25/02/2026  10:49    <DIR>          LightGBM_BAG_L1
+25/02/2026  10:49    <DIR>          LightGBM_BAG_L2
+25/02/2026  10:49    <DIR>          NeuralNetFastAI_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestEntr_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestEntr_BAG_L2
+25/02/2026  10:49    <DIR>          RandomForestGini_BAG_L1
+25/02/2026  10:49    <DIR>          RandomForestGini_BAG_L2
+24/02/2026  21:59            10.350 trainer.pkl
+25/02/2026  10:49    <DIR>          WeightedEnsemble_L2
+25/02/2026  10:49    <DIR>          WeightedEnsemble_L3
+               1 archivos         10.350 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54             4.141 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.141 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:53           775.984 model.pkl
+               1 archivos        775.984 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:53         1.050.664 model.pkl
+               1 archivos      1.050.664 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:53         1.054.184 model.pkl
+               1 archivos      1.054.184 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:53           741.568 model.pkl
+               1 archivos        741.568 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:53           713.928 model.pkl
+               1 archivos        713.928 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:53         1.086.824 model.pkl
+               1 archivos      1.086.824 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54         1.028.431 model.pkl
+               1 archivos      1.028.431 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54           998.951 model.pkl
+               1 archivos        998.951 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             1.226 model_template.pkl
+24/02/2026  21:54           212.085 oof.pkl
+               2 archivos        213.311 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58             5.422 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.422 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58           219.089 model.pkl
+               1 archivos        219.089 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58            79.569 model.pkl
+               1 archivos         79.569 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58            82.537 model.pkl
+               1 archivos         82.537 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58            87.193 model.pkl
+               1 archivos         87.193 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58            72.081 model.pkl
+               1 archivos         72.081 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58           138.097 model.pkl
+               1 archivos        138.097 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58           152.144 model.pkl
+               1 archivos        152.144 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58           227.480 model.pkl
+               1 archivos        227.480 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\CatBoost_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58             1.226 model_template.pkl
+24/02/2026  21:58           212.085 oof.pkl
+               2 archivos        213.311 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\ExtraTreesEntr_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54             3.787 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.787 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\ExtraTreesEntr_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54       237.721.717 model.pkl
+               1 archivos    237.721.717 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\ExtraTreesEntr_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54             1.270 model_template.pkl
+24/02/2026  21:54           117.949 oof.pkl
+               2 archivos        119.219 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\ExtraTreesGini_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54             3.787 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.787 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\ExtraTreesGini_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54       240.114.349 model.pkl
+               1 archivos    240.114.349 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\ExtraTreesGini_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54             1.267 model_template.pkl
+24/02/2026  21:54           117.949 oof.pkl
+               2 archivos        119.216 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             4.130 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.130 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:51         1.425.291 model.pkl
+               1 archivos      1.425.291 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         2.667.312 model.pkl
+               1 archivos      2.667.312 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         2.397.227 model.pkl
+               1 archivos      2.397.227 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         2.594.964 model.pkl
+               1 archivos      2.594.964 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         2.413.516 model.pkl
+               1 archivos      2.413.516 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         2.208.786 model.pkl
+               1 archivos      2.208.786 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         1.834.305 model.pkl
+               1 archivos      1.834.305 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         2.035.696 model.pkl
+               1 archivos      2.035.696 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:51             1.277 model_template.pkl
+24/02/2026  21:52           212.085 oof.pkl
+               2 archivos        213.362 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57             5.423 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.423 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           358.535 model.pkl
+               1 archivos        358.535 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           424.488 model.pkl
+               1 archivos        424.488 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           407.004 model.pkl
+               1 archivos        407.004 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           410.294 model.pkl
+               1 archivos        410.294 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           413.936 model.pkl
+               1 archivos        413.936 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           403.341 model.pkl
+               1 archivos        403.341 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           535.442 model.pkl
+               1 archivos        535.442 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           531.668 model.pkl
+               1 archivos        531.668 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBMXT_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56             1.277 model_template.pkl
+24/02/2026  21:57           212.085 oof.pkl
+               2 archivos        213.362 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             4.126 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.126 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52           712.408 model.pkl
+               1 archivos        712.408 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52           654.426 model.pkl
+               1 archivos        654.426 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52           903.644 model.pkl
+               1 archivos        903.644 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         1.118.644 model.pkl
+               1 archivos      1.118.644 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52           838.627 model.pkl
+               1 archivos        838.627 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52           718.687 model.pkl
+               1 archivos        718.687 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52         1.813.495 model.pkl
+               1 archivos      1.813.495 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52           667.898 model.pkl
+               1 archivos        667.898 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             1.261 model_template.pkl
+24/02/2026  21:52           212.085 oof.pkl
+               2 archivos        213.346 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57             5.419 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.419 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           289.822 model.pkl
+               1 archivos        289.822 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           344.576 model.pkl
+               1 archivos        344.576 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           375.282 model.pkl
+               1 archivos        375.282 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           337.842 model.pkl
+               1 archivos        337.842 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           396.388 model.pkl
+               1 archivos        396.388 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           344.723 model.pkl
+               1 archivos        344.723 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           379.303 model.pkl
+               1 archivos        379.303 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57           351.450 model.pkl
+               1 archivos        351.450 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\LightGBM_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57             1.261 model_template.pkl
+24/02/2026  21:57           212.085 oof.pkl
+               2 archivos        213.346 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56             4.200 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          S1F2
+25/02/2026  10:49    <DIR>          S1F3
+25/02/2026  10:49    <DIR>          S1F4
+25/02/2026  10:49    <DIR>          S1F5
+25/02/2026  10:49    <DIR>          S1F6
+25/02/2026  10:49    <DIR>          S1F7
+25/02/2026  10:49    <DIR>          S1F8
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          4.200 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           160.673 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        164.870 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           160.737 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        164.934 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           195.553 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        199.750 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F4
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           160.609 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        164.806 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F5
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           160.801 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        164.998 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F6
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           210.849 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        215.046 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F7
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           160.673 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        164.870 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\S1F8
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56           215.713 model-internals.pkl
+24/02/2026  21:56             4.197 model.pkl
+               2 archivos        219.910 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\NeuralNetFastAI_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:54             1.376 model_template.pkl
+24/02/2026  21:56           212.085 oof.pkl
+               2 archivos        213.461 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestEntr_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             3.791 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.791 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestEntr_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52       138.775.003 model.pkl
+               1 archivos    138.775.003 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestEntr_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             1.270 model_template.pkl
+24/02/2026  21:52           117.949 oof.pkl
+               2 archivos        119.219 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestEntr_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          utils
+               0 archivos              0 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestEntr_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58             1.270 model_template.pkl
+               1 archivos          1.270 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestGini_BAG_L1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             3.791 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          3.791 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestGini_BAG_L1\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52       144.318.195 model.pkl
+               1 archivos    144.318.195 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestGini_BAG_L1\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:52             1.267 model_template.pkl
+24/02/2026  21:52           117.949 oof.pkl
+               2 archivos        119.216 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestGini_BAG_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58             5.090 model.pkl
+25/02/2026  10:49    <DIR>          S1F1
+25/02/2026  10:49    <DIR>          utils
+               1 archivos          5.090 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestGini_BAG_L2\S1F1
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:58        91.426.849 model.pkl
+               1 archivos     91.426.849 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\RandomForestGini_BAG_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:57             1.267 model_template.pkl
+24/02/2026  21:58           117.949 oof.pkl
+               2 archivos        119.216 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\WeightedEnsemble_L2
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56            12.114 model.pkl
+25/02/2026  10:49    <DIR>          utils
+               1 archivos         12.114 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\WeightedEnsemble_L2\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:56             1.391 model_template.pkl
+24/02/2026  21:56           117.949 oof.pkl
+               2 archivos        119.340 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\WeightedEnsemble_L3
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:59            12.548 model.pkl
+25/02/2026  10:49    <DIR>          utils
+               1 archivos         12.548 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\models\WeightedEnsemble_L3\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:59             1.391 model_template.pkl
+24/02/2026  21:59           117.949 oof.pkl
+               2 archivos        119.340 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\utils
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+25/02/2026  10:49    <DIR>          data
+               0 archivos              0 bytes
+
+ Directorio de C:\Users\mjmor\OneDrive - Universitat Jaume I\2.- AU_UJI\data\automl\autogluon_models_D_strict\utils\data
+
+25/02/2026  10:49    <DIR>          .
+25/02/2026  10:49    <DIR>          ..
+24/02/2026  21:51         3.272.549 X.pkl
+24/02/2026  21:51           400.761 y.pkl
+               2 archivos      3.673.310 bytes
+
+     Total de archivos en la lista:
+             570 archivos  3.189.813.260 bytes
+             893 dirs  597.074.501.632 bytes libres

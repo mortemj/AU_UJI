@@ -1,0 +1,27 @@
+# ============================================================================
+# TFM Abandono Universitario - Requirements Fase 3 (Feature Engineering)
+# Nota: Incluye visualización para análisis de distribuciones y outliers
+# ============================================================================
+
+# Manipulación de datos
+pandas>=2.0.0
+numpy>=1.24.0
+pyarrow>=14.0.0
+
+# Visualización (histogramas, KDE, análisis de distribuciones)
+altair>=5.0.0
+vegafusion>=1.0.0
+vegafusion-python-embed>=1.0.0
+vl-convert-python>=1.6.0
+plotly>=5.18.0
+matplotlib>=3.7.0
+seaborn>=0.13.0
+
+# Estadísticas (para transformaciones, tests de normalidad)
+scipy>=1.11.0
+
+# Utilidades
+tqdm>=4.65.0
+
+# --- PLANTILLAS HTML ---
+Jinja2>=3.1.0

@@ -5,35 +5,198 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M05: Bivariante vs Target - TFM Abandono Universitario</title>
     <link rel="stylesheet" href="../style.css">
+    <style>
+    /* ================================================================
+       RESET Y BASE — garantiza tamaño uniforme en todas las fases
+       ================================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f7fafc;
+        color: #2d3748;
+        min-width: 320px;
+        /* Sin max-width en body — el .container lo limita */
+    }
+
+    /* ================================================================
+       WRAPPER GLOBAL — ancho fijo idéntico en todas las páginas
+       ================================================================ */
+    .page-wrapper {
+        width: 100%;
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    /* ================================================================
+       HEADER
+       ================================================================ */
+    header {
+        background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 100%);
+        color: white;
+        padding: 14px 0;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-content {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+    .header-logo {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+        flex-shrink: 0;
+    }
+    .header-title { flex: 1; }
+    .header-title h1 {
+        font-size: 18px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0;
+    }
+    .header-title p {
+        font-size: 12px;
+        opacity: 0.85;
+        margin-top: 2px;
+    }
+
+    /* ================================================================
+       NAVEGACIÓN DE FASES
+       ================================================================ */
+    .nav-fases-wrapper {
+        background: #2d3748;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    nav.nav-fases {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+    }
+    nav.nav-fases a {
+        display: inline-block;
+        padding: 9px 14px;
+        color: #a0aec0;
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 500;
+        border-bottom: 3px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    nav.nav-fases a:hover { color: #fff; background: rgba(255,255,255,0.07); }
+    nav.nav-fases a.active { color: #fff; border-bottom-color: #3182ce; font-weight: 700; }
+    nav.nav-fases a.disabled { opacity: 0.4; pointer-events: none; }
+
+    /* ================================================================
+       NAVEGACIÓN DE MÓDULOS
+       ================================================================ */
+    .nav-modulos-wrapper {
+        background: #edf2f7;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+    }
+    nav.nav-modulos {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+        display: flex;
+        gap: 2px;
+    }
+    nav.nav-modulos a {
+        display: inline-block;
+        padding: 7px 12px;
+        color: #4a5568;
+        text-decoration: none;
+        font-size: 12px;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+        white-space: nowrap;
+    }
+    nav.nav-modulos a:hover { color: #2d3748; background: rgba(0,0,0,0.04); }
+    nav.nav-modulos a.active { color: #2b6cb0; border-bottom-color: #3182ce; font-weight: 700; }
+
+    /* ================================================================
+       CONTENEDOR PRINCIPAL — tamaño uniforme garantizado
+       ================================================================ */
+    .container {
+        max-width: 1280px;
+        margin: 24px auto;
+        padding: 0 24px;
+        /* sin min-height ni height fijo para evitar scroll vacío */
+    }
+
+    /* ================================================================
+       FOOTER
+       ================================================================ */
+    footer {
+        max-width: 1280px;
+        margin: 32px auto 0;
+        padding: 16px 24px;
+        border-top: 1px solid #e2e8f0;
+        font-size: 12px;
+        color: #718096;
+        text-align: center;
+    }
+    footer a { color: #3182ce; text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ================================================================
+       UTILIDADES COMUNES (tablas, badges, etc.)
+       ================================================================ */
+    table { border-collapse: collapse; width: 100%; }
+    th, td { text-align: left; }
+    img { max-width: 100%; height: auto; }
+    code {
+        background: #edf2f7;
+        padding: 1px 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-family: 'SFMono-Regular', Consolas, monospace;
+    }
+    </style>
     
 </head>
 <body>
+
     <header>
         <div class="header-content">
-            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo"
+                 onerror="this.style.display='none'">
             <div class="header-title">
                 <h1>📊 M05: Bivariante vs Target</h1>
                 <p>Fase 4: EDA Final | TFM Abandono Universitario</p>
             </div>
-            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo"
+                 onerror="this.style.display='none'">
         </div>
     </header>
 
-    <nav class="nav-fases">
+    <div class="nav-fases-wrapper">
         <nav class="nav-fases">
   <a href="../index.html" class="">🏠 Inicio</a>
   <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
   <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
   <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
   <a href="../fase4/fase4_index.html" class="active">🔬 EDA Final</a>
-  <a href="../fase5/fase5_index.html" class=" disabled">🤖 Modelado</a>
-  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase5/fase5_index.html" class="">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class="">🔍 Evaluación</a>
   <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
   <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
 </nav>
-    </nav>
+    </div>
 
-    <nav class="nav-modulos">
+    <div class="nav-modulos-wrapper">
         <nav class="nav-modulos">
   <a href="fase4_index.html" class="">📋 Índice</a>
   <a href="m01_inspeccion.html" class="">🔍 Inspección</a>
@@ -46,7 +209,7 @@
   <a href="m08_perfiles_riesgo.html" class="">📊 Comparativa Grupos</a>
   <a href="m09_conclusiones_eda.html" class="">📝 Conclusiones</a>
 </nav>
-    </nav>
+    </div>
 
     <div class="container">
         <div class="kpis">
@@ -348,7 +511,7 @@
     <section class="seccion">
         <h2>3 · Ranking global de asociación</h2>
         <div>                        <script type="text/javascript">window.PlotlyConfig = {MathJaxConfig: 'local'};</script>
-        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.0.min.js" integrity="sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=" crossorigin="anonymous"></script>                <div id="61093023-04fe-4c5f-897b-f00327d43a02" class="plotly-graph-div" style="height:665px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("61093023-04fe-4c5f-897b-f00327d43a02")) {                    Plotly.newPlot(                        "61093023-04fe-4c5f-897b-f00327d43a02",                        [{"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#3182ce","line":{"color":"white","width":1},"size":12},"mode":"markers","name":"Num\u00e9rica","text":["|Cohen d|: 0.030","|Cohen d|: 0.038","|Cohen d|: 0.104","|Cohen d|: 0.272","|Cohen d|: 0.274","|Cohen d|: 0.510","|Cohen d|: 0.543","|Cohen d|: 0.624","|Cohen d|: 0.693","|Cohen d|: 0.780","|Cohen d|: 0.845"],"x":{"dtype":"f8","bdata":"rK3YX3ZPnj\u002fb+X5qvHSjPwdfmEwVjLo\u002f6Nms+lxt0T\u002ff4AuTqYLRP8pUwaikTuA\u002fT6+UZYhj4T9JLv8h\u002ffbjPylcj8L1KOY\u002fYOXQItv56D+TOgFNhA3rPw=="},"y":["anios_gap","indicador_interrupcion","max_pagos","anios_sin_beca","edad_entrada","nota_selectividad","tuvo_beca","cred_superados_anio_1er","nota_acceso","nota_1er_anio","n_anios_beca"],"type":"scatter"},{"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#805ad5","line":{"color":"white","width":1},"size":12},"mode":"markers","name":"Categ\u00f3rica","text":["Cram\u00e9r V: 0.037","Cram\u00e9r V: 0.040","Cram\u00e9r V: 0.067","Cram\u00e9r V: 0.069","Cram\u00e9r V: 0.132","Cram\u00e9r V: 0.132","Cram\u00e9r V: 0.150","Cram\u00e9r V: 0.261"],"x":{"dtype":"f8","bdata":"BTQRNjy9oj+coiO5\u002fIekP7Hh6ZWyDLE\u002fh6dXyjLEsT8qqRPQRNjAP0w3iUFg5cA\u002fMzMzMzMzwz+ad5yiI7nQPw=="},"y":["orden_preferencia","pais_nombre","universidad_origen","provincia","via_acceso","rama","sexo","situacion_laboral"],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"shapes":[{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.0296,"y0":"anios_gap","y1":"anios_gap"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0366,"y0":"orden_preferencia","y1":"orden_preferencia"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.038,"y0":"indicador_interrupcion","y1":"indicador_interrupcion"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0401,"y0":"pais_nombre","y1":"pais_nombre"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0666,"y0":"universidad_origen","y1":"universidad_origen"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0694,"y0":"provincia","y1":"provincia"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.1037,"y0":"max_pagos","y1":"max_pagos"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.1316,"y0":"via_acceso","y1":"via_acceso"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.132,"y0":"rama","y1":"rama"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.15,"y0":"sexo","y1":"sexo"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.2613,"y0":"situacion_laboral","y1":"situacion_laboral"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.2723,"y0":"anios_sin_beca","y1":"anios_sin_beca"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.2736,"y0":"edad_entrada","y1":"edad_entrada"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.5096,"y0":"nota_selectividad","y1":"nota_selectividad"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.5434,"y0":"tuvo_beca","y1":"tuvo_beca"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.6239,"y0":"cred_superados_anio_1er","y1":"cred_superados_anio_1er"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.6925,"y0":"nota_acceso","y1":"nota_acceso"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.7805,"y0":"nota_1er_anio","y1":"nota_1er_anio"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.8454,"y0":"n_anios_beca","y1":"n_anios_beca"},{"line":{"color":"gray","dash":"dot","width":1},"type":"line","x0":0.2,"x1":0.2,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"gray","dash":"dot","width":1},"type":"line","x0":0.5,"x1":0.5,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"gray","dash":"dot","width":1},"type":"line","x0":0.8,"x1":0.8,"xref":"x","y0":0,"y1":1,"yref":"y domain"}],"title":{"font":{"size":15},"text":"\u003cb\u003eRanking de asociaci\u00f3n con abandono\u003c\u002fb\u003e\u003cbr\u003e\u003csup\u003eNum\u00e9ricas: |Cohen d| \u00b7 Categ\u00f3ricas: Cram\u00e9r V\u003c\u002fsup\u003e"},"legend":{"orientation":"h","yanchor":"bottom","y":1.02},"xaxis":{"title":{"text":"Fuerza de asociaci\u00f3n"}},"yaxis":{"title":{"text":""}},"height":665,"annotations":[{"showarrow":false,"text":"peque\u00f1o","x":0.2,"xanchor":"center","xref":"x","y":1,"yanchor":"bottom","yref":"y domain"},{"showarrow":false,"text":"mediano","x":0.5,"xanchor":"center","xref":"x","y":1,"yanchor":"bottom","yref":"y domain"},{"showarrow":false,"text":"grande","x":0.8,"xanchor":"center","xref":"x","y":1,"yanchor":"bottom","yref":"y domain"}]},                        {"responsive": true}                    )                };            </script>        </div><table border="1" class="dataframe tabla-resultados">
+        <script charset="utf-8" src="https://cdn.plot.ly/plotly-3.3.0.min.js" integrity="sha256-bO3dS6yCpk9aK4gUpNELtCiDeSYvGYnK7jFI58NQnHI=" crossorigin="anonymous"></script>                <div id="5f926a3b-de2e-4482-a135-cf593b50ab75" class="plotly-graph-div" style="height:665px; width:100%;"></div>            <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("5f926a3b-de2e-4482-a135-cf593b50ab75")) {                    Plotly.newPlot(                        "5f926a3b-de2e-4482-a135-cf593b50ab75",                        [{"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#3182ce","line":{"color":"white","width":1},"size":12},"mode":"markers","name":"Num\u00e9rica","text":["|Cohen d|: 0.030","|Cohen d|: 0.038","|Cohen d|: 0.104","|Cohen d|: 0.272","|Cohen d|: 0.274","|Cohen d|: 0.510","|Cohen d|: 0.543","|Cohen d|: 0.624","|Cohen d|: 0.693","|Cohen d|: 0.780","|Cohen d|: 0.845"],"x":{"dtype":"f8","bdata":"rK3YX3ZPnj\u002fb+X5qvHSjPwdfmEwVjLo\u002f6Nms+lxt0T\u002ff4AuTqYLRP8pUwaikTuA\u002fT6+UZYhj4T9JLv8h\u002ffbjPylcj8L1KOY\u002fYOXQItv56D+TOgFNhA3rPw=="},"y":["anios_gap","indicador_interrupcion","max_pagos","anios_sin_beca","edad_entrada","nota_selectividad","tuvo_beca","cred_superados_anio_1er","nota_acceso","nota_1er_anio","n_anios_beca"],"type":"scatter"},{"hovertemplate":"\u003cb\u003e%{y}\u003c\u002fb\u003e\u003cbr\u003e%{text}\u003cextra\u003e\u003c\u002fextra\u003e","marker":{"color":"#805ad5","line":{"color":"white","width":1},"size":12},"mode":"markers","name":"Categ\u00f3rica","text":["Cram\u00e9r V: 0.037","Cram\u00e9r V: 0.040","Cram\u00e9r V: 0.067","Cram\u00e9r V: 0.069","Cram\u00e9r V: 0.132","Cram\u00e9r V: 0.132","Cram\u00e9r V: 0.150","Cram\u00e9r V: 0.261"],"x":{"dtype":"f8","bdata":"BTQRNjy9oj+coiO5\u002fIekP7Hh6ZWyDLE\u002fh6dXyjLEsT8qqRPQRNjAP0w3iUFg5cA\u002fMzMzMzMzwz+ad5yiI7nQPw=="},"y":["orden_preferencia","pais_nombre","universidad_origen","provincia","via_acceso","rama","sexo","situacion_laboral"],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"shapes":[{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.0296,"y0":"anios_gap","y1":"anios_gap"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0366,"y0":"orden_preferencia","y1":"orden_preferencia"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.038,"y0":"indicador_interrupcion","y1":"indicador_interrupcion"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0401,"y0":"pais_nombre","y1":"pais_nombre"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0666,"y0":"universidad_origen","y1":"universidad_origen"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.0694,"y0":"provincia","y1":"provincia"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.1037,"y0":"max_pagos","y1":"max_pagos"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.1316,"y0":"via_acceso","y1":"via_acceso"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.132,"y0":"rama","y1":"rama"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.15,"y0":"sexo","y1":"sexo"},{"line":{"color":"#805ad5","width":2},"type":"line","x0":0,"x1":0.2613,"y0":"situacion_laboral","y1":"situacion_laboral"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.2723,"y0":"anios_sin_beca","y1":"anios_sin_beca"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.2736,"y0":"edad_entrada","y1":"edad_entrada"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.5096,"y0":"nota_selectividad","y1":"nota_selectividad"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.5434,"y0":"tuvo_beca","y1":"tuvo_beca"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.6239,"y0":"cred_superados_anio_1er","y1":"cred_superados_anio_1er"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.6925,"y0":"nota_acceso","y1":"nota_acceso"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.7805,"y0":"nota_1er_anio","y1":"nota_1er_anio"},{"line":{"color":"#3182ce","width":2},"type":"line","x0":0,"x1":0.8454,"y0":"n_anios_beca","y1":"n_anios_beca"},{"line":{"color":"gray","dash":"dot","width":1},"type":"line","x0":0.2,"x1":0.2,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"gray","dash":"dot","width":1},"type":"line","x0":0.5,"x1":0.5,"xref":"x","y0":0,"y1":1,"yref":"y domain"},{"line":{"color":"gray","dash":"dot","width":1},"type":"line","x0":0.8,"x1":0.8,"xref":"x","y0":0,"y1":1,"yref":"y domain"}],"title":{"font":{"size":15},"text":"\u003cb\u003eRanking de asociaci\u00f3n con abandono\u003c\u002fb\u003e\u003cbr\u003e\u003csup\u003eNum\u00e9ricas: |Cohen d| \u00b7 Categ\u00f3ricas: Cram\u00e9r V\u003c\u002fsup\u003e"},"legend":{"orientation":"h","yanchor":"bottom","y":1.02},"xaxis":{"title":{"text":"Fuerza de asociaci\u00f3n"}},"yaxis":{"title":{"text":""}},"height":665,"annotations":[{"showarrow":false,"text":"peque\u00f1o","x":0.2,"xanchor":"center","xref":"x","y":1,"yanchor":"bottom","yref":"y domain"},{"showarrow":false,"text":"mediano","x":0.5,"xanchor":"center","xref":"x","y":1,"yanchor":"bottom","yref":"y domain"},{"showarrow":false,"text":"grande","x":0.8,"xanchor":"center","xref":"x","y":1,"yanchor":"bottom","yref":"y domain"}]},                        {"responsive": true}                    )                };            </script>        </div><table border="1" class="dataframe tabla-resultados">
   <thead>
     <tr style="text-align: right;">
       <th>variable</th>
@@ -500,12 +663,13 @@
         <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
         <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
         
-        <br>
+        &nbsp;·&nbsp;
         <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase4_eda/f4_m05_bivariante.ipynb" target="_blank">📓 Ver Notebook</a>
         
-        <br>Generado: 05/03/2026
+        &nbsp;·&nbsp; Generado: 23/03/2026
     </footer>
 
     
+
 </body>
 </html>

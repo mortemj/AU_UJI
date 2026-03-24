@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lineales - TFM Abandono Universitario</title>
+    <link rel="stylesheet" href="../style.css">
+    
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo" onerror="this.style.display='none'">
+            <div class="header-title">
+                <h1>Lineales</h1>
+                <p>Fase 5: Modelado | TFM Abandono Universitario</p>
+            </div>
+            <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo" onerror="this.style.display='none'">
+        </div>
+    </header>
+
+    <nav class="nav-fases">
+        <nav class="nav-fases">
+  <a href="../index.html" class="">🏠 Inicio</a>
+  <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
+  <a href="../fase4/fase4_index.html" class="">🔬 EDA Final</a>
+  <a href="../fase5/fase5_index.html" class="active">🤖 Modelado</a>
+  <a href="../fase6/fase6_index.html" class=" disabled">📈 Evaluación</a>
+  <a href="../fase7/fase7_index.html" class=" disabled">🚀 Aplicación</a>
+  <a href="../fase_automl/fase_automl_index.html" class="">⚡ Pre-Modelado: AutoML</a>
+</nav>
+    </nav>
+
+    <nav class="nav-modulos">
+        <nav class="nav-modulos">
+  <a href="fase5_index.html" class="">📋 Índice</a>
+  <a href="m01_lineales.html" class="active">📈 Modelos Lineales</a>
+  <a href="m02_arboles.html" class="">🌲 Árboles</a>
+  <a href="m03_boosting.html" class="">🚀 Gradient Boosting</a>
+  <a href="m04_otros.html" class="">🧪 Otros Algoritmos</a>
+  <a href="m05_mlp_ebm.html" class="">🧠 MLP + EBM</a>
+  <a href="m06_ensambles.html" class="">🔗 Ensambles</a>
+  <a href="m07_comparacion.html" class="">🏆 Comparativa Final</a>
+</nav>
+    </nav>
+
+    <div class="container">
+        <section class="seccion"><h2>Modelos generativos/otros — LDA · Ridge</h2><div style="display:flex;flex-wrap:wrap;gap:16px;margin:16px 0;"><div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 28px;text-align:center;min-width:120px;"><div style="font-size:2rem;font-weight:700;color:#3182ce;">2</div><div style="font-size:0.85rem;color:#555;margin-top:4px;">Modelos</div></div><div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 28px;text-align:center;min-width:120px;"><div style="font-size:2rem;font-weight:700;color:#3182ce;">3</div><div style="font-size:0.85rem;color:#555;margin-top:4px;">Estrategias</div></div><div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 28px;text-align:center;min-width:120px;"><div style="font-size:2rem;font-weight:700;color:#3182ce;">6</div><div style="font-size:0.85rem;color:#555;margin-top:4px;">Combinaciones</div></div><div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 28px;text-align:center;min-width:120px;"><div style="font-size:2rem;font-weight:700;color:#3182ce;">0.885</div><div style="font-size:0.85rem;color:#555;margin-top:4px;">Mejor AUC CV</div></div><div style="background:#f7fafc;border:1px solid #e2e8f0;border-radius:10px;padding:18px 28px;text-align:center;min-width:120px;"><div style="font-size:2rem;font-weight:700;color:#3182ce;">0.715</div><div style="font-size:0.85rem;color:#555;margin-top:4px;">Mejor F1 CV</div></div></div></section><section class="seccion"><h2>Conclusiones</h2><p>De las <strong>6 combinaciones</strong> evaluadas (2 modelos x 3 estrategias), <strong>Ridge</strong> con estrategia <strong>balanced</strong> obtiene el mejor resultado con <strong>AUC CV = 0.8847 &plusmn; 0.0045</strong> y <strong>F1 = 0.7145</strong>.</p><p>Supera al segundo (Ridge + smote) en <strong>0.0003 puntos de AUC</strong>.</p></section><section class="seccion"><h2>Comparativa por modelo</h2><table class="tabla-datos"><thead><tr><th>Modelo</th><th>Mejor estrategia</th><th>AUC CV (mean&plusmn;std)</th><th>F1 CV</th><th>Precision</th><th>Recall</th></tr></thead><tbody><tr style="background:#ebf8ff;font-weight:600;"><td>Ridge 🏆</td><td>balanced</td><td>0.8847 &plusmn; 0.0045</td><td>0.7145</td><td>0.7652</td><td>0.6705</td></tr><tr style=""><td>LDA</td><td>smote</td><td>0.8843 &plusmn; 0.0044</td><td>0.7250</td><td>0.6600</td><td>0.8043</td></tr></tbody></table></section><section class="seccion"><h2>Resultados completos CV</h2><table class="tabla-datos"><thead><tr><th>Modelo</th><th>Estrategia</th><th>AUC (mean&plusmn;std)</th><th>F1</th><th>Precision</th><th>Recall</th><th>Tiempo</th></tr></thead><tbody><tr style="background:#ebf8ff;font-weight:600;"><td>Ridge</td><td>balanced</td><td>0.8847 &plusmn; 0.0045</td><td>0.7145</td><td>0.7652</td><td>0.6705</td><td>0.4s</td></tr><tr style=""><td>Ridge</td><td>smote</td><td>0.8843 &plusmn; 0.0044</td><td>0.7252</td><td>0.6615</td><td>0.8027</td><td>2.8s</td></tr><tr style=""><td>LDA</td><td>smote</td><td>0.8843 &plusmn; 0.0044</td><td>0.7250</td><td>0.6600</td><td>0.8043</td><td>3.1s</td></tr><tr style=""><td>Ridge</td><td>none</td><td>0.8823 &plusmn; 0.0044</td><td>0.7117</td><td>0.7701</td><td>0.6618</td><td>0.5s</td></tr><tr style=""><td>LDA</td><td>none</td><td>0.8823 &plusmn; 0.0044</td><td>0.7150</td><td>0.7588</td><td>0.6762</td><td>4.4s</td></tr><tr style=""><td>LDA</td><td>balanced</td><td>0.8823 &plusmn; 0.0044</td><td>0.7150</td><td>0.7588</td><td>0.6762</td><td>5.0s</td></tr></tbody></table></section>
+    </div>
+
+    <footer>
+        <strong>María José Morte</strong> |
+        <a href="mailto:mjmorteruiz@uoc.edu">mjmorteruiz@uoc.edu</a> (UOC) |
+        <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
+        
+        <br>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase5_modelado/f5_m01_lineales.ipynb" target="_blank">📓 Ver Notebook</a>
+        
+        <br>Generado: 09/03/2026
+    </footer>
+
+    
+</body>
+</html>
