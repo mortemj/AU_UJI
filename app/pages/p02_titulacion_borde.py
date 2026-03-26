@@ -1028,16 +1028,6 @@ def mostrar():
     col_rama = "rama_meta" if "rama_meta" in df.columns else "rama"
     ramas_disponibles = sorted(df[col_rama].dropna().unique().tolist())
 
-    # Zona de filtros — línea azul arriba y abajo
-    st.markdown("""
-    <div style="border-top: 2px solid #3182ce; margin-bottom: 0.5rem;">
-        <span style="font-size:0.72rem; font-weight:600; color:#3182ce;
-                     text-transform:uppercase; letter-spacing:0.05em;">
-            🔍 Filtros
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-
     col_sel1, col_sel2 = st.columns([1, 2])
 
     # Selector 1: filtro por rama (acota la lista de titulaciones)
@@ -1067,10 +1057,6 @@ def mostrar():
             key="filtro_tit_p02",
             help="Una titulación → análisis detallado. Varias → comparativa."
         )
-
-    st.markdown("""
-    <div style="border-bottom: 2px solid #3182ce; margin-top: 0.5rem; margin-bottom: 1rem;"></div>
-    """, unsafe_allow_html=True)
 
     # Pantalla neutra si no ha seleccionado nada
     if not tits_sel:

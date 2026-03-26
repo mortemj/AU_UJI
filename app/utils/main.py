@@ -125,6 +125,17 @@ id_pagina = "inicio" if idx_pagina == 0 else PESTANAS[idx_pagina - 1]["id"]
 if id_pagina == "inicio":
     from pages import p00_inicio as pagina
     pagina.show()
+    # Botones de acceso rápido — en main.py para que st.rerun() funcione
+    cols = st.columns(len(PESTANAS))
+    for i, (col, p) in enumerate(zip(cols, PESTANAS)):
+        with col:
+            if st.button(
+                f"{p['icono']}  {p['titulo']}",
+                key=f"acceso_{p['id']}",
+                use_container_width=True,
+            ):
+                st.session_state["nav_idx"] = i + 1
+                st.rerun()
 elif id_pagina == "institucional":
     from pages import p01_institucional as pagina
     pagina.show()

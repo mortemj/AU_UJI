@@ -1484,11 +1484,32 @@ def _grafico_cascada(perfil: dict, df_ref: pd.DataFrame,
     </h4>
     """, unsafe_allow_html=True)
 
-    # Método de cálculo: solo Rápido disponible.
-    # El método Preciso (SHAP sobre CatBoost base) produce valores en escala
-    # log-odds no convertibles a % de forma fiable para el Stacking completo.
-    # Se mantiene el código _contribuciones_shap por si se resuelve en el futuro.
-    contribuciones = _contribuciones_proxy(perfil, df_ref)
+    # Selector de método — justo debajo del título
+    metodo = st.radio(
+        label="Método de cálculo:",
+        options=["⚡ Rápido (estimación instantánea)",
+                 "🔬 Preciso (SHAP real, ~2s)"],
+        index=0,
+        horizontal=True,
+        key=f"metodo_cascada_{id(perfil)}_{id(df_ref)}",
+        help=(
+            "Rápido: diferencia de medias por grupo (aproximación marginal). "
+            "Preciso: SHAP TreeExplainer, calcula la contribución exacta "
+            "de cada variable para TU perfil concreto."
+        ),
+    )
+
+    usar_shap = "Preciso" in metodo
+
+    if usar_shap:
+        st.caption(
+            "⚠️ Los valores SHAP se calculan sobre el meta-modelo del ensamble "
+            "(LogisticRegression), no sobre el Stacking completo. "
+            "Es una aproximación válida, no los valores exactos del modelo final."
+        )
+        contribuciones = _contribuciones_shap(perfil, df_ref, modelo, pipeline)
+    else:
+        contribuciones = _contribuciones_proxy(perfil, df_ref)
 
     if not contribuciones:
         st.info("No hay suficientes datos para calcular las contribuciones.")
@@ -1586,38 +1607,24 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             X_usuario = pd.DataFrame([fila])
             X_prep    = pipeline.transform(X_usuario)
 
-            # Extraemos CatBoost del Stacking para SHAP:
+            # Extraemos el meta-modelo del Stacking para SHAP:
             # Pipeline → named_steps['model'] (StackingClassifier)
-            #          → estimators_['CatBoost'] → Pipeline → named_steps['model']
-            # TreeExplainer es compatible con CatBoost y devuelve SHAP
-            # sobre las 19 features originales.
-            # NOTA: aproximación — SHAP del estimador base CatBoost,
-            # no del Stacking completo.
+            #          → final_estimator_ (LogisticRegression)
+            # Usamos LinearExplainer — compatible con modelos lineales.
+            # NOTA: los valores SHAP son del meta-modelo (LogReg),
+            # no del ensamble completo — es una aproximación válida.
             stacking = modelo
             if hasattr(modelo, 'named_steps'):
                 stacking = modelo.named_steps.get('model', modelo)
 
-            # Extraer CatBoost de los estimadores base del Stacking
-            catboost_model = None
-            # estimators_ contiene los estimadores ajustados (sin nombres)
-            # estimators contiene las tuplas (nombre, estimador) originales
-            if hasattr(stacking, 'estimators'):
-                for name, est in stacking.estimators:
-                    if 'CatBoost' in name or 'catboost' in name.lower():
-                        # El estimador puede ser un Pipeline con step 'model'
-                        # Buscamos el estimador ajustado en estimators_
-                        idx = [n for n, _ in stacking.estimators].index(name)
-                        est_fitted = stacking.estimators_[idx]
-                        if hasattr(est_fitted, 'named_steps'):
-                            catboost_model = est_fitted.named_steps.get('model', est_fitted)
-                        else:
-                            catboost_model = est_fitted
-                        break
+            if hasattr(stacking, 'final_estimator_'):
+                meta_modelo = stacking.final_estimator_
+            else:
+                meta_modelo = stacking
 
-            if catboost_model is None:
-                raise ValueError("No se encontró CatBoost en los estimadores del Stacking.")
-
-            explainer = shap.TreeExplainer(catboost_model)
+            # LinearExplainer necesita los datos de entrenamiento como background
+            # Usamos X_prep (ya transformado por el pipeline) como referencia
+            explainer = shap.LinearExplainer(meta_modelo, X_prep)
             shap_vals = explainer.shap_values(X_prep)
 
             # shap_values puede ser array o lista según la versión de SHAP
@@ -1634,39 +1641,24 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             except AttributeError:
                 feature_names = [f"feat_{i}" for i in range(len(vals))]
 
-            # Convertir SHAP values de log-odds a escala de probabilidad
-            # Los SHAP de CatBoost están en log-odds — hay que escalarlos
-            # para que sean comparables con la probabilidad predicha (0-100%).
-            # Usamos la derivada de la sigmoid en el punto de predicción:
-            # dp/d(log-odds) = p * (1 - p)
-            import scipy.special as sp
-            log_odds_total = float(np.sum(vals)) + explainer.expected_value
-            if hasattr(explainer.expected_value, '__len__'):
-                log_odds_total = float(np.sum(vals)) + float(explainer.expected_value[1])
-            prob_pred = float(sp.expit(log_odds_total))
-            escala = prob_pred * (1 - prob_pred) * 100  # factor de escala a %
-
-            # Construimos contribuciones escaladas a %
+            # Construimos contribuciones
             contribuciones = []
             for fname, shap_val in zip(feature_names, vals):
+                # Intentamos mapear al nombre original (sin prefijo del pipeline)
                 fname_clean = fname.split('__')[-1] if '__' in fname else fname
                 nombre      = NOMBRES_VARIABLES.get(fname_clean,
                                                      fname_clean.replace('_', ' ').title())
                 contribuciones.append({
                     'variable':     nombre,
                     'valor':        fname_clean,
-                    'contribucion': float(shap_val) * escala,
+                    'contribucion': float(shap_val),
                 })
 
             contribuciones.sort(key=lambda x: abs(x['contribucion']), reverse=True)
             return contribuciones[:6]
 
         except Exception as e:
-            st.warning(
-                f"⚠️ No se pudo calcular SHAP: {e}. Usando método rápido. "
-                f"Si persiste: verificar versiones SHAP/sklearn/CatBoost y que "
-                f"stacking.estimators contenga tuplas (nombre, estimador) con 'CatBoost'."
-            )
+            st.warning(f"⚠️ No se pudo calcular SHAP: {e}. Usando método rápido.")
             return _contribuciones_proxy(perfil, df_ref)
 
 

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Cambios de Plan — Titulaciones UJI</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f7fafc; color: #2d3748; padding: 2rem; }
+  h1 { color: #3182ce; font-size: 1.6rem; margin-bottom: 0.3rem; }
+  .subtitulo { color: #718096; font-size: 0.9rem; margin-bottom: 2rem; }
+
+  /* LEYENDA TIPOS */
+  .leyenda { display: flex; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+  .badge { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.8rem;
+           padding: 0.3rem 0.8rem; border-radius: 20px; font-weight: 600; }
+  .badge-nombre  { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+  .badge-plan    { background: #fff3e0; color: #c05621; border: 1px solid #fbd38d; }
+  .badge-error   { background: #fff5f5; color: #c53030; border: 1px solid #fed7d7; }
+
+  /* TABLA PRINCIPAL */
+  .tabla-wrap { overflow-x: auto; margin-bottom: 2.5rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; background: white;
+          border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  thead { background: #3182ce; color: white; }
+  th { padding: 0.75rem 1rem; text-align: left; font-weight: 600; }
+  td { padding: 0.65rem 1rem; border-bottom: 1px solid #e2e8f0; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f0f7ff; }
+  .plan-viejo { color: #c05621; font-weight: 600; }
+  .plan-nuevo { color: #276749; font-weight: 600; }
+  .diff-grande { color: #c53030; font-weight: 700; }
+  .diff-media  { color: #c05621; font-weight: 600; }
+  .diff-trunc  { color: #718096; }
+  .tag { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 10px; margin-left: 0.3rem; }
+  .tag-trunc { background: #e2e8f0; color: #4a5568; }
+  .tag-mejora { background: #c6f6d5; color: #276749; }
+
+  /* GRÁFICO DE BARRAS */
+  .seccion-titulo { font-size: 1.1rem; font-weight: 700; color: #2d3748;
+                    margin-bottom: 1rem; padding-bottom: 0.3rem;
+                    border-bottom: 2px solid #3182ce; }
+  .barras { display: flex; flex-direction: column; gap: 1.2rem; margin-bottom: 2.5rem; }
+  .barra-grupo { background: white; border-radius: 8px; padding: 1rem 1.2rem;
+                 box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .barra-titulo { font-size: 0.82rem; font-weight: 600; margin-bottom: 0.6rem; color: #4a5568; }
+  .barra-fila { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.35rem; }
+  .barra-label { font-size: 0.75rem; color: #718096; width: 80px; text-align: right; flex-shrink: 0; }
+  .barra-track { flex: 1; background: #edf2f7; border-radius: 4px; height: 20px; position: relative; }
+  .barra-fill { height: 100%; border-radius: 4px; display: flex; align-items: center;
+                padding-left: 0.4rem; font-size: 0.72rem; font-weight: 700; color: white;
+                min-width: 2rem; transition: width 0.3s; }
+  .fill-viejo { background: #e53e3e; }
+  .fill-nuevo { background: #38a169; }
+  .fill-trunc { background: #a0aec0; }
+
+  /* NOTA METODOLÓGICA */
+  .nota { background: #fffbeb; border-left: 4px solid #d69e2e; border-radius: 0 8px 8px 0;
+          padding: 1rem 1.2rem; font-size: 0.82rem; color: #744210; margin-bottom: 2rem; }
+  .nota strong { color: #92400e; }
+
+  /* DECISIÓN */
+  .decision { background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 10px;
+              padding: 1.2rem 1.5rem; margin-bottom: 2rem; }
+  .decision h3 { color: #2b6cb0; margin-bottom: 0.8rem; font-size: 1rem; }
+  .decision ul { padding-left: 1.2rem; font-size: 0.85rem; line-height: 1.8; }
+  .flag-table { margin-top: 0.8rem; width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .flag-table th { background: #bee3f8; color: #2b6cb0; padding: 0.4rem 0.8rem; text-align: left; }
+  .flag-table td { padding: 0.4rem 0.8rem; border-bottom: 1px solid #e2e8f0; }
+
+  /* PIE */
+  .pie { text-align: center; font-size: 0.75rem; color: #a0aec0; margin-top: 2rem;
+         padding-top: 1rem; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+
+<h1>🎓 Cambios de Plan en Titulaciones de la UJI</h1>
+<div class="subtitulo">TFM · Predicción de Abandono Universitario · María José Morte Ruiz · 2025</div>
+
+<!-- LEYENDA -->
+<div class="leyenda">
+  <span class="badge badge-nombre">🔄 Cambio de nombre</span>
+  <span class="badge badge-plan">📋 Renovación de plan</span>
+  <span class="badge badge-error">⚠️ Error de datos</span>
+</div>
+
+<!-- TABLA PAREJAS -->
+<div class="seccion-titulo">Parejas identificadas (9 familias)</div>
+<div class="tabla-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Nombre unificado</th>
+      <th>Plan viejo (abandono)</th>
+      <th>Plan nuevo (abandono)</th>
+      <th>Tipo</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Arquitectura Técnica</strong></td>
+      <td><span class="plan-viejo">Ing. de la Edificación → 0.0%</span></td>
+      <td><span class="plan-nuevo">Plan 2020 → 0.0% <span class="tag tag-trunc">truncamiento</span></span></td>
+      <td><span class="badge badge-nombre" style="font-size:0.72rem">Cambio nombre</span></td>
+    </tr>
+    <tr>
+      <td><strong>Criminología y Seguridad</strong></td>
+      <td><span class="plan-viejo">2010–2019 → 20.0%</span></td>
+      <td><span class="plan-nuevo">Plan 2020 → 0.0% <span class="tag tag-trunc">truncamiento</span></span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Historia y Patrimonio</strong></td>
+      <td><span class="plan-viejo">2010–2015 → 52.9%</span></td>
+      <td><span class="plan-nuevo">Plan 2015 → 20.4% <span class="tag tag-mejora">mejora real</span></span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Ing. Agroalimentaria</strong></td>
+      <td><span class="plan-viejo">2010–2017 → 52.9%</span></td>
+      <td><span class="plan-nuevo">Plan 2018 → 5.9% <span class="tag tag-mejora">mejora real</span></span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Maestro Ed. Infantil</strong></td>
+      <td><span class="plan-viejo">2010–2017 → 15.0%</span></td>
+      <td><span class="plan-nuevo">Plan 2018 → 2.1% <span class="tag tag-trunc">truncamiento</span></span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Maestro Ed. Primaria</strong></td>
+      <td><span class="plan-viejo">2010–2018 → 22.6%</span></td>
+      <td><span class="plan-nuevo">Plan 2018 → 3.3% <span class="tag tag-trunc">truncamiento</span></span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Medicina</strong></td>
+      <td><span class="plan-viejo">2011–2016 → 11.1%</span></td>
+      <td><span class="plan-nuevo">Plan 2017 → 3.0% <span class="tag tag-trunc">truncamiento</span></span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Ing. Diseño Industrial</strong></td>
+      <td><span class="plan-viejo">2010–2020 → 30.9%</span></td>
+      <td><span class="plan-nuevo">Plan 2020 → N/D</span></td>
+      <td><span class="badge badge-plan" style="font-size:0.72rem">Renovación plan</span></td>
+    </tr>
+    <tr>
+      <td><strong>Doble Grado ADE y Derecho</strong></td>
+      <td colspan="2" style="color:#c53030">Nombre con coma al final — error de datos</td>
+      <td><span class="badge badge-error" style="font-size:0.72rem">Error datos</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- GRÁFICO BARRAS -->
+<div class="seccion-titulo">Tasa de abandono: plan viejo vs plan nuevo</div>
+<div class="barras">
+
+  <div class="barra-grupo">
+    <div class="barra-titulo">Historia y Patrimonio <span style="color:#c53030">−32.5 pp</span></div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan viejo</div>
+      <div class="barra-track"><div class="barra-fill fill-viejo" style="width:52.9%">52.9%</div></div>
+    </div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan 2015</div>
+      <div class="barra-track"><div class="barra-fill fill-nuevo" style="width:20.4%">20.4%</div></div>
+    </div>
+  </div>
+
+  <div class="barra-grupo">
+    <div class="barra-titulo">Ing. Agroalimentaria <span style="color:#c53030">−47.0 pp</span></div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan viejo</div>
+      <div class="barra-track"><div class="barra-fill fill-viejo" style="width:52.9%">52.9%</div></div>
+    </div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan 2018</div>
+      <div class="barra-track"><div class="barra-fill fill-nuevo" style="width:5.9%">5.9%</div></div>
+    </div>
+  </div>
+
+  <div class="barra-grupo">
+    <div class="barra-titulo">Maestro Ed. Primaria <span style="color:#c05621">−19.3 pp</span></div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan viejo</div>
+      <div class="barra-track"><div class="barra-fill fill-viejo" style="width:22.6%">22.6%</div></div>
+    </div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan 2018</div>
+      <div class="barra-track"><div class="barra-fill fill-nuevo" style="width:3.3%">3.3%</div></div>
+    </div>
+  </div>
+
+  <div class="barra-grupo">
+    <div class="barra-titulo">Criminología y Seguridad <span style="color:#718096">−20.0 pp (truncamiento)</span></div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan viejo</div>
+      <div class="barra-track"><div class="barra-fill fill-viejo" style="width:20%">20.0%</div></div>
+    </div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan 2020</div>
+      <div class="barra-track"><div class="barra-fill fill-trunc" style="width:2%">0%</div></div>
+    </div>
+  </div>
+
+  <div class="barra-grupo">
+    <div class="barra-titulo">Medicina <span style="color:#718096">−8.1 pp (truncamiento)</span></div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan viejo</div>
+      <div class="barra-track"><div class="barra-fill fill-viejo" style="width:11.1%">11.1%</div></div>
+    </div>
+    <div class="barra-fila">
+      <div class="barra-label">Plan 2017</div>
+      <div class="barra-track"><div class="barra-fill fill-nuevo" style="width:3%">3.0%</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NOTA TRUNCAMIENTO -->
+<div class="nota">
+  <strong>⚠️ Sobre el truncamiento temporal:</strong> los alumnos del plan nuevo llevan pocos años
+  en el dataset (máximo hasta 2020). Un alumno de cohorte 2018 solo tiene 2 años de observación,
+  insuficiente para que se materialice el abandono que típicamente ocurre en años 3–4.
+  Las tasas del plan nuevo están <strong>subestimadas</strong> y no son directamente comparables
+  con las del plan viejo. Las carreras con Plan 2020 (Criminología, Arquitectura) muestran 0%
+  exclusivamente por este motivo.
+</div>
+
+<!-- DECISIÓN -->
+<div class="decision">
+  <h3>✅ Decisión adoptada: Unificación con flag <code>cambio_plan</code></h3>
+  <ul>
+    <li>Todos los nombres se unifican bajo el nombre actual de la titulación</li>
+    <li>Se añade columna <code>cambio_plan</code> para preservar la información del plan</li>
+    <li>La app muestra <strong>una sola entrada por carrera</strong> en todos los selectores</li>
+    <li>El analista puede filtrar por plan si necesita comparar abandono entre versiones</li>
+  </ul>
+  <table class="flag-table">
+    <thead><tr><th>Valor flag</th><th>Descripción</th></tr></thead>
+    <tbody>
+      <tr><td><code>plan_original</code></td><td>Alumno matriculado en el plan vigente desde el inicio</td></tr>
+      <tr><td><code>transicion</code></td><td>Alumno matriculado durante el solapamiento de los 2 planes</td></tr>
+      <tr><td><code>plan_nuevo</code></td><td>Alumno matriculado ya en el plan renovado</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pie">
+  TFM · Predicción de Abandono Universitario en la UJI · María José Morte Ruiz · UOC + UJI · 2025
+</div>
+
+</body>
+</html>

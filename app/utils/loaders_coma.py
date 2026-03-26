@@ -116,8 +116,6 @@ def _fusionar_titulaciones(df: "pd.DataFrame") -> "pd.DataFrame":
     df = df.copy()
     if "titulacion" in df.columns:
         df["titulacion"] = df["titulacion"].replace(_MAPEO_TITULACIONES)
-        # Limpiar comas sobrantes al final del nombre (error P09 del audit de calidad)
-        df["titulacion"] = df["titulacion"].str.strip().str.rstrip(",").str.strip()
     return df
 
 

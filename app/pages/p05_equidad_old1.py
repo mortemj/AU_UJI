@@ -196,22 +196,12 @@ def _preparar_datos(df_raw: pd.DataFrame, modelo, pipeline) -> pd.DataFrame | No
         umbral_default = UMBRALES['riesgo_medio']
         df['pred_abandono'] = (df['prob_abandono'] >= umbral_default).astype(int)
 
-        # Normalizar tuvo_beca a etiquetas legibles
-        # Puede venir como 0/1 entero, float, o ya como string.
-        # Usamos n_anios_beca del pipeline si tuvo_beca tiene un solo valor.
+        # Normalizar tuvo_beca a etiquetas legibles si es numérica
         if 'tuvo_beca' in df.columns:
-            col_beca = df['tuvo_beca']
-            if pd.api.types.is_numeric_dtype(col_beca):
-                # Mapeo estándar 0→Sin beca, >0→Con beca
-                df['tuvo_beca'] = col_beca.apply(
-                    lambda x: 'Con beca' if (pd.notna(x) and x > 0) else 'Sin beca'
-                )
-        # Si tuvo_beca sigue con un solo valor, intentar derivar de n_anios_beca
-        if 'tuvo_beca' in df.columns and df['tuvo_beca'].nunique() < 2:
-            if 'n_anios_beca' in df.columns:
-                df['tuvo_beca'] = df['n_anios_beca'].apply(
-                    lambda x: 'Con beca' if (pd.notna(x) and x > 0) else 'Sin beca'
-                )
+            if pd.api.types.is_numeric_dtype(df['tuvo_beca']):
+                df['tuvo_beca'] = df['tuvo_beca'].map(
+                    {0: 'Sin beca', 1: 'Con beca'}
+                ).fillna('Sin beca')
 
         return df
     except Exception as e:
@@ -219,17 +209,12 @@ def _preparar_datos(df_raw: pd.DataFrame, modelo, pipeline) -> pd.DataFrame | No
         return None
 
 
-# Mínimo de alumnos por grupo para métricas fiables en gráficos
-MIN_N_GRUPO = 30
-
-
 def _metricas_grupo(df_g: pd.DataFrame) -> dict:
     """
     Calcula métricas de clasificación para un subgrupo.
-    Grupos con n < MIN_N_GRUPO se calculan igualmente pero se marca
-    'grupo_pequeno': True para filtrarlos del gráfico y avisar en tabla.
+    Devuelve dict con n, tasa_real, tasa_pred, precision, recall, f1, auc.
     """
-    if len(df_g) < 5 or 'abandono' not in df_g.columns:
+    if len(df_g) < 10 or 'abandono' not in df_g.columns:
         return {}
 
     y_true = df_g['abandono'].values
@@ -238,15 +223,14 @@ def _metricas_grupo(df_g: pd.DataFrame) -> dict:
 
     try:
         return {
-            'n':             len(df_g),
-            'grupo_pequeno': len(df_g) < MIN_N_GRUPO,
-            'tasa_real':     y_true.mean() * 100,
-            'tasa_pred':     y_pred.mean() * 100,
-            'precision':     precision_score(y_true, y_pred, zero_division=0) * 100,
-            'recall':        recall_score(y_true, y_pred, zero_division=0) * 100,
-            'f1':            f1_score(y_true, y_pred, zero_division=0) * 100,
-            'auc':           roc_auc_score(y_true, y_prob) * 100
-                             if len(np.unique(y_true)) > 1 else np.nan,
+            'n':          len(df_g),
+            'tasa_real':  y_true.mean() * 100,
+            'tasa_pred':  y_pred.mean() * 100,
+            'precision':  precision_score(y_true, y_pred, zero_division=0) * 100,
+            'recall':     recall_score(y_true, y_pred, zero_division=0) * 100,
+            'f1':         f1_score(y_true, y_pred, zero_division=0) * 100,
+            'auc':        roc_auc_score(y_true, y_prob) * 100
+                          if len(np.unique(y_true)) > 1 else np.nan,
         }
     except Exception:
         return {}
@@ -311,7 +295,7 @@ def _bloque_explicacion_equidad():
                 border-top: 3px solid {COLORES['primario']};
                 border-radius: 8px;
                 padding: 1.2rem;
-                min-height: 200px;
+                height: 200px;
             ">
                 <div style="font-size: 1.8rem;">{t['icono']}</div>
                 <div style="font-weight: bold; color: {COLORES['primario']};
@@ -421,24 +405,7 @@ def _bloque_equidad_por_grupo(
         }
     )
 
-    # Aviso grupos pequeños bajo la tabla
-    grupos_pequenos = df_met[df_met.get('grupo_pequeno', False) == True][col_grupo].tolist() \
-        if 'grupo_pequeno' in df_met.columns else []
-    if grupos_pequenos:
-        nombres_gp = ', '.join(str(g) for g in grupos_pequenos)
-        st.markdown(f"""
-        <div style="font-size:0.78rem; color:{COLORES['texto_suave']};
-                    margin-top:-0.3rem; margin-bottom:0.4rem;">
-            ⚠️ <em>Grupos con N &lt; {MIN_N_GRUPO} (resultados poco estables):
-            {nombres_gp}</em>
-        </div>
-        """, unsafe_allow_html=True)
-
     # --- Gráfico de barras agrupadas: métricas clave por grupo ---
-    # Solo grupos fiables en el gráfico (evita barras de 100% artificiales)
-    tabla_fiable = tabla[tabla['N alumnos'] >= MIN_N_GRUPO].copy()
-    tabla_graf   = tabla_fiable if len(tabla_fiable) >= 2 else tabla
-
     metricas_plot = ['Precisión (%)', 'Recall (%)', 'F1 (%)']
     fig = go.Figure()
 
@@ -446,18 +413,14 @@ def _bloque_equidad_por_grupo(
                       COLORES['exito'], COLORES['advertencia'],
                       '#805ad5', '#319795', '#dd6b20']
 
-    max_val = 0.0
-    for i, fila in tabla_graf.reset_index(drop=True).iterrows():
-        vals = [fila[m] for m in metricas_plot]
-        max_val = max(max_val, max(v for v in vals if pd.notna(v)))
+    for i, fila in tabla.iterrows():
         fig.add_trace(go.Bar(
             name=str(fila[col_grupo]),
             x=metricas_plot,
-            y=vals,
+            y=[fila[m] for m in metricas_plot],
             marker_color=colores_grupos[i % len(colores_grupos)],
-            text=[f"{v:.1f}%" for v in vals],
-            textposition='inside',
-            insidetextanchor='end',
+            text=[f"{fila[m]:.1f}%" for m in metricas_plot],
+            textposition='outside',
             hovertemplate=f"<b>{fila[col_grupo]}</b><br>%{{x}}: %{{y:.1f}}%<extra></extra>",
         ))
 
@@ -472,12 +435,9 @@ def _bloque_equidad_por_grupo(
         annotation_font_size=10,
     )
 
-    # Eje Y dinámico — nunca hay overflow aunque algún grupo llegue a 100%
-    y_max = max(105.0, min(max_val * 1.10, 108.0))
-
     fig.update_layout(
         barmode='group',
-        yaxis=dict(range=[0, y_max], ticksuffix='%'),
+        yaxis=dict(range=[0, 110], ticksuffix='%'),
         yaxis_title="Valor (%)",
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -489,49 +449,32 @@ def _bloque_equidad_por_grupo(
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    if len(tabla_graf) < len(tabla):
-        st.caption(
-            f"Gráfico con grupos de N ≥ {MIN_N_GRUPO}. "
-            f"Excluidos por tamaño insuficiente: {', '.join(str(g) for g in grupos_pequenos)}."
-        )
-
     st.plotly_chart(fig, use_container_width=True)
 
-    # Interpretación automática — basada solo en grupos fiables
-    df_interp = tabla_fiable if len(tabla_fiable) >= 2 else tabla
-    if 'F1 (%)' in df_interp.columns and len(df_interp) >= 2:
-        f1_vals     = df_interp['F1 (%)'].values
-        dif_f1      = f1_vals.max() - f1_vals.min()
-        grupo_mejor = str(df_interp.loc[df_interp['F1 (%)'].idxmax(), col_grupo])
-        grupo_peor  = str(df_interp.loc[df_interp['F1 (%)'].idxmin(), col_grupo])
+    # Interpretación automática basada en diferencia de F1
+    if 'F1 (%)' in tabla.columns and len(tabla) >= 2:
+        f1_vals = tabla['F1 (%)'].values
+        dif_f1  = f1_vals.max() - f1_vals.min()
+        grupo_mejor = str(tabla.loc[tabla['F1 (%)'].idxmax(), col_grupo])
+        grupo_peor  = str(tabla.loc[tabla['F1 (%)'].idxmin(), col_grupo])
 
         if dif_f1 < 5:
-            msg   = f"✅ El modelo muestra un rendimiento <strong>homogéneo</strong> entre grupos de {titulo.lower()} (diferencia F1: {dif_f1:.1f} pp)."
+            msg   = f"✅ El modelo muestra un rendimiento **homogéneo** entre grupos de {titulo.lower()} (diferencia F1: {dif_f1:.1f} pp)."
             color = COLORES['exito']
         elif dif_f1 < 10:
             msg   = (
-                f"⚠️ Hay una diferencia <strong>moderada</strong> de rendimiento entre grupos de {titulo.lower()} "
+                f"⚠️ Hay una diferencia **moderada** de rendimiento entre grupos de {titulo.lower()} "
                 f"(diferencia F1: {dif_f1:.1f} pp). "
-                f"El modelo funciona mejor en <strong>{grupo_mejor}</strong> que en <strong>{grupo_peor}</strong>."
+                f"El modelo funciona mejor en **{grupo_mejor}** que en **{grupo_peor}**."
             )
             color = COLORES['advertencia']
         else:
             msg   = (
-                f"🔴 Hay una diferencia <strong>notable</strong> de rendimiento entre grupos de {titulo.lower()} "
+                f"🔴 Hay una diferencia **notable** de rendimiento entre grupos de {titulo.lower()} "
                 f"(diferencia F1: {dif_f1:.1f} pp). "
-                f"El grupo <strong>{grupo_peor}</strong> está significativamente menos protegido. Requiere atención."
+                f"El grupo **{grupo_peor}** está significativamente menos protegido. Requiere atención."
             )
             color = COLORES['abandono']
-
-        # Nota contextual para beca: diferencia estructural, no sesgo del modelo
-        nota_extra = ""
-        if titulo == "Situación de beca" and dif_f1 > 5:
-            nota_extra = (
-                f"<br><em style='font-size:0.82rem; color:{COLORES['texto_suave']}'>"
-                "Nota: los alumnos con beca tienen una tasa de abandono real más baja (~22%), "
-                "lo que dificulta detectarlos como positivos. "
-                "No indica sesgo discriminatorio del modelo.</em>"
-            )
 
         st.markdown(f"""
         <div style="
@@ -541,7 +484,7 @@ def _bloque_equidad_por_grupo(
             padding: 0.7rem 1rem;
             font-size: 0.87rem;
             margin-top: 0.3rem;
-        ">{msg}{nota_extra}</div>
+        ">{msg}</div>
         """, unsafe_allow_html=True)
 
 
@@ -592,26 +535,12 @@ def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
             )
 
             if len(tasas) < 2:
-                st.markdown(f"""
-                <div style="
-                    background: {COLORES['fondo']};
-                    border: 1px solid {COLORES['borde']};
-                    border-radius: 8px;
-                    padding: 0.9rem 1rem;
-                    font-size: 0.82rem;
-                    color: {COLORES['texto_suave']};
-                    text-align: center;
-                ">
-                    <strong>{titulo}</strong><br>
-                    Solo hay un grupo con datos suficientes.<br>
-                    No se puede calcular el ratio.
-                </div>
-                """, unsafe_allow_html=True)
+                st.info(f"No hay suficientes grupos en '{titulo}'.")
                 continue
 
             di        = tasas.iloc[0] / tasas.iloc[-1]
-            grupo_min = str(tasas.index[0])[:15]
-            grupo_max = str(tasas.index[-1])[:15]
+            grupo_min = str(tasas.index[0])[:18]
+            grupo_max = str(tasas.index[-1])[:18]
 
             if di >= 0.8:
                 color_di  = COLORES['exito']

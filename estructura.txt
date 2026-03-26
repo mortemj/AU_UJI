@@ -1,0 +1,1988 @@
+Listado de rutas de carpetas para el volumen Windows-SSD
+El número de serie del volumen es 3848-26E4
+C:.
+|   .gitignore
+|   check_data.py
+|   estructura.txt
+|   index.html
+|   palette_accents.png
+|   palette_dark.png
+|   palette_main.png
+|   README.md
+|   requirements.txt
+|   requirements_fase1.txt
+|   requirements_fase2.txt
+|   requirements_fase3.txt
+|   trazabilidad.py
+|   tree_ver_dataset.txt
+|   
++---.ipynb_checkpoints
+|       lista de titulaciones que cambia-checkpoint.ipynb
+|       lista titulaciones-checkpoint.ipynb
+|       prueba_paleta de colores-checkpoint.ipynb
+|       Untitled-checkpoint.ipynb
+|       Untitled1-checkpoint.ipynb
+|       Untitled2-checkpoint.ipynb
+|       Untitled3-checkpoint.ipynb
+|       valores de rama-checkpoint.ipynb
+|       ver valores de dataset-checkpoint.ipynb
+|       
++---app
+|   |   calculos.ipynb
+|   |   config_app.py
+|   |   diagnostico.py
+|   |   main.py
+|   |   test-alumno -titulacioan.ipynb
+|   |   _path_setup.py
+|   |   
+|   +---.ipynb_checkpoints
+|   |       calculos-checkpoint.ipynb
+|   |       config_app-checkpoint.py
+|   |       diagnostic4-checkpoint.py
+|   |       diagnostico5-checkpoint.py
+|   |       test-alumno -titulacioan-checkpoint.ipynb
+|   |       Untitled-checkpoint.ipynb
+|   |       Untitled1-checkpoint.ipynb
+|   |       
+|   +---documentacion
+|   |       DECISIONES_TECNICAS.md
+|   |       README_titulacion_vs_rama.html
+|   |       README_titulacion_vs_rama.md
+|   |       recomendaciones_config.xlsx
+|   |       recomendaciones_tribunal.html
+|   |       
+|   +---pages
+|   |   |   p00_inicio.py
+|   |   |   p01_institucional.py
+|   |   |   p02_titulacion.py
+|   |   |   p02_titulacion_borde.py
+|   |   |   p03_prospecto.py
+|   |   |   p04_en_curso.py
+|   |   |   p05_equidad.py
+|   |   |   p05_equidad_old.py
+|   |   |   p05_equidad_old1.py
+|   |   |   p05_equidad_old2.py
+|   |   |   
+|   |   +---.ipynb_checkpoints
+|   |   \---__pycache__
+|   |           p00_inicio.cpython-311.pyc
+|   |           p01_institucional.cpython-311.pyc
+|   |           p01_institucional.cpython-311.pyc.1893497845728
+|   |           p02_titulacion.cpython-311.pyc
+|   |           p03_prospecto.cpython-311.pyc
+|   |           p04_en_curso.cpython-311.pyc
+|   |           p05_equidad.cpython-311.pyc
+|   |           
+|   +---utils
+|   |   |   loaders.py
+|   |   |   loaders_coma.py
+|   |   |   main.py
+|   |   |   pronostico_shared.py
+|   |   |   __init__.py
+|   |   |   
+|   |   +---old
+|   |   |       pronostico_shared.py
+|   |   |       pronostico_shared_bug rama .py
+|   |   |       pronostico_shared_catboost.py
+|   |   |       pronostico_shared_chechk beca.py
+|   |   |       pronostico_shared_OK hasta p03.py
+|   |   |       pronostico_shared_OLD.py
+|   |   |       pronostico_shared_old1.py
+|   |   |       pronostico_shared_old2.py
+|   |   |       pronostico_shared_old3.py
+|   |   |       pronostico_shared_P3P4.py
+|   |   |       pronostico_shared_sexo.py
+|   |   |       pronostico_shared_shap.py
+|   |   |       pronostico_shared_shap2.py
+|   |   |       pronostico_shared_si va.py
+|   |   |       pronostico_shared_VA CON RAMA IGUAL.py
+|   |   |       pronostico_shared_valoes altos.py
+|   |   |       pronostico_shared____!.py
+|   |   |       
+|   |   \---__pycache__
+|   |           loaders.cpython-311.pyc
+|   |           pronostico_shared.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           config_app.cpython-311.pyc
+|           _path_setup.cpython-311.pyc
+|           
++---data
+|   |   arbol_data.txt
+|   |   arbol_FASE6.txt
+|   |   muestra_5_alumnos.xlsx
+|   |   muestra_alumnos_v2.xlsx
+|   |   
+|   +---00_raw
+|   |       datos_proyecto_sin_preinscrip.ORIGINALxlsx
+|   |       datos_proyecto_sin_preinscrip.xlsx
+|   |       preinscripcion_si.xlsx
+|   |       
+|   +---01_interim
+|   |       becas.parquet
+|   |       demograficos.parquet
+|   |       domicilios.parquet
+|   |       expedientes.parquet
+|   |       notas.parquet
+|   |       preinscripcion.parquet
+|   |       recibos.parquet
+|   |       titulaciones.parquet
+|   |       trabajo.parquet
+|   |       
+|   +---02_processed
+|   |       df_alumno.csv
+|   |       df_alumno.parquet
+|   |       df_alumno_base.parquet
+|   |       
+|   +---03_features
+|   |   |   df_alumno_limpio.parquet
+|   |   |   df_eda_con_target.parquet
+|   |   |   df_expediente_base.parquet
+|   |   |   df_expediente_features.csv
+|   |   |   df_expediente_features.parquet
+|   |   |   df_exp_automl_target.parquet
+|   |   |   df_exp_target_eda.parquet
+|   |   |   f4_m06_correlaciones_tabla.parquet
+|   |   |   f4_m07_features_seleccionadas.csv
+|   |   |   f4_m07_features_seleccionadas.parquet
+|   |   |   f4_m07_listas_features.json
+|   |   |   resultados_bivariante_categoricas.csv
+|   |   |   resultados_bivariante_numericas.csv
+|   |   |   
+|   |   \---validacion
+|   |           comparativa_baselines_D.png
+|   |           estabilidad_seeds.png
+|   |           feature_importance_casoD.png
+|   |           feature_importance_casoD_strict.png
+|   |           validacion_baselines_D.xlsx
+|   |           validacion_estabilidad.xlsx
+|   |           
+|   +---04_eda
+|   |       df_eda_final.csv
+|   |       df_eda_final.json
+|   |       df_eda_final.parquet
+|   |       df_eda_final.xlsx
+|   |       df_exp_eda_D_strict.csv
+|   |       df_exp_eda_D_strict.json
+|   |       df_exp_eda_D_strict.parquet
+|   |       df_exp_eda_D_strict.xlsx
+|   |       f4_m05_correlaciones_tabla.parquet
+|   |       f4_m06_correlaciones_tabla.parquet
+|   |       
+|   +---05_modelado
+|   |   |   meta_preparacion.json
+|   |   |   pipeline_preprocesamiento.pkl
+|   |   |   X_test.parquet
+|   |   |   X_test_prep.parquet
+|   |   |   X_test_prep_ids.parquet
+|   |   |   X_train.parquet
+|   |   |   X_train_prep.parquet
+|   |   |   y_test.parquet
+|   |   |   y_train.parquet
+|   |   |   
+|   |   +---models
+|   |   |       AdaBoost__balanced.pkl
+|   |   |       AdaBoost__none.pkl
+|   |   |       AdaBoost__smote.pkl
+|   |   |       arbol_models.txt
+|   |   |       Bagging__balanced.pkl
+|   |   |       Bagging__none.pkl
+|   |   |       Bagging__smote.pkl
+|   |   |       BernoulliNB__balanced.pkl
+|   |   |       BernoulliNB__none.pkl
+|   |   |       BernoulliNB__smote.pkl
+|   |   |       BernoulliNB_{estrategia}.pkl
+|   |   |       CatBoost__balanced.pkl
+|   |   |       CatBoost__none.pkl
+|   |   |       CatBoost__smote.pkl
+|   |   |       DecisionTree__balanced.pkl
+|   |   |       DecisionTree__none.pkl
+|   |   |       DecisionTree__smote.pkl
+|   |   |       EBM__balanced.pkl
+|   |   |       EBM__none.pkl
+|   |   |       EBM__smote.pkl
+|   |   |       ExtraTrees__balanced.pkl
+|   |   |       ExtraTrees__none.pkl
+|   |   |       ExtraTrees__smote.pkl
+|   |   |       GaussianNB__balanced.pkl
+|   |   |       GaussianNB__none.pkl
+|   |   |       GaussianNB__smote.pkl
+|   |   |       GaussianNB_{estrategia}.pkl
+|   |   |       GradientBoosting__balanced.pkl
+|   |   |       GradientBoosting__none.pkl
+|   |   |       GradientBoosting__smote.pkl
+|   |   |       KNN__balanced.pkl
+|   |   |       KNN__none.pkl
+|   |   |       KNN__smote.pkl
+|   |   |       KNN_{estrategia}.pkl
+|   |   |       LDA__balanced.pkl
+|   |   |       LDA__none.pkl
+|   |   |       LDA__smote.pkl
+|   |   |       LightGBM__balanced.pkl
+|   |   |       LightGBM__none.pkl
+|   |   |       LightGBM__smote.pkl
+|   |   |       LogReg__balanced.pkl
+|   |   |       LogReg__none.pkl
+|   |   |       LogReg__smote.pkl
+|   |   |       MLP__balanced.pkl
+|   |   |       MLP__none.pkl
+|   |   |       MLP__smote.pkl
+|   |   |       Perceptron__balanced.pkl
+|   |   |       Perceptron__none.pkl
+|   |   |       Perceptron__smote.pkl
+|   |   |       RandomForest__balanced.pkl
+|   |   |       RandomForest__none.pkl
+|   |   |       RandomForest__smote.pkl
+|   |   |       Ridge__balanced.pkl
+|   |   |       Ridge__none.pkl
+|   |   |       Ridge__smote.pkl
+|   |   |       SGD__balanced.pkl
+|   |   |       SGD__none.pkl
+|   |   |       SGD__smote.pkl
+|   |   |       Stacking__balanced.pkl
+|   |   |       Stacking__none.pkl
+|   |   |       Stacking__smote.pkl
+|   |   |       SVM_lineal__balanced.pkl
+|   |   |       SVM_lineal__none.pkl
+|   |   |       SVM_lineal__smote.pkl
+|   |   |       SVM_RBF__balanced.pkl
+|   |   |       SVM_RBF__none.pkl
+|   |   |       SVM_RBF__smote.pkl
+|   |   |       Voting__balanced.pkl
+|   |   |       Voting__none.pkl
+|   |   |       Voting__smote.pkl
+|   |   |       XGBoost__balanced.pkl
+|   |   |       XGBoost__none.pkl
+|   |   |       XGBoost__smote.pkl
+|   |   |       
+|   |   \---results
+|   |           emissions.csv
+|   |           emissions.csv.bak
+|   |           emissions.csv_0.bak
+|   |           emissions.csv_1.bak
+|   |           emissions.csv_2.bak
+|   |           resultados_maestro.json
+|   |           resultados_maestro.parquet
+|   |           resultados_maestro.xlsx
+|   |           results_arboles.json
+|   |           results_arboles.parquet
+|   |           results_arboles.xlsx
+|   |           results_boosting.json
+|   |           results_boosting.parquet
+|   |           results_boosting.xlsx
+|   |           results_boosting_prueba.json
+|   |           results_boosting_prueba.parquet
+|   |           results_boosting_prueba.xlsx
+|   |           results_ensambles.json
+|   |           results_ensambles.parquet
+|   |           results_ensambles.xlsx
+|   |           results_lineales.json
+|   |           results_lineales.parquet
+|   |           results_lineales.xlsx
+|   |           results_lineales_basico.json
+|   |           results_lineales_basico.parquet
+|   |           results_lineales_basico.xlsx
+|   |           results_lineales_completo.parquet
+|   |           results_lineales_completo.xlsx
+|   |           results_lineales_ext.json
+|   |           results_lineales_ext.parquet
+|   |           results_lineales_ext.xlsx
+|   |           results_mlp_ebm.json
+|   |           results_mlp_ebm.parquet
+|   |           results_mlp_ebm.xlsx
+|   |           results_otros.json
+|   |           results_otros.parquet
+|   |           results_otros.xlsx
+|   |           top3_fase6.json
+|   |           
+|   +---06_evaluacion
+|   |       meta_test.parquet
+|   |       
+|   +---07_aplicacion
+|   \---automl
+|       |   auditoria_features_D_strict.xlsx
+|       |   automl_comparativa_final.json
+|       |   automl_comparativa_final.xlsx
+|       |   automl_top_modelos.parquet
+|       |   comparativa_baselines_D.png
+|       |   dataset_final_tfm.parquet
+|       |   df_exp_automl_C.csv
+|       |   df_exp_automl_C.json
+|       |   df_exp_automl_C.parquet
+|       |   df_exp_automl_C.xlsx
+|       |   df_exp_automl_D.csv
+|       |   df_exp_automl_D.json
+|       |   df_exp_automl_D.parquet
+|       |   df_exp_automl_D.xlsx
+|       |   df_exp_automl_D_strict.csv
+|       |   df_exp_automl_D_strict.json
+|       |   df_exp_automl_D_strict.parquet
+|       |   df_exp_automl_D_strict.xlsx
+|       |   diccionario_columnas.json
+|       |   estabilidad_seeds.png
+|       |   feature_importance_casoD.png
+|       |   feature_importance_casoD_strict.png
+|       |   grafico_de_la_verdad.png
+|       |   mejor_modelo_pycaret.pkl
+|       |   quick_baseline_casoD.parquet
+|       |   quick_baseline_casoD.xlsx
+|       |   ranking_final_fase4.parquet
+|       |   results_autogluon.parquet
+|       |   results_baselines.parquet
+|       |   results_h2o.parquet
+|       |   results_lazypredict.parquet
+|       |   results_pycaret.parquet
+|       |   
+|       +---autogluon_models
+|       |   |   learner.pkl
+|       |   |   metadata.json
+|       |   |   predictor.pkl
+|       |   |   version.txt
+|       |   |   
+|       |   +---models
+|       |   |   |   trainer.pkl
+|       |   |   |   
+|       |   |   +---CatBoost_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---CatBoost_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesEntr_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesEntr_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesGini_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesGini_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBMXT_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBMXT_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBM_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBM_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---NeuralNetFastAI_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---NeuralNetFastAI_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestEntr_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestEntr_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestGini_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestGini_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---WeightedEnsemble_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---WeightedEnsemble_L3
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   \---XGBoost_BAG_L1
+|       |   |       |   model.pkl
+|       |   |       |   
+|       |   |       +---S1F1
+|       |   |       |       model.pkl
+|       |   |       |       xgb.ubj
+|       |   |       |       
+|       |   |       +---S1F2
+|       |   |       |       model.pkl
+|       |   |       |       xgb.ubj
+|       |   |       |       
+|       |   |       +---S1F3
+|       |   |       |       model.pkl
+|       |   |       |       xgb.ubj
+|       |   |       |       
+|       |   |       +---S1F4
+|       |   |       |       model.pkl
+|       |   |       |       xgb.ubj
+|       |   |       |       
+|       |   |       +---S1F5
+|       |   |       |       model.pkl
+|       |   |       |       xgb.ubj
+|       |   |       |       
+|       |   |       \---utils
+|       |   |               model_template.pkl
+|       |   |               oof.pkl
+|       |   |               
+|       |   \---utils
+|       |       \---data
+|       |               X.pkl
+|       |               y.pkl
+|       |               
+|       +---autogluon_models_D
+|       |   |   learner.pkl
+|       |   |   metadata.json
+|       |   |   predictor.pkl
+|       |   |   version.txt
+|       |   |   
+|       |   +---models
+|       |   |   |   trainer.pkl
+|       |   |   |   
+|       |   |   +---CatBoost_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---CatBoost_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesEntr_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesGini_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBMXT_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBMXT_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBM_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBM_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---NeuralNetFastAI_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestEntr_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestEntr_BAG_L2
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           
+|       |   |   +---RandomForestGini_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestGini_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---WeightedEnsemble_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   \---WeightedEnsemble_L3
+|       |   |       |   model.pkl
+|       |   |       |   
+|       |   |       \---utils
+|       |   |               model_template.pkl
+|       |   |               oof.pkl
+|       |   |               
+|       |   \---utils
+|       |       \---data
+|       |               X.pkl
+|       |               y.pkl
+|       |               
+|       +---autogluon_models_D_strict
+|       |   |   learner.pkl
+|       |   |   metadata.json
+|       |   |   predictor.pkl
+|       |   |   version.txt
+|       |   |   
+|       |   +---models
+|       |   |   |   trainer.pkl
+|       |   |   |   
+|       |   |   +---CatBoost_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---CatBoost_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesEntr_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---ExtraTreesGini_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBMXT_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBMXT_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBM_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---LightGBM_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---NeuralNetFastAI_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F2
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F3
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F4
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F5
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F6
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F7
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   +---S1F8
+|       |   |   |   |       model-internals.pkl
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestEntr_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestEntr_BAG_L2
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           
+|       |   |   +---RandomForestGini_BAG_L1
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---RandomForestGini_BAG_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   +---S1F1
+|       |   |   |   |       model.pkl
+|       |   |   |   |       
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   +---WeightedEnsemble_L2
+|       |   |   |   |   model.pkl
+|       |   |   |   |   
+|       |   |   |   \---utils
+|       |   |   |           model_template.pkl
+|       |   |   |           oof.pkl
+|       |   |   |           
+|       |   |   \---WeightedEnsemble_L3
+|       |   |       |   model.pkl
+|       |   |       |   
+|       |   |       \---utils
+|       |   |               model_template.pkl
+|       |   |               oof.pkl
+|       |   |               
+|       |   \---utils
+|       |       \---data
+|       |               X.pkl
+|       |               y.pkl
+|       |               
+|       \---old
+|               df_exp_automl_A.csv
+|               df_exp_automl_A.json
+|               df_exp_automl_A.parquet
+|               df_exp_automl_A.xlsx
+|               df_exp_automl_B.csv
+|               df_exp_automl_B.json
+|               df_exp_automl_B.parquet
+|               df_exp_automl_B.xlsx
+|               df_exp_automl_target_final.parquet
+|               
++---docs
+|   |   trazabilidad_columnas.docx
+|   |   
+|   +---assets
+|   |   |   logo_uji.jpg
+|   |   |   logo_uoc.jpg
+|   |   |   logo_uoc.png
+|   |   |   logo_uoc1.jpg
+|   |   |   trazabilidad_fase1.jpg
+|   |   |   trazabilidad_fase1.png
+|   |   |   
+|   |   \---img
+|   |           validacion.png
+|   |           
+|   +---entregables
+|   |   +---fase1
+|   |   |       .gitkeep
+|   |   |       
+|   |   +---fase2
+|   |   |       .gitkeep
+|   |   |       
+|   |   +---fase3
+|   |   |       .gitkeep
+|   |   |       
+|   |   +---fase4
+|   |   |       .gitkeep
+|   |   |       
+|   |   +---fase5
+|   |   |       .gitkeep
+|   |   |       
+|   |   +---fase6
+|   |   |       .gitkeep
+|   |   |       
+|   |   \---fase7
+|   +---html
+|   |   |   index.html
+|   |   |   style.css
+|   |   |   style_old.css
+|   |   |   
+|   |   +---assets
+|   |   +---fase0
+|   |   |   \---configuracion
+|   |   +---fase1
+|   |   |   |   fase1_index.html
+|   |   |   |   m00_ejecucion.html
+|   |   |   |   m01_reportes_raw.html
+|   |   |   |   m02_limpieza.html
+|   |   |   |   m03_reportes_clean.html
+|   |   |   |   m04_dataset_final.html
+|   |   |   |   m05_dashboard.html
+|   |   |   |   m05_grafo_d3.html
+|   |   |   |   m06_grafo.html
+|   |   |   |   m06_grafo_pyvis.html
+|   |   |   |   trazabilidad_fase1.jpg
+|   |   |   |   trazabilidad_fase1.png
+|   |   |   |   
+|   |   |   +---reportes_clean
+|   |   |   |       reporte_becas.html
+|   |   |   |       reporte_demograficos.html
+|   |   |   |       reporte_domicilios.html
+|   |   |   |       reporte_expedientes.html
+|   |   |   |       reporte_notas.html
+|   |   |   |       reporte_preinscripcion.html
+|   |   |   |       reporte_recibos.html
+|   |   |   |       reporte_titulaciones.html
+|   |   |   |       reporte_trabajo.html
+|   |   |   |       
+|   |   |   +---reportes_raw
+|   |   |   |       reporte_becas.html
+|   |   |   |       reporte_demograficos.html
+|   |   |   |       reporte_domicilios.html
+|   |   |   |       reporte_expedientes.html
+|   |   |   |       reporte_notas.html
+|   |   |   |       reporte_preinscripcion.html
+|   |   |   |       reporte_recibos.html
+|   |   |   |       reporte_titulaciones.html
+|   |   |   |       reporte_trabajo.html
+|   |   |   |       
+|   |   |   \---test_reportes
+|   |   +---fase2
+|   |   |   |   fase2_index.html
+|   |   |   |   m00_ejecucion.html
+|   |   |   |   m01_inspeccion.html
+|   |   |   |   m02_calidad.html
+|   |   |   |   m03_nulos.html
+|   |   |   |   m04_univariante_num.html
+|   |   |   |   m05_univariante_cat.html
+|   |   |   |   m06_evolucion.html
+|   |   |   |   m06_temporal.html
+|   |   |   |   m07_conclusiones.html
+|   |   |   |   muestra_datos_m05.xlsx
+|   |   |   |   
+|   |   |   \---graficos
+|   |   |           m01_cardinalidad.html
+|   |   |           m01_completitud.html
+|   |   |           m01_dist_cardinalidad.html
+|   |   |           m01_lollipop_cardinalidad.html
+|   |   |           m01_memoria.html
+|   |   |           m01_nulos.html
+|   |   |           m01_tipos_datos.html
+|   |   |           m01_unicos.html
+|   |   |           m02_anomalias.html
+|   |   |           m02_anomalias_barras.html
+|   |   |           m02_anomalias_tabla.html
+|   |   |           m02_cursos.html
+|   |   |           m02_curso_sexo.html
+|   |   |           m02_filas_alumno.html
+|   |   |           m02_heatmap_alumno_curso.html
+|   |   |           m02_rama.html
+|   |   |           m02_sexo.html
+|   |   |           m02_titulaciones.html
+|   |   |           m03_barras_nulos.html
+|   |   |           m03_correlacion_nulos.html
+|   |   |           m03_corr_nulos.html
+|   |   |           m03_donut_clasificacion.html
+|   |   |           m03_matriz_nulos.html
+|   |   |           m03_matriz_nulos.png
+|   |   |           m03_nulos_barras.html
+|   |   |           m03_nulos_filas.html
+|   |   |           m03_nulos_tipo.html
+|   |   |           m03_patron_nulos.html
+|   |   |           m04_boxplots.html
+|   |   |           m04_boxplots_full.html
+|   |   |           m04_clasificacion.html
+|   |   |           m04_forma.html
+|   |   |           m04_histogramas.html
+|   |   |           m04_hist_cred_matriculados.html
+|   |   |           m04_hist_cred_superados.html
+|   |   |           m04_hist_media_curso.html
+|   |   |           m04_hist_media_titulacion_alumno.html
+|   |   |           m04_hist_media_titulacion_curso.html
+|   |   |           m04_hist_nota.html
+|   |   |           m04_hist_nota_acceso.html
+|   |   |           m04_hist_nota_selectividad.html
+|   |   |           m04_naturaleza.html
+|   |   |           m04_outliers_resumen.html
+|   |   |           m04_qqplot.html
+|   |   |           m04_stripplot.html
+|   |   |           m04_violinplots.html
+|   |   |           m05_barras.html
+|   |   |           m05_barras_cupo.html
+|   |   |           m05_barras_nombre_trabajo.html
+|   |   |           m05_barras_via_acceso.html
+|   |   |           m05_cardinalidad.html
+|   |   |           m05_cupo.html
+|   |   |           m05_egresado.html
+|   |   |           m05_forma_de_pago.html
+|   |   |           m05_id_pais.html
+|   |   |           m05_nombre.html
+|   |   |           m05_nombre_beca.html
+|   |   |           m05_nombre_trabajo.html
+|   |   |           m05_nuevo.html
+|   |   |           m05_paises.html
+|   |   |           m05_paises_barras.html
+|   |   |           m05_paises_pie.html
+|   |   |           m05_pais_domicilio.html
+|   |   |           m05_pais_nombre.html
+|   |   |           m05_pie.html
+|   |   |           m05_pie_egresado.html
+|   |   |           m05_pie_forma_de_pago.html
+|   |   |           m05_pie_nuevo.html
+|   |   |           m05_pie_rama.html
+|   |   |           m05_pie_seguro.html
+|   |   |           m05_pie_universidad_origen.html
+|   |   |           m05_poblacion.html
+|   |   |           m05_poblaciones.html
+|   |   |           m05_provincia.html
+|   |   |           m05_provincias.html
+|   |   |           m05_provincias_barras.html
+|   |   |           m05_provincias_otras.html
+|   |   |           m05_provincias_pie.html
+|   |   |           m05_rama.html
+|   |   |           m05_seguro.html
+|   |   |           m05_sunburst_pais.html
+|   |   |           m05_tiene_beca.html
+|   |   |           m05_titulacion.html
+|   |   |           m05_topn_id_pais.html
+|   |   |           m05_topn_nombre.html
+|   |   |           m05_topn_nombre_beca.html
+|   |   |           m05_topn_pais_domicilio.html
+|   |   |           m05_topn_titulacion.html
+|   |   |           m05_topn_via_acceso_exp.html
+|   |   |           m05_treemap_poblacion.html
+|   |   |           m05_treemap_provincia.html
+|   |   |           m05_via_acceso.html
+|   |   |           m05_vive_fuera.html
+|   |   |           m06_becas.html
+|   |   |           m06_creditos.html
+|   |   |           m06_egresados.html
+|   |   |           m06_evolucion_matriculas.html
+|   |   |           m06_evolucion_notas.html
+|   |   |           m06_heatmap_rama.html
+|   |   |           m06_nuevos_continuos.html
+|   |   |           m06_pct_nuevos.html
+|   |   |           m06_rama_evolucion.html
+|   |   |           m06_spaghetti.html
+|   |   |           m06_variacion_interanual.html
+|   |   |           m07_flujo_proyecto.html
+|   |   |           
+|   |   +---fase3
+|   |   |       .gitkeep
+|   |   |       fase3_index.html
+|   |   |       m00_ejecucion.html
+|   |   |       m01_validacion.html
+|   |   |       m02_agregacion.html
+|   |   |       m03_features.html
+|   |   |       m04_automl.html
+|   |   |       m04_eda.html
+|   |   |       m04_encoding.html
+|   |   |       m05_target_export.html
+|   |   |       m06_alerta_temprana.html
+|   |   |       m07_validacion.html
+|   |   |       m08_auditoria.html
+|   |   |       
+|   |   +---fase4
+|   |   |   |   .gitkeep
+|   |   |   |   fase4_index.html
+|   |   |   |   m00_ejecucion.html
+|   |   |   |   m01_inspeccion.html
+|   |   |   |   m02_target.html
+|   |   |   |   m02_target_va.html
+|   |   |   |   m03_distribuciones_num.html
+|   |   |   |   m04_distribuciones_cat.html
+|   |   |   |   m05_bivariante.html
+|   |   |   |   m06_correlaciones.html
+|   |   |   |   m07_seleccion_features.html
+|   |   |   |   m08_perfiles_riesgo.html
+|   |   |   |   m08_perfiles_riesgo_ampliacion.html
+|   |   |   |   m09_conclusiones_eda.html
+|   |   |   |   
+|   |   |   +---graficos
+|   |   |   |       m04_cardinalidad.html
+|   |   |   |       m04_dropdown_categoricas.html
+|   |   |   |       m04_mapa_universidades.html
+|   |   |   |       m04_orden_preferencia.html
+|   |   |   |       m04_pais.html
+|   |   |   |       m04_provincia.html
+|   |   |   |       m04_sit_laboral.html
+|   |   |   |       m04_titulacion.html
+|   |   |   |       m04_treemap_rama.html
+|   |   |   |       m04_via_acceso.html
+|   |   |   |       
+|   |   |   \---img
+|   |   +---fase5
+|   |   |       .gitkeep
+|   |   |       fase5_index.html
+|   |   |       m00_ejecucion.html
+|   |   |       m01_discriminativos.html
+|   |   |       m01_generativos.html
+|   |   |       m01_lineales.html
+|   |   |       m01_lineales_basico.html
+|   |   |       m01_lineales_ext.html
+|   |   |       m01_preparacion.html
+|   |   |       m02_arboles.html
+|   |   |       m03_boosting.html
+|   |   |       m03_boosting_prueba.html
+|   |   |       m04_otros.html
+|   |   |       m04_otros_prueba.html
+|   |   |       m05_mlp_ebm.html
+|   |   |       m05_mlp_ebm_prueba.html
+|   |   |       m06_ensambles.html
+|   |   |       m06_ensambles_prueba.html
+|   |   |       m07_comparacion.html
+|   |   |       
+|   |   +---fase6
+|   |   |       .gitkeep
+|   |   |       fase6_index.html
+|   |   |       index.html
+|   |   |       m00_ejecucion.html
+|   |   |       m01a_shap_global.html
+|   |   |       m01b_shap_local.html
+|   |   |       m01c_shap_cohortes.html
+|   |   |       m01d_shapash.html
+|   |   |       m01_interpretabilidad_shap.html
+|   |   |       m02a_lime.html
+|   |   |       m02b_dice.html
+|   |   |       m02_interpretabilidad_alternativa.html
+|   |   |       m03a_fairness.html
+|   |   |       m03b_errores_fpfn.html
+|   |   |       m03_fairness_errores.html
+|   |   |       m04a_stress.html
+|   |   |       m04b_calibracion.html
+|   |   |       m04c_sostenibilidad.html
+|   |   |       m04_robustez_calibracion.html
+|   |   |       m05_informe_final.html
+|   |   |       
+|   |   +---fase7
+|   |   +---fase_automl
+|   |   |       fase_automl_index.html
+|   |   |       m01_baselines.html
+|   |   |       m02_lazypredict.html
+|   |   |       m03_pycaret.html
+|   |   |       m04_h2o.html
+|   |   |       m05_autogluon.html
+|   |   |       m06_comparativa.html
+|   |   |       
+|   |   +---reportes_clean
+|   |   |       .gitkeep
+|   |   |       
+|   |   +---reportes_raw
+|   |   \---static
+|   |           style.css
+|   |           
+|   +---img
+|   |   |   modelo conceptual de abandono.png
+|   |   |   modelo_conceptual_estudiante.jpg
+|   |   |   modelo_conceptual_estudiante.png
+|   |   |   modelo_conceptual_estudiante.svg
+|   |   |   prisma_flujo_datos.jpg
+|   |   |   prisma_flujo_datos.png
+|   |   |   prisma_flujo_datos.svg
+|   |   |   proceso de rendimiento.png
+|   |   |   
+|   |   \---fase4
+|   |           f4_m05_boxplots_numericas.png
+|   |           f4_m05_kde_numericas.png
+|   |           
+|   +---notas_analiticas
+|   |       analisis_cambios_plan_titulaciones.md
+|   |       infografia_cambios_plan.html
+|   |       
+|   \---reportes
++---logs
+|       tfm_abandono.log
+|       
++---notebooks
+|   |   CELDA_1.ipynb
+|   |   muestra_10_filas.xlsx
+|   |   muestra_X_test_prep.xlsx
+|   |   requirements_fase3.txt
+|   |   
+|   +---fase0_configuracion
+|   |       00_configuracion_proyecto.ipynb
+|   |       00_ejecutar_proyecto.ipynb
+|   |       comprobaciones.ipynb
+|   |       dudas aantes fase6.ipynb
+|   |       lista de titulaciones que cambia.ipynb
+|   |       lista titulaciones.ipynb
+|   |       no inventar nada.ipynb
+|   |       orquestador_maestro.ipynb
+|   |       valores de rama.ipynb
+|   |       ver valores de dataset.ipynb
+|   |       
+|   +---fase1_transformacion
+|   |   |   f1_m00_ejecucion.ipynb
+|   |   |   f1_m00_indice.ipynb
+|   |   |   f1_m02_limpieza.ipynb
+|   |   |   f1_m03_reportes_clean.ipynb
+|   |   |   f1_m04a_union_tablas.ipynb
+|   |   |   f1_m04b_union_preinscripcion.ipynb
+|   |   |   f1_m04c_correccion_notas.ipynb
+|   |   |   f1_m04d_correccion_via_acceso.ipynb
+|   |   |   f1_m04_dataset_final.ipynb
+|   |   |   f1_m05_dashboard.ipynb
+|   |   |   f1_m05_m06_trazabilidad.ipynb
+|   |   |   f1_m06_grafo.ipynb
+|   |   |   f1_m06_grafo_pyvis.ipynb
+|   |   |   index.html.ipynb
+|   |   |   
+|   |   \---lib
+|   |       +---bindings
+|   |       |       utils.js
+|   |       |       
+|   |       +---tom-select
+|   |       |       tom-select.complete.min.js
+|   |       |       tom-select.css
+|   |       |       
+|   |       \---vis-9.1.2
+|   |               vis-network.css
+|   |               vis-network.min.js
+|   |               
+|   +---fase2_eda
+|   |       f2_m00_ejecucion.ipynb
+|   |       f2_m00_indice.ipynb
+|   |       f2_m01_inspeccion.ipynb
+|   |       f2_m02_calidad.ipynb
+|   |       f2_m03_nulos.ipynb
+|   |       f2_m04_univariante_num.ipynb
+|   |       f2_m05_univariante_cat.ipynb
+|   |       f2_m06_evolucion.ipynb
+|   |       f2_m06_temporal.ipynb
+|   |       f2_m07_conclusiones.ipynb
+|   |       
+|   +---fase3_features
+|   |       .gitkeep
+|   |       f3_m00_ejecucion.ipynb
+|   |       f3_m00_indice.ipynb
+|   |       f3_m01_validacion.ipynb
+|   |       f3_m02_agregacion.ipynb
+|   |       f3_m03_features.ipynb
+|   |       f3_m04a_automl_target.ipynb
+|   |       f3_m04b_eda_target.ipynb
+|   |       f3_m04_index.ipynb
+|   |       f3_m05_target_export.ipynb
+|   |       f3_m06_alerta_temprana.ipynb
+|   |       f3_m07_validacion.ipynb
+|   |       f3_m08_auditoria.ipynb
+|   |       install_java.bat
+|   |       plantilla_fX_m0Y.ipynb
+|   |       verificar_librerias.py
+|   |       
+|   +---fase4_eda
+|   |       f4_m00_ejecucion.ipynb
+|   |       f4_m00_indice.ipynb
+|   |       f4_m01_inspeccion.ipynb
+|   |       f4_m02_target.ipynb
+|   |       f4_m03_distribuciones_num.ipynb
+|   |       f4_m04_distribuciones_cat.ipynb
+|   |       f4_m05_bivariante.ipynb
+|   |       f4_m06_correlaciones.ipynb
+|   |       f4_m07_seleccion_features.ipynb
+|   |       f4_m08_perfiles_riesgo.ipynb
+|   |       f4_m09_conclusiones_eda.ipynb
+|   |       
+|   +---fase5_modelado
+|   |   |   .gitkeep
+|   |   |   columnas_parquet.ipynb
+|   |   |   f5_m00_ejecucion.ipynb
+|   |   |   f5_m00_indice.ipynb
+|   |   |   f5_m01_lineales.ipynb
+|   |   |   f5_m01_lineales_basico.ipynb
+|   |   |   f5_m01_lineales_ext.ipynb
+|   |   |   f5_m01_preparacion.ipynb
+|   |   |   f5_m02_arboles.ipynb
+|   |   |   f5_m03_boosting.ipynb
+|   |   |   f5_m03_boosting_prueba.ipynb
+|   |   |   f5_m04_otros.ipynb
+|   |   |   f5_m04_otros_prueba.ipynb
+|   |   |   f5_m05_mlp_ebm.ipynb
+|   |   |   f5_m05_mlp_ebm_prueba.ipynb
+|   |   |   f5_m06_ensambles.ipynb
+|   |   |   f5_m06_ensambles_prueba.ipynb
+|   |   |   f5_m07_comparacion.ipynb
+|   |   |   f5_maestro_m05_m06.ipynb
+|   |   |   f6_m05_informe_final.ipynb
+|   |   |   
+|   |   \---catboost_info
+|   |       |   catboost_training.json
+|   |       |   learn_error.tsv
+|   |       |   time_left.tsv
+|   |       |   
+|   |       +---learn
+|   |       |       events.out.tfevents
+|   |       |       
+|   |       \---tmp
+|   +---fase6_evaluacion
+|   |       f6_m00_ejecucion.ipynb
+|   |       f6_m00_indice.ipynb
+|   |       f6_m00_preparacion.ipynb
+|   |       f6_m01a_shap_global.ipynb
+|   |       f6_m01b_shap_local.ipynb
+|   |       f6_m01c_shap_cohortes.ipynb
+|   |       f6_m01d_shapash.ipynb
+|   |       f6_m01_shap_indice.ipynb
+|   |       f6_m02a_lime.ipynb
+|   |       f6_m02b_dice.ipynb
+|   |       f6_m02_interp_indice.ipynb
+|   |       f6_m03a_fairness.ipynb
+|   |       f6_m03b_errores_fpfn.ipynb
+|   |       f6_m03_fairness_indice.ipynb
+|   |       f6_m04a_stress.ipynb
+|   |       f6_m04b_calibracion.ipynb
+|   |       f6_m04c_sostenibilidad.ipynb
+|   |       f6_m04_robustez_indice.ipynb
+|   |       f6_m05_informe_final.ipynb
+|   |       notebook_fase6.txt
+|   |       
+|   +---fase7_aplicacion
+|   |       .gitkeep
+|   |       
+|   \---fase_automl
+|       |   comprobar_existe_parquet.ipynb
+|       |   comproba_parquet_2.ipynb
+|       |   fautoml_m00_ejecucion.ipynb
+|       |   fautoml_m00_indice.ipynb
+|       |   fautoml_m01_baselines.ipynb
+|       |   fautoml_m02_lazypredict.ipynb
+|       |   fautoml_m03_pycaret.ipynb
+|       |   fautoml_m04_h2o.ipynb
+|       |   fautoml_m05_autogluon.ipynb
+|       |   fautoml_m06_comparativa.ipynb
+|       |   fautoml_setup_entornos.ipynb
+|       |   install_java.bat
+|       |   logs.log
+|       |   run_automl.bat
+|       |   run_automl.sh
+|       |   
+|       \---catboost_info
+|           |   catboost_training.json
+|           |   learn_error.tsv
+|           |   time_left.tsv
+|           |   
+|           +---learn
+|           |       events.out.tfevents
+|           |       
+|           \---tmp
++---notes
+|       bitacora.md
+|       checklist.md
+|       ideas.md
+|       inventario_datos_tfm.xlsx
+|       parejas_planes_abandono.xlsx
+|       titulaciones_revision_por_desaparecer.xlsx
+|       
++---project
+|       TFM-Predccion.ipynb
+|       
++---results
+|   |   reorganizar_resultados.ipynb
+|   |   
+|   +---.ipynb_checkpoints
+|   |       reorganizar_resultados-checkpoint.ipynb
+|   |       
+|   +---exports
+|   |       .gitkeep
+|   |       
+|   +---fase5
+|   |       emissions.csv
+|   |       emissions.csv.bak
+|   |       emissions.csv_0.bak
+|   |       emissions.csv_1.bak
+|   |       emissions.csv_2.bak
+|   |       resultados_maestro.json
+|   |       resultados_maestro.parquet
+|   |       resultados_maestro.xlsx
+|   |       results_arboles.json
+|   |       results_arboles.parquet
+|   |       results_arboles.xlsx
+|   |       results_boosting.json
+|   |       results_boosting.parquet
+|   |       results_boosting.xlsx
+|   |       results_boosting_prueba.json
+|   |       results_boosting_prueba.parquet
+|   |       results_boosting_prueba.xlsx
+|   |       results_ensambles.json
+|   |       results_ensambles.parquet
+|   |       results_ensambles.xlsx
+|   |       results_lineales.json
+|   |       results_lineales.parquet
+|   |       results_lineales.xlsx
+|   |       results_lineales_basico.json
+|   |       results_lineales_basico.parquet
+|   |       results_lineales_basico.xlsx
+|   |       results_lineales_completo.parquet
+|   |       results_lineales_completo.xlsx
+|   |       results_lineales_ext.json
+|   |       results_lineales_ext.parquet
+|   |       results_lineales_ext.xlsx
+|   |       results_mlp_ebm.json
+|   |       results_mlp_ebm.parquet
+|   |       results_mlp_ebm.xlsx
+|   |       results_otros.json
+|   |       results_otros.parquet
+|   |       results_otros.xlsx
+|   |       top3_fase6.json
+|   |       
+|   +---fase6
+|   |       calibracion_distribucion.png
+|   |       calibracion_metricas.parquet
+|   |       calibracion_reliability.png
+|   |       dice_contrafactuales.parquet
+|   |       dice_FP__Falso_positivo.png
+|   |       dice_TP__Abandono_real.png
+|   |       dice_Zona_de_riesgo.png
+|   |       ebm_importancia_global.parquet
+|   |       errores_distribucion.png
+|   |       errores_fpfn.parquet
+|   |       errores_matriz_confusion.png
+|   |       errores_perfil_features.png
+|   |       fairness_metricas.parquet
+|   |       fairness_rama.png
+|   |       fairness_sexo.png
+|   |       fairness_tuvo_beca.png
+|   |       fairness_via_acceso.png
+|   |       informe_burbuja_shap.html
+|   |       informe_burbuja_shap.png
+|   |       informe_curva_robustez.png
+|   |       informe_embudo.png
+|   |       informe_mapa_riesgo.png
+|   |       informe_sankey.html
+|   |       informe_semaforo_fairness.png
+|   |       lime_abandono_real.png
+|   |       lime_explicaciones.parquet
+|   |       lime_no_abandono.png
+|   |       lime_zona_riesgo.png
+|   |       perfiles_locales.parquet
+|   |       result_FASE6.txt
+|   |       shapash_dashboard.html
+|   |       shap_bar_comparativo.png
+|   |       shap_beeswarm_catboost.png
+|   |       shap_cohortes_rama.parquet
+|   |       shap_cohortes_rama_top10.png
+|   |       shap_cohortes_titulacion.parquet
+|   |       shap_cohortes_titulacion_top8.png
+|   |       shap_global_catboost.pkl
+|   |       shap_global_rf.pkl
+|   |       shap_heatmap_catboost.png
+|   |       shap_importancia_comparativa.parquet
+|   |       shap_local_decision_comparativo.png
+|   |       shap_local_force_abandono_real.png
+|   |       shap_local_force_no_abandono.png
+|   |       shap_local_force_zona_riesgo.png
+|   |       shap_local_waterfall_abandono_real.png
+|   |       shap_local_waterfall_no_abandono.png
+|   |       shap_local_waterfall_zona_riesgo.png
+|   |       sostenibilidad_comparativa.png
+|   |       sostenibilidad_metricas.parquet
+|   |       stress_missing.png
+|   |       stress_outliers.png
+|   |       stress_resultados.parquet
+|   |       stress_ruido.png
+|   |       
+|   +---metricas
+|   |       .gitkeep
+|   |       f1_m01_reportes_raw.json
+|   |       f1_m02_limpieza.json
+|   |       f1_m03_reportes_clean.json
+|   |       fase1_limpieza.json
+|   |       fase1_reportes_clean.json
+|   |       fase1_reportes_raw.json
+|   |       
+|   \---tablas
+|           .gitkeep
+|           
++---src
+|   |   config.py
+|   |   config_datos.py
+|   |   config_entorno.py
+|   |   config_modelado.py
+|   |   config_proyecto.py
+|   |   config_utils.py
+|   |   constantes.py
+|   |   dependencias.py
+|   |   display.py
+|   |   index_generator.py
+|   |   log_ejecucion.py
+|   |   metricas.py
+|   |   schemas.py
+|   |   __init__.py
+|   |   
+|   +---html
+|   |   |   components.py
+|   |   |   navegacion.py
+|   |   |   navegacion_old.py
+|   |   |   render.py
+|   |   |   __init__.py
+|   |   |   
+|   |   +---templates
+|   |   |       base.html
+|   |   |       base_old.html
+|   |   |       reporte.html
+|   |   |       
+|   |   \---__pycache__
+|   |           components.cpython-311.pyc
+|   |           navegacion.cpython-311.pyc
+|   |           render.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   +---utils
+|   |   |   files.py
+|   |   |   formatters.py
+|   |   |   graficos.py
+|   |   |   log.py
+|   |   |   orquestador.py
+|   |   |   progress.py
+|   |   |   text.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           files.cpython-311.pyc
+|   |           formatters.cpython-311.pyc
+|   |           graficos.cpython-311.pyc
+|   |           log.cpython-311.pyc
+|   |           orquestador.cpython-311.pyc
+|   |           progress.cpython-311.pyc
+|   |           text.cpython-311.pyc
+|   |           __init__.cpython-311.pyc
+|   |           
+|   \---__pycache__
+|           config.cpython-311.pyc
+|           config_datos.cpython-311.pyc
+|           config_entorno.cpython-311.pyc
+|           config_modelado.cpython-311.pyc
+|           config_proyecto.cpython-311.pyc
+|           config_utils.cpython-311.pyc
+|           constantes.cpython-311.pyc
+|           display.cpython-311.pyc
+|           index_generator.cpython-311.pyc
+|           __init__.cpython-311.pyc
+|           
++---tests
+|       __init__.py
+|       
++---tribunal
+|       lanzar_app_mac.sh
+|       lanzar_app_windows.bat
+|       
+\---txt
+        kernels_errores.txt
+        kernels_inventario.txt
+        kernels_inventario2.txt
+        libs_automl.txt
+        libs_tfm_abandono.txt
+        lista_notebooks.txt
+        porque_automl.txt
+        

@@ -197,7 +197,6 @@ def _tarjetas_navegacion():
     </h3>
     """, unsafe_allow_html=True)
 
-    # Creamos una fila de 5 columnas, una por pestaña
     columnas = st.columns(len(PESTANAS))
 
     for col, pestana in zip(columnas, PESTANAS):

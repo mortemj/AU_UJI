@@ -60,16 +60,16 @@ ROOT = _detectar_root()
 
 RUTAS = {
     # --- Modelo y pipeline ---
-    # El modelo entrenado en Fase 5 (CatBoost con balanceo)
-    "modelo": ROOT / "data" / "05_modelado" / "models" / "CatBoost__balanced.pkl",
+    # El modelo ganador de Fase 5 (Stacking con balanceo, AUC=0.9308, F1=0.7882)
+    "modelo": ROOT / "data" / "05_modelado" / "models" / "Stacking__balanced.pkl",
 
     # El pipeline de preprocesamiento (imputer + encoder + scaler)
     # Se aplica ANTES de pasar datos al modelo
     "pipeline": ROOT / "data" / "05_modelado" / "pipeline_preprocesamiento.pkl",
 
     # --- Resultados de Fase 6 (interpretabilidad) ---
-    # Valores SHAP globales calculados sobre el conjunto de test
-    "shap_global": ROOT / "results" / "fase6" / "shap_global_catboost.pkl",
+    # Valores SHAP globales calculados sobre el conjunto de test (estimador final del Stacking)
+    "shap_global": ROOT / "results" / "fase6" / "shap_global_stacking.pkl",
 
     # Métricas de equidad (fairness) por subgrupos
     "fairness": ROOT / "results" / "fase6" / "fairness_metricas.parquet",
@@ -191,7 +191,7 @@ PESTANAS = [
     },
     {
         "id":          "prospecto",
-        "titulo":      "Alumno prospecto",
+        "titulo":      "Futuro estudiante",
         "icono":       "🔍",
         "descripcion": "Pronóstico para alumnos antes de matricularse",
         "perfil":      "Futuros estudiantes y orientadores",
@@ -235,18 +235,33 @@ UMBRALES = {
 # En la interfaz mostramos nombres comprensibles para cualquier usuario.
 
 NOMBRES_VARIABLES = {
-    "nota_acceso":          "Nota de acceso a la universidad",
-    "nota_1er_anio":        "Nota media del primer año",
-    "n_anios_beca":         "Años con beca",
-    "creditos_superados":   "Créditos superados",
-    "creditos_matriculados":"Créditos matriculados",
-    "tasa_rendimiento":     "Tasa de rendimiento académico",
-    "situacion_laboral":    "Situación laboral",
-    "rama":                 "Rama de conocimiento",
-    "tipo_acceso":          "Vía de acceso a la universidad",
-    "sexo":                 "Sexo",
-    "edad_acceso":          "Edad al acceder a la universidad",
-    "anio_cohorte":         "Año de inicio de estudios",
+    # --- Académicas ---
+    "nota_acceso":              "Nota de acceso a la universidad",
+    "nota_selectividad":        "Nota de selectividad",
+    "nota_1er_anio":            "Nota media del primer año",
+    "cred_superados_anio_1er":  "Créditos superados en 1.º",
+    "creditos_superados":       "Créditos superados",
+    "creditos_matriculados":    "Créditos matriculados",
+    "tasa_rendimiento":         "Tasa de rendimiento académico",
+    "max_pagos":                "Máximo de pagos de matrícula",
+    "universidad_origen":       "Universidad de procedencia",
+    "orden_preferencia":        "Orden de preferencia de la titulación",
+    # --- Beca ---
+    "n_anios_beca":             "Años con beca",
+    "anios_sin_beca":           "Años sin beca",
+    "tuvo_beca":                "Tuvo beca algún año",
+    # --- Perfil personal ---
+    "situacion_laboral":        "Situación laboral",
+    "edad_acceso":              "Edad al acceder a la universidad",
+    "edad_entrada":             "Edad de entrada a la universidad",
+    "sexo":                     "Sexo",
+    # --- Trayectoria ---
+    "anios_gap":                "Años de pausa antes de matricularse",
+    "indicador_interrupcion":   "Interrumpió los estudios previamente",
+    "rama":                     "Rama de conocimiento",
+    "via_acceso":               "Vía de acceso a la universidad",
+    # --- Probabilidad (para tablas) ---
+    "prob_abandono":            "Probabilidad de abandono",
 }
 
 
@@ -269,6 +284,96 @@ def verificar_ficheros_criticos() -> list[str]:
         if not ruta.exists():
             errores.append(f"❌ No encontrado: {ruta}")
     return errores
+
+
+
+# =============================================================================
+# 9. MAPAS DE CODIFICACIÓN NUMÉRICA — FEATURES DEL MODELO
+# =============================================================================
+# El modelo fue entrenado con variables categóricas codificadas como enteros
+# (Fase 3, f3_m04a_automl_target.ipynb). Estos mapas convierten las opciones
+# legibles del formulario al código numérico que espera el pipeline.
+#
+# Fuente de verdad para la app — NO importar de src/ para evitar dependencias
+# frágiles entre app/ y los notebooks del proyecto científico.
+#
+# texto legible (lo que ve el usuario) → código numérico (lo que ve el modelo)
+
+# Situación laboral
+# Código 11 = inactivo/desempleado (categoría más frecuente, ~38% del dataset)
+SITUACION_LABORAL_MAP: dict = {
+    "No trabaja (inactivo/desempleado)": 11,
+    "Trabaja a tiempo parcial":             2,
+    "Trabaja a tiempo completo":            8,
+}
+
+# Vía de acceso a la universidad
+VIA_ACCESO_MAP: dict = {
+    "Bachillerato / PAU":           10,
+    "FP Grado Superior":             5,
+    "Titulados universitarios":      4,
+    "Mayores de 25 años":            7,
+    "Mayores de 40 años":           13,
+    "Mayores de 45 años":           12,
+    "Extranjeros (UE)":             11,
+    "Extranjeros (fuera UE)":        6,
+    "Sin datos / otro":              0,
+}
+
+# Universidad de procedencia
+UNIVERSIDAD_ORIGEN_MAP: dict = {
+    "UJI — Universitat Jaume I":   40,
+    "UPV — Politècnica de València": 27,
+    "UV — Universitat de València":  18,
+    "UA — Universitat d'Alacant":     1,
+    "UMH — Miguel Hernández":        55,
+    "Otra universidad / sin datos":   0,
+}
+
+# Sexo
+SEXO_MAP: dict = {
+    "Mujer":                   0,
+    "Hombre":                  1,
+    "Otro / no indicar":       0,  # fallback a Mujer (código 0)
+}
+
+# Provincia de residencia
+PROVINCIA_MAP: dict = {
+    "Castelló":         1,
+    "Alacant":          2,
+    "Tarragona":        3,
+    "Terol":            4,
+    "València":         5,
+    "Otra / sin datos": 0,
+}
+
+# País de nacionalidad (agrupado por región)
+PAIS_NOMBRE_MAP: dict = {
+    "España":                           1,
+    "Europa (UE)":                      2,
+    "América Latina":                   3,
+    "Asia":                             4,
+    "África / Oriente Medio":           5,
+    "Sin datos / otro":                 0,
+}
+
+# Rama de conocimiento (código numérico del dataset)
+RAMA_MAP: dict = {
+    "Ingeniería y Arquitectura":     1,
+    "Artes y Humanidades":           2,
+    "Ciencias Sociales y Jurídicas": 3,
+    "Ciencias de la Salud":          4,
+    "Ciencias Experimentales":       5,
+}
+
+# Diccionarios inversos — código → etiqueta (para mostrar en gráficos)
+SITUACION_LABORAL_INV: dict = {v: k for k, v in SITUACION_LABORAL_MAP.items()}
+VIA_ACCESO_INV:        dict = {v: k for k, v in VIA_ACCESO_MAP.items()}
+UNIVERSIDAD_ORIGEN_INV:dict = {v: k for k, v in UNIVERSIDAD_ORIGEN_MAP.items()}
+SEXO_INV:              dict = {v: k for k, v in SEXO_MAP.items()}
+PROVINCIA_INV:         dict = {v: k for k, v in PROVINCIA_MAP.items()}
+PAIS_NOMBRE_INV:       dict = {v: k for k, v in PAIS_NOMBRE_MAP.items()}
+RAMA_MAP_INV:          dict = {v: k for k, v in RAMA_MAP.items()}
 
 
 # =============================================================================

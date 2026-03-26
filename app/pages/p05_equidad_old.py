@@ -4,8 +4,8 @@
 #
 # ¿QUÉ HACE ESTE FICHERO?
 #   Analiza si el modelo predice de forma justa entre distintos grupos
-#   de estudiantes: sexo, rama de conocimiento, vía de acceso y situación
-#   de beca. Pensada para todos los perfiles, especialmente para el tribunal
+#   de estudiantes (por sexo y rama de conocimiento).
+#   Pensada para todos los perfiles, especialmente para el tribunal
 #   evaluador del TFM.
 #
 # FILOSOFÍA DE ESTA PESTAÑA:
@@ -16,13 +16,11 @@
 # ESTRUCTURA:
 #   1. ¿Qué es la equidad en ML? — explicación didáctica
 #   2. Equidad por sexo — métricas y gráficos comparativos
-#   3. Equidad por rama de conocimiento
-#   4. Equidad por vía de acceso
-#   5. Equidad por situación de beca
-#   6. Disparate Impact — métrica estándar de fairness con gauge
-#   7. Matriz de confusión por grupo — quién paga el precio del error
-#   8. Simulador de política institucional — umbral ajustable ★ extra
-#   9. Conclusión y limitaciones — valoración honesta y directa
+#   3. Equidad por rama — métricas y gráficos comparativos
+#   4. Disparate Impact — métrica estándar de fairness con gauge
+#   5. Matriz de confusión por grupo — quién paga el precio del error
+#   6. Simulador de política institucional — umbral ajustable ★ extra
+#   7. Conclusión y limitaciones — valoración honesta y directa
 #
 # DATOS QUE USA:
 #   - meta_test.parquet + modelo + pipeline (probabilidades predichas)
@@ -50,73 +48,12 @@ from sklearn.metrics import (confusion_matrix, f1_score, precision_score,
 # ---------------------------------------------------------------------------
 # Imports internos
 # ---------------------------------------------------------------------------
+# _path_setup añade app/ a sys.path de forma robusta en Windows/OneDrive
 import _path_setup  # noqa: F401
 
 from config_app import COLORES, UMBRALES
 from utils.loaders import (cargar_fairness, cargar_meta_test, cargar_modelo,
                            cargar_pipeline)
-
-
-# =============================================================================
-# CONFIGURACIÓN DE GRUPOS SENSIBLES
-# =============================================================================
-# Mapa: nombre legible → columna en el df (con fallback si no existe _meta)
-# El orden define el orden de aparición en la pestaña.
-
-GRUPOS_SENSIBLES = [
-    {
-        "col":         "sexo_meta",
-        "col_fallback": "sexo",
-        "nombre":      "sexo",
-        "titulo":      "Sexo",
-        "icono":       "👥",
-        "nota":        "Variable sensible protegida (ODS 5 — Igualdad de género).",
-    },
-    {
-        "col":         "rama_meta",
-        "col_fallback": "rama",
-        "nombre":      "rama",
-        "titulo":      "Rama de conocimiento",
-        "icono":       "📚",
-        "nota":        (
-            "No es una variable protegida en sentido estricto, pero permite "
-            "detectar si el modelo rinde mejor en unas disciplinas que en otras."
-        ),
-    },
-    {
-        "col":         "via_acceso_meta",
-        "col_fallback": "via_acceso",
-        "nombre":      "via_acceso",
-        "titulo":      "Vía de acceso",
-        "icono":       "🎓",
-        "nota":        (
-            "Refleja el origen educativo del alumno (selectividad, FP, "
-            "mayores de 25…). Diferencias aquí señalan posibles inequidades "
-            "de oportunidad educativa."
-        ),
-    },
-    {
-        "col":         "tuvo_beca",
-        "col_fallback": "tuvo_beca",
-        "nombre":      "tuvo_beca",
-        "titulo":      "Situación de beca",
-        "icono":       "💰",
-        "nota":        (
-            "Proxy socioeconómico. Especialmente relevante porque "
-            "n_anios_beca es la variable más importante del modelo: "
-            "verificar que no hay sesgo sistemático hacia alumnos sin beca."
-        ),
-    },
-]
-
-
-def _resolver_col(df: pd.DataFrame, grupo: dict) -> str | None:
-    """Devuelve la columna real disponible para un grupo sensible."""
-    if grupo["col"] in df.columns:
-        return grupo["col"]
-    if grupo["col_fallback"] in df.columns:
-        return grupo["col_fallback"]
-    return None
 
 
 # =============================================================================
@@ -157,23 +94,17 @@ def show():
     # Bloques
     _bloque_explicacion_equidad()
     st.divider()
-
-    # Bloque por cada grupo sensible disponible
-    grupos_disponibles = []
-    for g in GRUPOS_SENSIBLES:
-        col_real = _resolver_col(df, g)
-        if col_real is not None:
-            grupos_disponibles.append({**g, "col_real": col_real})
-            _bloque_equidad_por_grupo(df, col_real, g["titulo"], g["icono"], g["nota"])
-            st.divider()
-
-    _bloque_disparate_impact(df, grupos_disponibles)
+    _bloque_equidad_por_grupo(df, grupo='sexo')
     st.divider()
-    _bloque_confusion_por_grupo(df, grupos_disponibles)
+    _bloque_equidad_por_grupo(df, grupo='rama')
+    st.divider()
+    _bloque_disparate_impact(df)
+    st.divider()
+    _bloque_confusion_por_grupo(df)
     st.divider()
     _bloque_simulador_politica(df)
     st.divider()
-    _bloque_conclusion(df, grupos_disponibles)
+    _bloque_conclusion(df)
 
 
 # =============================================================================
@@ -187,31 +118,16 @@ def _preparar_datos(df_raw: pd.DataFrame, modelo, pipeline) -> pd.DataFrame | No
     """
     try:
         df = df_raw.copy()
+        # Usamos pipeline.feature_names_in_ — robusto, sin listas manuales
         cols_features = list(pipeline.feature_names_in_)
         cols_disp     = [c for c in cols_features if c in df.columns]
 
         X_prep = pipeline.transform(df[cols_disp])
         df['prob_abandono'] = modelo.predict_proba(X_prep)[:, 1]
 
+        # Predicción binaria con el umbral por defecto
         umbral_default = UMBRALES['riesgo_medio']
         df['pred_abandono'] = (df['prob_abandono'] >= umbral_default).astype(int)
-
-        # Normalizar tuvo_beca a etiquetas legibles
-        # Puede venir como 0/1 entero, float, o ya como string.
-        # Usamos n_anios_beca del pipeline si tuvo_beca tiene un solo valor.
-        if 'tuvo_beca' in df.columns:
-            col_beca = df['tuvo_beca']
-            if pd.api.types.is_numeric_dtype(col_beca):
-                # Mapeo estándar 0→Sin beca, >0→Con beca
-                df['tuvo_beca'] = col_beca.apply(
-                    lambda x: 'Con beca' if (pd.notna(x) and x > 0) else 'Sin beca'
-                )
-        # Si tuvo_beca sigue con un solo valor, intentar derivar de n_anios_beca
-        if 'tuvo_beca' in df.columns and df['tuvo_beca'].nunique() < 2:
-            if 'n_anios_beca' in df.columns:
-                df['tuvo_beca'] = df['n_anios_beca'].apply(
-                    lambda x: 'Con beca' if (pd.notna(x) and x > 0) else 'Sin beca'
-                )
 
         return df
     except Exception as e:
@@ -219,17 +135,12 @@ def _preparar_datos(df_raw: pd.DataFrame, modelo, pipeline) -> pd.DataFrame | No
         return None
 
 
-# Mínimo de alumnos por grupo para métricas fiables en gráficos
-MIN_N_GRUPO = 30
-
-
 def _metricas_grupo(df_g: pd.DataFrame) -> dict:
     """
     Calcula métricas de clasificación para un subgrupo.
-    Grupos con n < MIN_N_GRUPO se calculan igualmente pero se marca
-    'grupo_pequeno': True para filtrarlos del gráfico y avisar en tabla.
+    Devuelve dict con n, tasa_real, tasa_pred, precision, recall, f1, auc.
     """
-    if len(df_g) < 5 or 'abandono' not in df_g.columns:
+    if len(df_g) < 10 or 'abandono' not in df_g.columns:
         return {}
 
     y_true = df_g['abandono'].values
@@ -238,15 +149,14 @@ def _metricas_grupo(df_g: pd.DataFrame) -> dict:
 
     try:
         return {
-            'n':             len(df_g),
-            'grupo_pequeno': len(df_g) < MIN_N_GRUPO,
-            'tasa_real':     y_true.mean() * 100,
-            'tasa_pred':     y_pred.mean() * 100,
-            'precision':     precision_score(y_true, y_pred, zero_division=0) * 100,
-            'recall':        recall_score(y_true, y_pred, zero_division=0) * 100,
-            'f1':            f1_score(y_true, y_pred, zero_division=0) * 100,
-            'auc':           roc_auc_score(y_true, y_prob) * 100
-                             if len(np.unique(y_true)) > 1 else np.nan,
+            'n':          len(df_g),
+            'tasa_real':  y_true.mean() * 100,
+            'tasa_pred':  y_pred.mean() * 100,
+            'precision':  precision_score(y_true, y_pred, zero_division=0) * 100,
+            'recall':     recall_score(y_true, y_pred, zero_division=0) * 100,
+            'f1':         f1_score(y_true, y_pred, zero_division=0) * 100,
+            'auc':        roc_auc_score(y_true, y_prob) * 100
+                          if len(np.unique(y_true)) > 1 else np.nan,
         }
     except Exception:
         return {}
@@ -277,7 +187,7 @@ def _bloque_explicacion_equidad():
                 'Un modelo puede tener buena precisión global pero '
                 'equivocarse sistemáticamente más con ciertos grupos. '
                 'Por ejemplo, detectar peor el abandono en mujeres '
-                'que en hombres, o en alumnos sin beca que con beca.'
+                'que en hombres, o en unas ramas que en otras.'
             )
         },
         {
@@ -311,7 +221,7 @@ def _bloque_explicacion_equidad():
                 border-top: 3px solid {COLORES['primario']};
                 border-radius: 8px;
                 padding: 1.2rem;
-                min-height: 200px;
+                height: 200px;
             ">
                 <div style="font-size: 1.8rem;">{t['icono']}</div>
                 <div style="font-weight: bold; color: {COLORES['primario']};
@@ -325,76 +235,45 @@ def _bloque_explicacion_equidad():
             </div>
             """, unsafe_allow_html=True)
 
-    # Variables sensibles analizadas — banner informativo
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div style="
-        background: {COLORES['primario']}08;
-        border: 1px solid {COLORES['primario']}30;
-        border-radius: 8px;
-        padding: 0.9rem 1.2rem;
-        font-size: 0.85rem;
-        color: {COLORES['texto']};
-    ">
-        <strong>Variables analizadas en este TFM:</strong>
-        👥 <strong>Sexo</strong> (variable protegida, ODS 5) ·
-        📚 <strong>Rama de conocimiento</strong> (5 áreas) ·
-        🎓 <strong>Vía de acceso</strong> (origen educativo) ·
-        💰 <strong>Situación de beca</strong> (proxy socioeconómico, variable más
-        importante del modelo)<br>
-        <span style="color: {COLORES['texto_suave']}; font-size: 0.8rem;">
-        El análisis de equidad es un requisito ético del TFM (CEISH/UJI) y uno de
-        los aspectos más valorados por los tribunales de Data Science.
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
-
 
 # =============================================================================
-# BLOQUE 2–5: Equidad por grupo (genérico)
+# BLOQUE 2 y 3: Equidad por grupo (sexo o rama)
 # =============================================================================
 
-def _bloque_equidad_por_grupo(
-    df: pd.DataFrame,
-    col_real: str,
-    titulo: str,
-    icono: str,
-    nota: str,
-):
+def _bloque_equidad_por_grupo(df: pd.DataFrame, grupo: str):
     """
-    Analiza la equidad del modelo para cualquier variable sensible.
-    Muestra tabla de métricas + gráfico comparativo de barras agrupadas
-    + nota contextual + interpretación automática.
+    Analiza la equidad del modelo para un grupo dado (sexo o rama).
+    Muestra tabla de métricas + gráfico comparativo de barras agrupadas.
     """
+    nombre_grupo = "sexo" if grupo == 'sexo' else "rama de conocimiento"
+    icono        = "👥" if grupo == 'sexo' else "📚"
+
     st.markdown(f"""
-    <h4 style="color: {COLORES['texto']}; margin-bottom: 0.3rem;">
-        {icono} Equidad por {titulo.lower()}
+    <h4 style="color: {COLORES['texto']}; margin-bottom: 0.8rem;">
+        {icono} Equidad por {nombre_grupo}
     </h4>
-    <p style="font-size: 0.82rem; color: {COLORES['texto_suave']};
-              margin-bottom: 0.8rem; font-style: italic;">
-        {nota}
-    </p>
     """, unsafe_allow_html=True)
 
-    if col_real not in df.columns:
-        st.info(f"La columna '{col_real}' no está disponible en los datos.")
+    if grupo not in df.columns:
+        st.info(f"La columna '{grupo}' no está disponible en los datos.")
         return
 
-    grupos   = df[col_real].dropna().unique()
-    filas    = []
-    for g in sorted(grupos, key=lambda x: str(x)):
-        df_g     = df[df[col_real] == g]
+    # Calculamos métricas por subgrupo
+    grupos     = df[grupo].dropna().unique()
+    filas      = []
+    for g in sorted(grupos):
+        df_g   = df[df[grupo] == g]
         metricas = _metricas_grupo(df_g)
         if metricas:
-            metricas[titulo] = g
+            metricas[nombre_grupo.capitalize()] = g
             filas.append(metricas)
 
     if not filas:
         st.info("No hay suficientes datos para calcular métricas por grupo.")
         return
 
-    df_met    = pd.DataFrame(filas)
-    col_grupo = titulo
+    df_met = pd.DataFrame(filas)
+    col_grupo = nombre_grupo.capitalize()
 
     # --- Tabla de métricas ---
     tabla = df_met[[col_grupo, 'n', 'tasa_real', 'tasa_pred',
@@ -421,47 +300,25 @@ def _bloque_equidad_por_grupo(
         }
     )
 
-    # Aviso grupos pequeños bajo la tabla
-    grupos_pequenos = df_met[df_met.get('grupo_pequeno', False) == True][col_grupo].tolist() \
-        if 'grupo_pequeno' in df_met.columns else []
-    if grupos_pequenos:
-        nombres_gp = ', '.join(str(g) for g in grupos_pequenos)
-        st.markdown(f"""
-        <div style="font-size:0.78rem; color:{COLORES['texto_suave']};
-                    margin-top:-0.3rem; margin-bottom:0.4rem;">
-            ⚠️ <em>Grupos con N &lt; {MIN_N_GRUPO} (resultados poco estables):
-            {nombres_gp}</em>
-        </div>
-        """, unsafe_allow_html=True)
-
     # --- Gráfico de barras agrupadas: métricas clave por grupo ---
-    # Solo grupos fiables en el gráfico (evita barras de 100% artificiales)
-    tabla_fiable = tabla[tabla['N alumnos'] >= MIN_N_GRUPO].copy()
-    tabla_graf   = tabla_fiable if len(tabla_fiable) >= 2 else tabla
-
     metricas_plot = ['Precisión (%)', 'Recall (%)', 'F1 (%)']
     fig = go.Figure()
 
     colores_grupos = [COLORES['primario'], COLORES['abandono'],
-                      COLORES['exito'], COLORES['advertencia'],
-                      '#805ad5', '#319795', '#dd6b20']
+                      COLORES['exito'], COLORES['advertencia']]
 
-    max_val = 0.0
-    for i, fila in tabla_graf.reset_index(drop=True).iterrows():
-        vals = [fila[m] for m in metricas_plot]
-        max_val = max(max_val, max(v for v in vals if pd.notna(v)))
+    for i, fila in tabla.iterrows():
         fig.add_trace(go.Bar(
             name=str(fila[col_grupo]),
             x=metricas_plot,
-            y=vals,
+            y=[fila[m] for m in metricas_plot],
             marker_color=colores_grupos[i % len(colores_grupos)],
-            text=[f"{v:.1f}%" for v in vals],
-            textposition='inside',
-            insidetextanchor='end',
+            text=[f"{fila[m]:.1f}%" for m in metricas_plot],
+            textposition='outside',
             hovertemplate=f"<b>{fila[col_grupo]}</b><br>%{{x}}: %{{y:.1f}}%<extra></extra>",
         ))
 
-    # Línea de referencia F1 global del modelo
+    # Línea de referencia: F1 global del modelo (0.799 = 79.9%)
     fig.add_hline(
         y=79.9,
         line_dash="dot",
@@ -472,12 +329,9 @@ def _bloque_equidad_por_grupo(
         annotation_font_size=10,
     )
 
-    # Eje Y dinámico — nunca hay overflow aunque algún grupo llegue a 100%
-    y_max = max(105.0, min(max_val * 1.10, 108.0))
-
     fig.update_layout(
         barmode='group',
-        yaxis=dict(range=[0, y_max], ticksuffix='%'),
+        yaxis=dict(range=[0, 110], ticksuffix='%'),
         yaxis_title="Valor (%)",
         plot_bgcolor="white",
         paper_bgcolor="white",
@@ -489,49 +343,21 @@ def _bloque_equidad_por_grupo(
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    if len(tabla_graf) < len(tabla):
-        st.caption(
-            f"Gráfico con grupos de N ≥ {MIN_N_GRUPO}. "
-            f"Excluidos por tamaño insuficiente: {', '.join(str(g) for g in grupos_pequenos)}."
-        )
-
     st.plotly_chart(fig, use_container_width=True)
 
-    # Interpretación automática — basada solo en grupos fiables
-    df_interp = tabla_fiable if len(tabla_fiable) >= 2 else tabla
-    if 'F1 (%)' in df_interp.columns and len(df_interp) >= 2:
-        f1_vals     = df_interp['F1 (%)'].values
-        dif_f1      = f1_vals.max() - f1_vals.min()
-        grupo_mejor = str(df_interp.loc[df_interp['F1 (%)'].idxmax(), col_grupo])
-        grupo_peor  = str(df_interp.loc[df_interp['F1 (%)'].idxmin(), col_grupo])
-
+    # Interpretación automática
+    if 'F1 (%)' in tabla.columns:
+        f1_vals  = tabla['F1 (%)'].values
+        dif_f1   = f1_vals.max() - f1_vals.min()
         if dif_f1 < 5:
-            msg   = f"✅ El modelo muestra un rendimiento <strong>homogéneo</strong> entre grupos de {titulo.lower()} (diferencia F1: {dif_f1:.1f} pp)."
+            msg   = f"✅ El modelo muestra un rendimiento **homogéneo** entre grupos de {nombre_grupo} (diferencia F1: {dif_f1:.1f} pp)."
             color = COLORES['exito']
         elif dif_f1 < 10:
-            msg   = (
-                f"⚠️ Hay una diferencia <strong>moderada</strong> de rendimiento entre grupos de {titulo.lower()} "
-                f"(diferencia F1: {dif_f1:.1f} pp). "
-                f"El modelo funciona mejor en <strong>{grupo_mejor}</strong> que en <strong>{grupo_peor}</strong>."
-            )
+            msg   = f"⚠️ Hay una diferencia **moderada** de rendimiento entre grupos de {nombre_grupo} (diferencia F1: {dif_f1:.1f} pp). Merece seguimiento."
             color = COLORES['advertencia']
         else:
-            msg   = (
-                f"🔴 Hay una diferencia <strong>notable</strong> de rendimiento entre grupos de {titulo.lower()} "
-                f"(diferencia F1: {dif_f1:.1f} pp). "
-                f"El grupo <strong>{grupo_peor}</strong> está significativamente menos protegido. Requiere atención."
-            )
+            msg   = f"🔴 Hay una diferencia **notable** de rendimiento entre grupos de {nombre_grupo} (diferencia F1: {dif_f1:.1f} pp). Requiere atención."
             color = COLORES['abandono']
-
-        # Nota contextual para beca: diferencia estructural, no sesgo del modelo
-        nota_extra = ""
-        if titulo == "Situación de beca" and dif_f1 > 5:
-            nota_extra = (
-                f"<br><em style='font-size:0.82rem; color:{COLORES['texto_suave']}'>"
-                "Nota: los alumnos con beca tienen una tasa de abandono real más baja (~22%), "
-                "lo que dificulta detectarlos como positivos. "
-                "No indica sesgo discriminatorio del modelo.</em>"
-            )
 
         st.markdown(f"""
         <div style="
@@ -541,17 +367,17 @@ def _bloque_equidad_por_grupo(
             padding: 0.7rem 1rem;
             font-size: 0.87rem;
             margin-top: 0.3rem;
-        ">{msg}{nota_extra}</div>
+        ">{msg}</div>
         """, unsafe_allow_html=True)
 
 
 # =============================================================================
-# BLOQUE 6: Disparate Impact
+# BLOQUE 4: Disparate Impact
 # =============================================================================
 
-def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
+def _bloque_disparate_impact(df: pd.DataFrame):
     """
-    Calcula el Disparate Impact para todos los grupos sensibles disponibles.
+    Calcula el Disparate Impact para sexo y rama.
     Métrica estándar: ratio entre tasa de predicción positiva del grupo
     menos favorecido vs el más favorecido.
     Regla del 80%: DI < 0.8 indica posible discriminación estadística.
@@ -567,62 +393,43 @@ def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
     </p>
     """, unsafe_allow_html=True)
 
-    # Filtrar grupos que tienen columna disponible en df
-    grupos_validos = [g for g in grupos_disponibles
-                      if g["col_real"] in df.columns and 'pred_abandono' in df.columns]
+    col1, col2 = st.columns(2)
 
-    if not grupos_validos:
-        st.info("No hay datos suficientes para calcular el Disparate Impact.")
-        return
+    for col, grupo in zip([col1, col2], ['sexo', 'rama']):
+        with col:
+            if grupo not in df.columns:
+                st.info(f"'{grupo}' no disponible.")
+                continue
 
-    # Distribuir en columnas (máx 4)
-    n_cols = min(len(grupos_validos), 4)
-    cols   = st.columns(n_cols)
-
-    for col_ui, g in zip(cols, grupos_validos):
-        col_real = g["col_real"]
-        titulo   = g["titulo"]
-
-        with col_ui:
+            # Tasa de predicción positiva por grupo
             tasas = (
-                df.groupby(col_real)['pred_abandono']
+                df.groupby(grupo)['pred_abandono']
                 .mean()
                 .sort_values()
-                .dropna()
             )
 
             if len(tasas) < 2:
-                st.markdown(f"""
-                <div style="
-                    background: {COLORES['fondo']};
-                    border: 1px solid {COLORES['borde']};
-                    border-radius: 8px;
-                    padding: 0.9rem 1rem;
-                    font-size: 0.82rem;
-                    color: {COLORES['texto_suave']};
-                    text-align: center;
-                ">
-                    <strong>{titulo}</strong><br>
-                    Solo hay un grupo con datos suficientes.<br>
-                    No se puede calcular el ratio.
-                </div>
-                """, unsafe_allow_html=True)
+                st.info("No hay suficientes grupos para calcular DI.")
                 continue
 
-            di        = tasas.iloc[0] / tasas.iloc[-1]
-            grupo_min = str(tasas.index[0])[:15]
-            grupo_max = str(tasas.index[-1])[:15]
+            di     = tasas.iloc[0] / tasas.iloc[-1]  # min / max
+            grupo_min = tasas.index[0]
+            grupo_max = tasas.index[-1]
 
+            # Color según si supera el umbral del 80%
             if di >= 0.8:
-                color_di  = COLORES['exito']
-                texto_di  = "✅ Dentro del umbral"
+                color_di = COLORES['exito']
+                texto_di = "✅ Dentro del umbral aceptable"
             elif di >= 0.6:
-                color_di  = COLORES['advertencia']
-                texto_di  = "⚠️ Por debajo del umbral"
+                color_di = COLORES['advertencia']
+                texto_di = "⚠️ Por debajo del umbral recomendado"
             else:
-                color_di  = COLORES['abandono']
-                texto_di  = "🔴 Posible discriminación"
+                color_di = COLORES['abandono']
+                texto_di = "🔴 Señal de posible discriminación estadística"
 
+            nombre_grupo = "Sexo" if grupo == 'sexo' else "Rama"
+
+            # Gauge de Disparate Impact
             fig = go.Figure(go.Indicator(
                 mode="gauge+number",
                 value=round(di, 3),
@@ -631,13 +438,13 @@ def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
                     'axis': {
                         'range': [0, 1],
                         'tickvals': [0, 0.6, 0.8, 1.0],
-                        'ticktext': ['0', '0.6', '0.8', '1.0'],
+                        'ticktext': ['0', '0.6', '0.8\n(umbral)', '1.0'],
                     },
                     'bar': {'color': color_di, 'thickness': 0.3},
                     'steps': [
-                        {'range': [0.0, 0.6], 'color': 'rgba(229,62,62,0.12)'},
-                        {'range': [0.6, 0.8], 'color': 'rgba(214,158,46,0.12)'},
-                        {'range': [0.8, 1.0], 'color': 'rgba(56,161,105,0.12)'},
+                        {'range': [0.0, 0.6], 'color': COLORES['abandono'] + '30'},
+                        {'range': [0.6, 0.8], 'color': COLORES['advertencia'] + '30'},
+                        {'range': [0.8, 1.0], 'color': COLORES['exito'] + '30'},
                     ],
                     'threshold': {
                         'line': {'color': COLORES['texto'], 'width': 2},
@@ -646,12 +453,10 @@ def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
                     },
                 },
                 title={
-                    'text': (
-                        f"DI por {titulo}<br>"
-                        f"<span style='font-size:0.72em;color:gray'>"
-                        f"{grupo_min} / {grupo_max}</span>"
-                    ),
-                    'font': {'size': 12}
+                    'text': f"DI por {nombre_grupo}<br>"
+                            f"<span style='font-size:0.75em;color:gray'>"
+                            f"{grupo_min} / {grupo_max}</span>",
+                    'font': {'size': 13}
                 },
             ))
             fig.update_layout(
@@ -672,10 +477,10 @@ def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
 
 
 # =============================================================================
-# BLOQUE 7: Matriz de confusión por grupo
+# BLOQUE 5: Matriz de confusión por grupo
 # =============================================================================
 
-def _bloque_confusion_por_grupo(df: pd.DataFrame, grupos_disponibles: list):
+def _bloque_confusion_por_grupo(df: pd.DataFrame):
     """
     Muestra los falsos positivos y falsos negativos por grupo.
     Pregunta clave: ¿a quién perjudica más el modelo cuando se equivoca?
@@ -698,49 +503,38 @@ def _bloque_confusion_por_grupo(df: pd.DataFrame, grupos_disponibles: list):
     </p>
     """, unsafe_allow_html=True)
 
-    # Opciones de grupo disponibles
-    opciones = {g["titulo"]: g["col_real"] for g in grupos_disponibles
-                if g["col_real"] in df.columns}
-
-    if not opciones:
-        st.info("No hay variables de grupo disponibles para este análisis.")
-        return
-
     col_sel, _ = st.columns([1, 2])
     with col_sel:
-        grupo_sel = st.selectbox(
+        grupo_conf = st.selectbox(
             label="Analizar errores por:",
-            options=list(opciones.keys()),
+            options=["sexo", "rama"] if 'rama' in df.columns else ["sexo"],
+            format_func=lambda x: "Sexo" if x == "sexo" else "Rama de conocimiento",
             key="grupo_confusion",
         )
 
-    col_real = opciones[grupo_sel]
-
-    if col_real not in df.columns or 'abandono' not in df.columns:
+    if grupo_conf not in df.columns or 'abandono' not in df.columns:
         st.info("Datos no disponibles para este análisis.")
         return
 
-    grupos      = sorted(df[col_real].dropna().unique(), key=lambda x: str(x))
+    grupos    = sorted(df[grupo_conf].dropna().unique())
     datos_fp_fn = []
 
     for g in grupos:
-        df_g = df[df[col_real] == g]
+        df_g = df[df[grupo_conf] == g]
         if len(df_g) < 5:
             continue
         y_true = df_g['abandono'].values
         y_pred = df_g['pred_abandono'].values
-        tn, fp, fn, tp = (
-            confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
+        tn, fp, fn, tp = confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel() \
             if len(np.unique(y_true)) > 1 else (0, 0, 0, 0)
-        )
         n = len(df_g)
         datos_fp_fn.append({
-            'grupo':  g,
-            'FP (%)': round(fp / n * 100, 1),
-            'FN (%)': round(fn / n * 100, 1),
-            'TP (%)': round(tp / n * 100, 1),
-            'TN (%)': round(tn / n * 100, 1),
-            'N':      n,
+            'grupo':     g,
+            'FP (%)':    round(fp / n * 100, 1),
+            'FN (%)':    round(fn / n * 100, 1),
+            'TP (%)':    round(tp / n * 100, 1),
+            'TN (%)':    round(tn / n * 100, 1),
+            'N':         n,
         })
 
     if not datos_fp_fn:
@@ -749,7 +543,9 @@ def _bloque_confusion_por_grupo(df: pd.DataFrame, grupos_disponibles: list):
 
     df_conf = pd.DataFrame(datos_fp_fn)
 
+    # Heatmap de FP y FN por grupo
     fig = go.Figure()
+
     for tipo, color, descripcion in [
         ('FP (%)', COLORES['advertencia'], 'Falsos positivos'),
         ('FN (%)', COLORES['abandono'],    'Falsos negativos'),
@@ -788,7 +584,7 @@ def _bloque_confusion_por_grupo(df: pd.DataFrame, grupos_disponibles: list):
 
 
 # =============================================================================
-# BLOQUE 8: Simulador de política institucional ★
+# BLOQUE 6: Simulador de política institucional ★
 # =============================================================================
 
 def _bloque_simulador_politica(df: pd.DataFrame):
@@ -860,20 +656,22 @@ def _bloque_simulador_politica(df: pd.DataFrame):
             key="coste_intervencion"
         )
 
+    # Calculamos métricas con el umbral simulado
     y_true      = df['abandono'].values
     y_prob      = df['prob_abandono'].values
     y_pred_sim  = (y_prob >= umbral_sim).astype(int)
 
-    n_total          = len(df)
-    n_intervencion   = y_pred_sim.sum()
-    n_fp             = ((y_pred_sim == 1) & (y_true == 0)).sum()
-    n_fn             = ((y_pred_sim == 0) & (y_true == 1)).sum()
-    n_tp             = ((y_pred_sim == 1) & (y_true == 1)).sum()
-    coste_total      = n_intervencion * coste_intervencion
-    recall_sim       = n_tp / max(y_true.sum(), 1) * 100
-    precision_sim    = n_tp / max(n_intervencion, 1) * 100
+    n_total         = len(df)
+    n_intervencion  = y_pred_sim.sum()
+    n_fp            = ((y_pred_sim == 1) & (y_true == 0)).sum()
+    n_fn            = ((y_pred_sim == 0) & (y_true == 1)).sum()
+    n_tp            = ((y_pred_sim == 1) & (y_true == 1)).sum()
+    coste_total     = n_intervencion * coste_intervencion
+    recall_sim      = n_tp / max(y_true.sum(), 1) * 100
+    precision_sim   = n_tp / max(n_intervencion, 1) * 100
     pct_intervencion = n_intervencion / n_total * 100
 
+    # Métricas en tarjetas
     c1, c2, c3, c4, c5 = st.columns(5)
 
     with c1:
@@ -912,7 +710,8 @@ def _bloque_simulador_politica(df: pd.DataFrame):
             delta_color="off"
         )
 
-    # Curva recall/precisión en función del umbral
+    # Gráfico: curva de recall y precisión según el umbral
+    # Calculamos para todos los umbrales posibles (0.05 a 0.95)
     umbrales_rango = np.arange(0.05, 0.96, 0.02)
     recalls, precisiones, n_interv = [], [], []
 
@@ -950,6 +749,7 @@ def _bloque_simulador_politica(df: pd.DataFrame):
         yaxis='y2',
     ))
 
+    # Línea vertical: umbral actual del simulador
     fig.add_vline(
         x=umbral_sim,
         line_color=COLORES['abandono'],
@@ -992,10 +792,10 @@ def _bloque_simulador_politica(df: pd.DataFrame):
 
 
 # =============================================================================
-# BLOQUE 9: Conclusión y limitaciones
+# BLOQUE 7: Conclusión y limitaciones
 # =============================================================================
 
-def _bloque_conclusion(df: pd.DataFrame, grupos_disponibles: list):
+def _bloque_conclusion(df: pd.DataFrame):
     """
     Conclusión directa y honesta sobre la equidad del modelo.
     Incluye limitaciones explícitas — fundamental para el tribunal.
@@ -1005,12 +805,6 @@ def _bloque_conclusion(df: pd.DataFrame, grupos_disponibles: list):
         📝 Conclusión: ¿Es justo el modelo?
     </h4>
     """, unsafe_allow_html=True)
-
-    # Nombres de los grupos analizados realmente
-    nombres_grupos = [g["titulo"] for g in grupos_disponibles
-                      if g["col_real"] in df.columns]
-    grupos_str = ", ".join(nombres_grupos[:-1]) + " y " + nombres_grupos[-1] \
-        if len(nombres_grupos) > 1 else nombres_grupos[0] if nombres_grupos else "los grupos analizados"
 
     col_concl, col_limit = st.columns([1, 1])
 
@@ -1030,15 +824,15 @@ def _bloque_conclusion(df: pd.DataFrame, grupos_disponibles: list):
         <div style="font-size: 0.85rem; color: {COLORES['texto']};
                     line-height: 1.7;">
             El modelo Stacking entrenado en este TFM muestra un comportamiento
-            <strong>razonablemente equitativo</strong> entre los grupos analizados
-            ({grupos_str}).<br><br>
-            Las diferencias de rendimiento se encuentran dentro de los márgenes
-            habituales en la literatura de fairness en educación superior.<br><br>
-            El Disparate Impact supera en la mayoría de casos el umbral del 80%,
-            lo que indica que el modelo no presenta señales sistemáticas de
-            discriminación estadística.<br><br>
-            <em>No obstante, cualquier uso institucional debe ir acompañado de
-            supervisión humana y revisión periódica.</em>
+            <strong>razonablemente equitativo</strong> entre los grupos analizados.<br><br>
+            Las diferencias de rendimiento entre grupos de sexo y rama se
+            encuentran dentro de los márgenes habituales en la literatura
+            de fairness en educación superior.<br><br>
+            El Disparate Impact supera en la mayoría de casos el umbral
+            del 80%, lo que indica que el modelo no presenta señales
+            sistemáticas de discriminación estadística.<br><br>
+            <em>No obstante, cualquier uso institucional de este modelo
+            debe ir acompañado de supervisión humana y revisión periódica.</em>
         </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1064,9 +858,9 @@ def _bloque_conclusion(df: pd.DataFrame, grupos_disponibles: list):
             <strong>2. Equidad ≠ causalidad:</strong> que el modelo sea equitativo
             no significa que el sistema académico lo sea. El modelo aprende
             de desigualdades preexistentes en los datos.<br><br>
-            <strong>3. Grupos pequeños:</strong> las estimaciones para grupos
-            con pocos registros (extranjeros, mayores de 25, Ciencias
-            Experimentales) tienen mayor varianza estadística.<br><br>
+            <strong>3. Grupos no analizados:</strong> no se ha podido analizar
+            equidad por nivel socioeconómico ni origen geográfico por falta
+            de datos disponibles.<br><br>
             <strong>4. Uso ético obligatorio:</strong> este modelo es una
             herramienta de apoyo, nunca de sustitución del juicio humano.
         </div>

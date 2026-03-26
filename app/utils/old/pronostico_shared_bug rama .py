@@ -649,27 +649,6 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
 
     df_ctx = contexto['df_contexto']
 
-    # Recordatorio de titulación/contexto seleccionado
-    if contexto['tipo'] in ('titulacion', 'rama') and contexto.get('valor'):
-        col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
-        n_alumnos = len(df_ctx)
-        tasa = (df_ctx['abandono'].sum() / n_alumnos * 100)             if 'abandono' in df_ctx.columns and n_alumnos > 0 else None
-        tasa_txt = f" · Abandono histórico: {tasa:.1f}%" if tasa is not None else ""
-        st.markdown(f"""
-        <div style="
-            background:{COLORES['fondo']};
-            border-left:3px solid {COLORES['primario']};
-            border-radius:4px;
-            padding:0.45rem 1rem;
-            font-size:0.83rem;
-            color:{COLORES['texto']};
-            margin-bottom:0.6rem;
-        ">
-            📚 Calculando para: <strong>{contexto['valor']}</strong>
-            · {n_alumnos:,} alumnos en histórico{tasa_txt}
-        </div>
-        """, unsafe_allow_html=True)
-
     # Helper: media del contexto como valor por defecto
     def _med(col, default):
         return float(df_ctx[col].mean()) \
@@ -770,7 +749,7 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 key=f"interrupcion_{modo}",
             ))
 
-        # Columna 3: edad + sexo
+        # Columna 3: solo edad (nota_acceso se mueve al expander)
         with col3:
             perfil['edad_entrada'] = st.number_input(
                 label="Edad al acceder",
@@ -778,12 +757,6 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
                 step=1,
                 key=f"edad_{modo}",
-            )
-            perfil['sexo'] = st.selectbox(
-                label="Sexo",
-                options=_OPCIONES_SEXO,
-                index=0,
-                key=f"sexo_bas_{modo}",
             )
 
     else:
@@ -815,16 +788,14 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
                 key=f"laboral_{modo}",
             )
-            _solicita_beca = st.checkbox(
-                label="¿Piensas solicitar beca? *",
-                value=True,
-                help=(
-                    "Los becarios tienen tasas de abandono significativamente más bajas. "
-                    "Si marcas que sí, el modelo asume una media de 4 años con beca."
-                ),
-                key=f"beca_checkbox_{modo}",
+            perfil['n_anios_beca'] = st.slider(
+                label="Años con beca previstos *",
+                min_value=0, max_value=6,
+                value=int(round(_med('n_anios_beca', 2))),
+                step=1,
+                help="Factor protector muy importante. Los becarios tienen tasas de abandono significativamente más bajas.",
+                key=f"beca_{modo}",
             )
-            perfil['n_anios_beca'] = 4 if _solicita_beca else 0
 
         with col3:
             perfil['edad_entrada'] = st.number_input(
@@ -833,12 +804,6 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
                 step=1,
                 key=f"edad_{modo}",
-            )
-            perfil['sexo'] = st.selectbox(
-                label="Sexo",
-                options=_OPCIONES_SEXO,
-                index=0,
-                key=f"sexo_bas_{modo}",
             )
             # Prospecto: aviso claro de que no se incluye rendimiento
             st.markdown(f"""
@@ -891,13 +856,13 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 key=f"orden_pref_{modo}",
             )
 
-            if modo == "en_curso":
+            if modo != "en_curso":
                 perfil['anios_gap'] = st.number_input(
                     label="Años sin matricularse durante la carrera",
-                    min_value=0, max_value=10,
+                    min_value=0, max_value=30,
                     value=int(_med('anios_gap', 0)),
                     step=1,
-                    help="Cursos en que no te matriculaste estando todavía en la carrera.",
+                    help="Años en que no te matriculaste estando todavía en la carrera.",
                     key=f"gap_{modo}",
                 )
 
@@ -919,6 +884,13 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 index=0,
                 help="Universidad a través de la cual realizaste la preinscripción. La mayoría de alumnos de bachillerato seleccionan UJI.",
                 key=f"univ_origen_{modo}",
+            )
+
+            perfil['sexo'] = st.selectbox(
+                label="Sexo",
+                options=_OPCIONES_SEXO,
+                index=0,
+                key=f"sexo_{modo}",
             )
 
             if modo == "en_curso":
@@ -1484,11 +1456,27 @@ def _grafico_cascada(perfil: dict, df_ref: pd.DataFrame,
     </h4>
     """, unsafe_allow_html=True)
 
-    # Método de cálculo: solo Rápido disponible.
-    # El método Preciso (SHAP sobre CatBoost base) produce valores en escala
-    # log-odds no convertibles a % de forma fiable para el Stacking completo.
-    # Se mantiene el código _contribuciones_shap por si se resuelve en el futuro.
-    contribuciones = _contribuciones_proxy(perfil, df_ref)
+    # Selector de método — justo debajo del título
+    metodo = st.radio(
+        label="Método de cálculo:",
+        options=["⚡ Rápido (estimación instantánea)",
+                 "🔬 Preciso (SHAP real, ~2s)"],
+        index=0,
+        horizontal=True,
+        key=f"metodo_cascada_{id(perfil)}_{id(df_ref)}",
+        help=(
+            "Rápido: diferencia de medias por grupo (aproximación marginal). "
+            "Preciso: SHAP TreeExplainer, calcula la contribución exacta "
+            "de cada variable para TU perfil concreto."
+        ),
+    )
+
+    usar_shap = "Preciso" in metodo
+
+    if usar_shap:
+        contribuciones = _contribuciones_shap(perfil, df_ref, modelo, pipeline)
+    else:
+        contribuciones = _contribuciones_proxy(perfil, df_ref)
 
     if not contribuciones:
         st.info("No hay suficientes datos para calcular las contribuciones.")
@@ -1565,9 +1553,6 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
 
     with st.spinner("🔬 Calculando contribuciones SHAP..."):
         try:
-            # Traducir strings a códigos numéricos antes de construir X_usuario
-            perfil = _traducir_perfil_a_codigos(perfil)
-
             # Construimos X_usuario como en _calcular_probabilidad
             cols_features = list(pipeline.feature_names_in_)                 if hasattr(pipeline, 'feature_names_in_') else                 [c for c in df_ref.columns if c not in _COLS_META]
             fila = {}
@@ -1586,47 +1571,25 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             X_usuario = pd.DataFrame([fila])
             X_prep    = pipeline.transform(X_usuario)
 
-            # Extraemos CatBoost del Stacking para SHAP:
-            # Pipeline → named_steps['model'] (StackingClassifier)
-            #          → estimators_['CatBoost'] → Pipeline → named_steps['model']
-            # TreeExplainer es compatible con CatBoost y devuelve SHAP
-            # sobre las 19 features originales.
-            # NOTA: aproximación — SHAP del estimador base CatBoost,
-            # no del Stacking completo.
-            stacking = modelo
+            # Extraemos el modelo base compatible con TreeExplainer:
+            #   - Pipeline sklearn (step 'model') → named_steps
+            #   - StackingClassifier              → final_estimator_ (CatBoost en Fase 5)
+            #   - Cualquier otro                  → el modelo tal cual
+            modelo_base = modelo
             if hasattr(modelo, 'named_steps'):
-                stacking = modelo.named_steps.get('model', modelo)
+                modelo_base = modelo.named_steps.get('model', modelo)
+            elif hasattr(modelo, 'final_estimator_'):
+                # StackingClassifier: el meta-modelo es CatBoost → compatible con TreeExplainer
+                modelo_base = modelo.final_estimator_
 
-            # Extraer CatBoost de los estimadores base del Stacking
-            catboost_model = None
-            # estimators_ contiene los estimadores ajustados (sin nombres)
-            # estimators contiene las tuplas (nombre, estimador) originales
-            if hasattr(stacking, 'estimators'):
-                for name, est in stacking.estimators:
-                    if 'CatBoost' in name or 'catboost' in name.lower():
-                        # El estimador puede ser un Pipeline con step 'model'
-                        # Buscamos el estimador ajustado en estimators_
-                        idx = [n for n, _ in stacking.estimators].index(name)
-                        est_fitted = stacking.estimators_[idx]
-                        if hasattr(est_fitted, 'named_steps'):
-                            catboost_model = est_fitted.named_steps.get('model', est_fitted)
-                        else:
-                            catboost_model = est_fitted
-                        break
-
-            if catboost_model is None:
-                raise ValueError("No se encontró CatBoost en los estimadores del Stacking.")
-
-            explainer = shap.TreeExplainer(catboost_model)
-            shap_vals = explainer.shap_values(X_prep)
+            explainer  = shap.TreeExplainer(modelo_base)
+            shap_vals  = explainer.shap_values(X_prep)
 
             # shap_values puede ser array o lista según la versión de SHAP
             if isinstance(shap_vals, list):
                 vals = shap_vals[1][0]  # clase 1 (abandono), primera fila
-            elif shap_vals.ndim == 2:
-                vals = shap_vals[0]
             else:
-                vals = shap_vals
+                vals = shap_vals[0] if shap_vals.ndim == 1 else shap_vals[0]
 
             # Nombres de features tras el pipeline
             try:
@@ -1634,39 +1597,24 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             except AttributeError:
                 feature_names = [f"feat_{i}" for i in range(len(vals))]
 
-            # Convertir SHAP values de log-odds a escala de probabilidad
-            # Los SHAP de CatBoost están en log-odds — hay que escalarlos
-            # para que sean comparables con la probabilidad predicha (0-100%).
-            # Usamos la derivada de la sigmoid en el punto de predicción:
-            # dp/d(log-odds) = p * (1 - p)
-            import scipy.special as sp
-            log_odds_total = float(np.sum(vals)) + explainer.expected_value
-            if hasattr(explainer.expected_value, '__len__'):
-                log_odds_total = float(np.sum(vals)) + float(explainer.expected_value[1])
-            prob_pred = float(sp.expit(log_odds_total))
-            escala = prob_pred * (1 - prob_pred) * 100  # factor de escala a %
-
-            # Construimos contribuciones escaladas a %
+            # Construimos contribuciones
             contribuciones = []
             for fname, shap_val in zip(feature_names, vals):
+                # Intentamos mapear al nombre original (sin prefijo del pipeline)
                 fname_clean = fname.split('__')[-1] if '__' in fname else fname
                 nombre      = NOMBRES_VARIABLES.get(fname_clean,
                                                      fname_clean.replace('_', ' ').title())
                 contribuciones.append({
                     'variable':     nombre,
                     'valor':        fname_clean,
-                    'contribucion': float(shap_val) * escala,
+                    'contribucion': float(shap_val),
                 })
 
             contribuciones.sort(key=lambda x: abs(x['contribucion']), reverse=True)
             return contribuciones[:6]
 
         except Exception as e:
-            st.warning(
-                f"⚠️ No se pudo calcular SHAP: {e}. Usando método rápido. "
-                f"Si persiste: verificar versiones SHAP/sklearn/CatBoost y que "
-                f"stacking.estimators contenga tuplas (nombre, estimador) con 'CatBoost'."
-            )
+            st.warning(f"⚠️ No se pudo calcular SHAP: {e}. Usando método rápido.")
             return _contribuciones_proxy(perfil, df_ref)
 
 
@@ -1761,13 +1709,7 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
         df_grupo     = df_ref[df_ref['titulacion'] == contexto['valor']]
         nombre_grupo = contexto['valor']
     else:
-        # "Solo mi rama" — obtener la rama del contexto correctamente
-        # Si el contexto es titulación, la rama está en df_contexto, no en valor
-        if contexto['tipo'] == 'titulacion' and contexto.get('df_contexto') is not None:
-            df_tit = contexto['df_contexto']
-            val_rama = df_tit[col_rama].mode()[0] if col_rama in df_tit.columns and len(df_tit) > 0 else None
-        else:
-            val_rama = contexto['valor']
+        val_rama     = contexto['valor']
         df_grupo     = df_ref[df_ref[col_rama] == val_rama] \
             if val_rama else df_ref.copy()
         nombre_grupo = val_rama or "toda la UJI"

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Decisión de diseño: titulación vs rama — TFM Abandono UJI</title>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f7fafc; margin: 0; padding: 24px; color: #2d3748; }
+  h1 { text-align: center; font-size: 1.3rem; font-weight: 600; margin-bottom: 4px; }
+  p.sub { text-align: center; color: #718096; font-size: 0.85rem; margin: 0 0 28px; }
+
+  /* TABLA */
+  .tabla-wrap { overflow-x: auto; margin-bottom: 32px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88rem; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  thead tr { background: #2d3748; color: white; }
+  th { padding: 12px 14px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tr.fila-actual { background: #f0fff4; border-left: 4px solid #38a169; }
+  tr.fila-futuro { background: #ebf8ff; border-left: 4px solid #3182ce; }
+  tr.fila-warn   { background: #fffbeb; }
+
+  /* BADGES */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.78rem; font-weight: 600; white-space: nowrap; }
+  .badge-verde   { background: #c6f6d5; color: #276749; }
+  .badge-azul    { background: #bee3f8; color: #1a365d; }
+  .badge-naranja { background: #feebc8; color: #7b341e; }
+  .badge-rojo    { background: #fed7d7; color: #c53030; }
+  .badge-morado  { background: #e9d8fd; color: #44337a; }
+  .badge-gris    { background: #e2e8f0; color: #4a5568; }
+
+  .num { font-family: 'Consolas', monospace; font-weight: 600; }
+  .num-verde { color: #276749; }
+  .num-rojo  { color: #c53030; }
+  .num-gris  { color: #a0aec0; }
+
+  /* SECCIONES */
+  h2 { font-size: 1.1rem; font-weight: 600; color: #2d3748; margin: 32px 0 12px; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+  h3 { font-size: 0.97rem; font-weight: 600; color: #2d3748; margin: 0 0 10px; }
+
+  /* GRID DE CARDS */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .card { background: white; border-radius: 10px; padding: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border-left: 4px solid #e2e8f0; }
+  .card-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid #f7fafc; }
+  .card-row:last-child { border-bottom: none; }
+  .card-label { color: #718096; }
+  .card-val { font-weight: 600; font-family: 'Consolas', monospace; }
+
+  /* BLOQUES ESPECIALES */
+  .info-block { border-radius: 8px; padding: 16px 20px; margin: 16px 0; font-size: 0.88rem; }
+  .info-verde  { background: #f0fff4; border-left: 4px solid #38a169; }
+  .info-azul   { background: #ebf8ff; border-left: 4px solid #3182ce; }
+  .info-naranja{ background: #fffbeb; border-left: 4px solid #d69e2e; }
+  .info-block h3 { font-size: 0.92rem; margin: 0 0 8px; }
+  .info-block p  { margin: 4px 0; color: #2d3748; line-height: 1.5; }
+  .info-block code { background: #e2e8f0; padding: 1px 5px; border-radius: 3px; font-size: 0.82rem; }
+
+  /* FASE TIMELINE */
+  .timeline { position: relative; padding-left: 28px; margin: 16px 0; }
+  .timeline::before { content:''; position:absolute; left:8px; top:4px; bottom:4px; width:2px; background:#e2e8f0; }
+  .tl-item { position: relative; margin-bottom: 14px; font-size: 0.87rem; }
+  .tl-item::before { content:''; position:absolute; left:-24px; top:4px; width:10px; height:10px; border-radius:50%; background:#3182ce; border:2px solid white; box-shadow:0 0 0 2px #3182ce; }
+  .tl-item.tl-actual::before { background:#38a169; box-shadow:0 0 0 2px #38a169; }
+  .tl-item.tl-warn::before   { background:#d69e2e; box-shadow:0 0 0 2px #d69e2e; }
+  .tl-fase { font-weight: 600; color: #2d3748; }
+  .tl-desc { color: #718096; margin-top: 2px; }
+
+  /* FÓRMULA */
+  .formula { background: #2d3748; color: #e2e8f0; border-radius: 8px; padding: 14px 20px; font-family: 'Consolas', monospace; font-size: 0.9rem; margin: 12px 0; line-height: 1.7; }
+  .formula .comment { color: #68d391; }
+
+  footer { text-align: center; color: #a0aec0; font-size: 0.78rem; margin-top: 40px; padding-top: 16px; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+
+<h1>Decisión de diseño: <code>titulacion</code> vs <code>rama</code> como feature</h1>
+<p class="sub">TFM: Pronóstico del Éxito y del Abandono en los Títulos de Grado de la UJI · María José Morte · UOC + UJI · 2026</p>
+
+<!-- ── BLOQUE RESUMEN ─────────────────────────────────────────────────────── -->
+<div class="info-block info-naranja">
+  <h3>⚠️ El problema que originó esta decisión</h3>
+  <p>El modelo predice la <strong>misma probabilidad de abandono</strong> para dos titulaciones de la misma rama (p.ej. Ingeniería Eléctrica e Ingeniería Mecánica), aunque su tasa histórica de abandono sea muy diferente (56% vs 28%). Esto ocurre porque <code>titulacion</code> <strong>no es una feature del modelo</strong> — solo lo es <code>rama</code>.</p>
+  <p>La solución implementada en la app es una <strong>corrección heurística post-hoc</strong> (Opción A), documentada más abajo.</p>
+</div>
+
+
+<!-- ── TABLA COMPARATIVA RAMA VS TITULACIÓN ───────────────────────────────── -->
+<h2>Comparativa: modelo con <code>rama</code> vs modelo con <code>titulacion</code></h2>
+<div class="tabla-wrap">
+<table>
+<thead>
+<tr>
+  <th>Aspecto</th>
+  <th>Modelo actual — <code>rama</code></th>
+  <th>Modelo futuro — <code>titulacion</code></th>
+</tr>
+</thead>
+<tbody>
+<tr class="fila-actual">
+  <td>Feature de contexto</td>
+  <td><code>rama</code> — 5 categorías</td>
+  <td><code>titulacion</code> — 40 categorías</td>
+</tr>
+<tr>
+  <td>Datos por clase</td>
+  <td class="num num-verde">~6.700 alumnos / rama</td>
+  <td class="num num-rojo">50 – 800 alumnos / titulación</td>
+</tr>
+<tr class="fila-warn">
+  <td>Riesgo de sobreajuste</td>
+  <td><span class="badge badge-verde">Bajo</span></td>
+  <td><span class="badge badge-naranja">Medio-alto</span></td>
+</tr>
+<tr>
+  <td>Tipo de relación aprendida</td>
+  <td>Nota × rama, beca × rama…</td>
+  <td>Nota × titulación, beca × titulación… (multivariante y no lineal)</td>
+</tr>
+<tr class="fila-warn">
+  <td>Riesgo de leakage</td>
+  <td><span class="badge badge-verde">Auditado y nulo</span></td>
+  <td><span class="badge badge-naranja">Requiere nueva auditoría</span></td>
+</tr>
+<tr>
+  <td>Diferenciación de pronóstico</td>
+  <td>Entre 5 ramas</td>
+  <td>Entre 40 titulaciones</td>
+</tr>
+<tr class="fila-warn">
+  <td>Datos mínimos necesarios</td>
+  <td><span class="badge badge-verde">Disponibles (33.621 exp.)</span></td>
+  <td><span class="badge badge-naranja">~500+ por titulación (no disponibles)</span></td>
+</tr>
+<tr>
+  <td>Defensa ante tribunal</td>
+  <td><span class="badge badge-verde">✅ Sólida y directa</span></td>
+  <td><span class="badge badge-naranja">Requiere justificación extra</span></td>
+</tr>
+<tr>
+  <td>Reproducible en producción</td>
+  <td><span class="badge badge-verde">Sí</span></td>
+  <td><span class="badge badge-gris">Solo con más datos futuros</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+<!-- ── QUÉ APRENDERÍA UN MODELO CON TITULACIÓN ───────────────────────────── -->
+<h2>¿Qué aprendería realmente un modelo con <code>titulacion</code>?</h2>
+
+<div class="info-block info-azul">
+  <h3>📖 Explicación para todos los públicos</h3>
+  <p>Con solo <code>rama</code>, el modelo aprende cosas como: <em>"Los de Ingeniería tienen más riesgo que los de Salud"</em> o <em>"Una nota de acceso baja en Ingeniería sube el riesgo X puntos"</em>.</p>
+  <p>Con <code>titulacion</code>, aprendería combinaciones mucho más finas:</p>
+  <ul style="margin:8px 0 0 16px; padding:0; font-size:0.87rem; line-height:1.8;">
+    <li>En Ingeniería Eléctrica, trabajar a tiempo parcial casi no afecta — en Diseño sí dispara el riesgo</li>
+    <li>En Medicina, una nota de acceso de 7 es suficiente — en Matemáticas no</li>
+    <li>En Historia el abandono ocurre en 1.º — en Derecho se distribuye en 3 años</li>
+  </ul>
+  <p>Eso es <strong>multivariante</strong> (combina varias variables a la vez) y <strong>no lineal</strong> (no es simplemente "más nota = menos riesgo" igual para todos). Un modelo de Gradient Boosting o un Stacking aprende esas combinaciones <em>solo si <code>titulacion</code> estaba en los datos de entrenamiento</em>.</p>
+</div>
+
+
+<!-- ── EN QUÉ FASE SE DEBERÍA HABER HECHO EL CAMBIO ─────────────────────── -->
+<h2>¿En qué fase debería haberse incluido <code>titulacion</code>?</h2>
+
+<div class="timeline">
+  <div class="tl-item tl-warn">
+    <div class="tl-fase">Fase 3 — M02: Agregación</div>
+    <div class="tl-desc">Aquí se pasa de 109.568 filas a 33.621 expedientes únicos. <strong>Este es el momento clave</strong>: se decide qué columnas quedan en el dataset final. <code>titulacion</code> ya estaba disponible en <code>df_alumno.parquet</code> y se podría haber incluido aquí.</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-fase">Fase 3 — M04: Encoding</div>
+    <div class="tl-desc">Habría que codificarla: target encoding (recomendado para alta cardinalidad) o one-hot con un mínimo de muestras por categoría.</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-fase">Fase 3 — M08: Auditoría leakage</div>
+    <div class="tl-desc">Revisar la auditoría completa con la nueva feature — <code>titulacion</code> está muy correlacionada con el target y podría introducir leakage indirecto.</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-fase">Fase AutoML + Fase 5: Reentrenar</div>
+    <div class="tl-desc">Repetir todo el screening y el modelado con el nuevo dataset de 20 features. Tiempo estimado: varios días de cómputo.</div>
+  </div>
+  <div class="tl-item">
+    <div class="tl-fase">Fase 6: Interpretabilidad</div>
+    <div class="tl-desc">Rehacer SHAP, LIME, fairness — ahora con una dimensión extra de análisis por titulación.</div>
+  </div>
+  <div class="tl-item tl-actual">
+    <div class="tl-fase">App (Fase 7): Sin cambios en la interfaz</div>
+    <div class="tl-desc">La app ya muestra resultados por titulación — solo cambiaría la fuente del dato (modelo real vs corrección heurística).</div>
+  </div>
+</div>
+
+<div class="info-block info-naranja">
+  <h3>⚠️ Conclusión sobre el cambio retroactivo</h3>
+  <p>Incluir <code>titulacion</code> requeriría <strong>rehacer prácticamente todo desde Fase 3</strong>. No es un cambio menor. Para el TFM actual con datos 2010-2020, la decisión de usar <code>rama</code> fue correcta: pocos datos por titulación habrían generado sobreajuste y una defensa complicada ante el tribunal.</p>
+  <p>Con más años de datos (p.ej. 2010-2030) y titulaciones con >500 alumnos, <code>titulacion</code> empezaría a ser viable.</p>
+</div>
+
+
+<!-- ── SOLUCIÓN IMPLEMENTADA ──────────────────────────────────────────────── -->
+<h2>Solución implementada en la app: corrección heurística (Opción A)</h2>
+
+<div class="formula">
+<span class="comment"># Corrección post-hoc por tasa histórica de abandono</span>
+prob_ajustada = prob_modelo × (tasa_hist_titulacion / tasa_hist_rama)
+
+<span class="comment"># Ejemplo:</span>
+<span class="comment"># modelo predice 20% para Ingeniería (rama)</span>
+<span class="comment"># Eléctrica: 56% abandono histórico · Media Ingeniería: 35%</span>
+<span class="comment"># factor = 56% / 35% = 1.60</span>
+<span class="comment"># prob_ajustada = 20% × 1.60 = 32%</span>
+
+<span class="comment"># Límites de seguridad: factor ∈ [0.30, 3.0]</span>
+<span class="comment"># Solo se activa cuando el usuario elige "una titulación concreta"</span>
+</div>
+
+<div class="card-grid">
+  <div class="card" style="border-left-color:#38a169">
+    <h3>✅ Ventajas</h3>
+    <div class="card-row"><span class="card-label">Diferenciación</span><span class="card-val" style="font-family:inherit">Titulaciones de la misma rama ya no dan el mismo %</span></div>
+    <div class="card-row"><span class="card-label">Implementación</span><span class="card-val" style="font-family:inherit">Sin reentrenar el modelo</span></div>
+    <div class="card-row"><span class="card-label">Transparencia</span><span class="card-val" style="font-family:inherit">Aviso visible en la app</span></div>
+    <div class="card-row"><span class="card-label">Seguridad</span><span class="card-val" style="font-family:inherit">Factor limitado a [0.3, 3.0]</span></div>
+  </div>
+  <div class="card" style="border-left-color:#e53e3e">
+    <h3>❌ Limitaciones</h3>
+    <div class="card-row"><span class="card-label">Univariante</span><span class="card-val" style="font-family:inherit">Solo usa tasa histórica, sin interacciones</span></div>
+    <div class="card-row"><span class="card-label">Lineal</span><span class="card-val" style="font-family:inherit">Factor constante para cualquier perfil</span></div>
+    <div class="card-row"><span class="card-label">Post-hoc</span><span class="card-val" style="font-family:inherit">No forma parte del entrenamiento</span></div>
+    <div class="card-row"><span class="card-label">Sobreestimación</span><span class="card-val" style="font-family:inherit">Posible en perfiles extremos</span></div>
+  </div>
+</div>
+
+<div class="info-block info-verde">
+  <h3>📌 Aviso mostrado en la app al usuario</h3>
+  <p><em>"La probabilidad base del modelo opera a nivel de rama de conocimiento. Se ha aplicado un ajuste por la tasa histórica de abandono de esta titulación específica (período 2010–2020) respecto a la media de su rama. Este ajuste no forma parte del modelo entrenado."</em></p>
+</div>
+
+
+<!-- ── LÍNEAS DE MEJORA FUTURA ────────────────────────────────────────────── -->
+<h2>Líneas de mejora futura</h2>
+
+<div class="card-grid">
+  <div class="card" style="border-left-color:#3182ce">
+    <h3>Opción 1 — Más datos</h3>
+    <div class="card-row"><span class="card-label">Cuándo</span><span class="card-val" style="font-family:inherit">Con datos 2010-2030+</span></div>
+    <div class="card-row"><span class="card-label">Mínimo</span><span class="card-val" style="font-family:inherit">≥500 alumnos/titulación</span></div>
+    <div class="card-row"><span class="card-label">Encoding</span><span class="card-val" style="font-family:inherit">Target encoding</span></div>
+    <div class="card-row"><span class="card-label">Esfuerzo</span><span class="card-val" style="font-family:inherit">Rehacer Fase 3 + 5 + 6</span></div>
+  </div>
+  <div class="card" style="border-left-color:#805ad5">
+    <h3>Opción 2 — Modelos jerárquicos</h3>
+    <div class="card-row"><span class="card-label">Qué</span><span class="card-val" style="font-family:inherit">Modelo global (rama) + local (titulación)</span></div>
+    <div class="card-row"><span class="card-label">Cómo</span><span class="card-val" style="font-family:inherit">Fine-tuning por titulación</span></div>
+    <div class="card-row"><span class="card-label">Ventaja</span><span class="card-val" style="font-family:inherit">Funciona con pocos datos por titulación</span></div>
+    <div class="card-row"><span class="card-label">Esfuerzo</span><span class="card-val" style="font-family:inherit">Alto — arquitectura nueva</span></div>
+  </div>
+  <div class="card" style="border-left-color:#d69e2e">
+    <h3>Opción 3 — Transfer learning</h3>
+    <div class="card-row"><span class="card-label">Qué</span><span class="card-val" style="font-family:inherit">Modelo de rama como base</span></div>
+    <div class="card-row"><span class="card-label">Cómo</span><span class="card-val" style="font-family:inherit">Few-shot por titulación</span></div>
+    <div class="card-row"><span class="card-label">Ventaja</span><span class="card-val" style="font-family:inherit">Aprovecha el modelo existente</span></div>
+    <div class="card-row"><span class="card-label">Esfuerzo</span><span class="card-val" style="font-family:inherit">Medio — experimental en tabular</span></div>
+  </div>
+</div>
+
+
+<!-- ── REFERENCIA EN EL TFM ───────────────────────────────────────────────── -->
+<h2>Referencia en el TFM</h2>
+<div class="tabla-wrap">
+<table>
+<thead>
+<tr><th>Fase</th><th>Módulo</th><th>Relevancia</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><span class="badge badge-azul">Fase 3</span></td>
+  <td>M02 Agregación · M04 Encoding · M08 Auditoría leakage</td>
+  <td>Aquí se tomó la decisión de usar <code>rama</code> y no <code>titulacion</code>. Documentado en D_strict (19 features)</td>
+</tr>
+<tr>
+  <td><span class="badge badge-azul">Fase 5</span></td>
+  <td>M07 Comparativa final</td>
+  <td>Modelo elegido (Stacking, AUC=0.9308) entrenado con <code>rama</code> como variable de contexto</td>
+</tr>
+<tr>
+  <td><span class="badge badge-verde">Fase 6</span></td>
+  <td>SHAP global · Fairness</td>
+  <td>Análisis de importancia de <code>rama</code> vs otras features. Fairness por rama de conocimiento</td>
+</tr>
+<tr class="fila-actual">
+  <td><span class="badge badge-verde">Fase 7 (app)</span></td>
+  <td>p03_prospecto · p04_en_curso · pronostico_shared.py</td>
+  <td>Corrección heurística implementada. Función <code>_ajustar_prob_por_titulacion()</code>. Este documento</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<footer>
+  TFM: Pronóstico del Éxito y del Abandono en los Títulos de Grado de la UJI · María José Morte · mjmorteruiz@uoc.edu · morte@uji.es · 2026
+</footer>
+
+</body>
+</html>

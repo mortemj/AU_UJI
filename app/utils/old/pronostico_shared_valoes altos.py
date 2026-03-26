@@ -1484,11 +1484,31 @@ def _grafico_cascada(perfil: dict, df_ref: pd.DataFrame,
     </h4>
     """, unsafe_allow_html=True)
 
-    # Método de cálculo: solo Rápido disponible.
-    # El método Preciso (SHAP sobre CatBoost base) produce valores en escala
-    # log-odds no convertibles a % de forma fiable para el Stacking completo.
-    # Se mantiene el código _contribuciones_shap por si se resuelve en el futuro.
-    contribuciones = _contribuciones_proxy(perfil, df_ref)
+    # Selector de método — justo debajo del título
+    metodo = st.radio(
+        label="Método de cálculo:",
+        options=["⚡ Rápido (estimación instantánea)",
+                 "🔬 Preciso (SHAP real, ~2s)"],
+        index=0,
+        horizontal=True,
+        key=f"metodo_cascada_{id(perfil)}_{id(df_ref)}",
+        help=(
+            "Rápido: diferencia de medias por grupo (aproximación marginal). "
+            "Preciso: SHAP TreeExplainer, calcula la contribución exacta "
+            "de cada variable para TU perfil concreto."
+        ),
+    )
+
+    usar_shap = "Preciso" in metodo
+
+    if usar_shap:
+        st.caption(
+            "⚠️ Los valores SHAP se calculan sobre CatBoost (estimador base del ensamble), "
+            "no sobre el Stacking completo. Es una aproximación válida y representativa."
+        )
+        contribuciones = _contribuciones_shap(perfil, df_ref, modelo, pipeline)
+    else:
+        contribuciones = _contribuciones_proxy(perfil, df_ref)
 
     if not contribuciones:
         st.info("No hay suficientes datos para calcular las contribuciones.")
@@ -1634,28 +1654,17 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             except AttributeError:
                 feature_names = [f"feat_{i}" for i in range(len(vals))]
 
-            # Convertir SHAP values de log-odds a escala de probabilidad
-            # Los SHAP de CatBoost están en log-odds — hay que escalarlos
-            # para que sean comparables con la probabilidad predicha (0-100%).
-            # Usamos la derivada de la sigmoid en el punto de predicción:
-            # dp/d(log-odds) = p * (1 - p)
-            import scipy.special as sp
-            log_odds_total = float(np.sum(vals)) + explainer.expected_value
-            if hasattr(explainer.expected_value, '__len__'):
-                log_odds_total = float(np.sum(vals)) + float(explainer.expected_value[1])
-            prob_pred = float(sp.expit(log_odds_total))
-            escala = prob_pred * (1 - prob_pred) * 100  # factor de escala a %
-
-            # Construimos contribuciones escaladas a %
+            # Construimos contribuciones
             contribuciones = []
             for fname, shap_val in zip(feature_names, vals):
+                # Intentamos mapear al nombre original (sin prefijo del pipeline)
                 fname_clean = fname.split('__')[-1] if '__' in fname else fname
                 nombre      = NOMBRES_VARIABLES.get(fname_clean,
                                                      fname_clean.replace('_', ' ').title())
                 contribuciones.append({
                     'variable':     nombre,
                     'valor':        fname_clean,
-                    'contribucion': float(shap_val) * escala,
+                    'contribucion': float(shap_val),
                 })
 
             contribuciones.sort(key=lambda x: abs(x['contribucion']), reverse=True)

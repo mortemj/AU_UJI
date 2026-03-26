@@ -117,14 +117,24 @@ def show():
     st.divider()
     _bloque_distribucion_riesgo(df_filtrado)
 
-    # Nota aclaratoria al pie
-    st.markdown(f"""
-    <div style="font-size: 0.75rem; color: {COLORES['texto_suave']}; margin-top: 1rem;">
-        ℹ️ <em>Los datos mostrados corresponden al conjunto de evaluación del modelo
-        (6.725 observaciones). Las probabilidades de riesgo son predicciones del modelo
-        Stacking entrenado en Fase 5, no valores reales observados.</em>
-    </div>
-    """, unsafe_allow_html=True)
+    st.divider()
+
+    # Nota metodológica — igual que en p00 y p02
+    with st.expander("📋 Nota metodológica — haz clic para ampliar", expanded=False):
+        st.markdown("""
+        **Dataset:** 109.568 registros · 30.872 alumnos únicos · Universitat Jaume I · Cursos 2010–2020.
+
+        **Variable objetivo:** abandono definitivo del grado (definición estricta). Tasa de abandono en test: **29,2 %**.
+
+        **Modelo final:** Stacking con CatBoost, XGBoost, LightGBM y Random Forest como modelos base,
+        y regresión logística como meta-learner. AUC = 0.931 · F1 = 0.799.
+
+        **Sobre los gráficos:** los porcentajes de riesgo son predicciones del modelo, no valores reales observados.
+        La tasa de abandono real corresponde a los datos históricos del conjunto de test (6.725 observaciones).
+
+        **Limitaciones:** el modelo está entrenado con datos hasta 2020. Las predicciones para cohortes
+        posteriores deben interpretarse con cautela.
+        """)
 
 
 # =============================================================================

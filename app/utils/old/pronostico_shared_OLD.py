@@ -121,75 +121,6 @@ _OPCIONES_UNIVERSIDAD = list(UNIVERSIDAD_ORIGEN_MAP.keys())
 # FUNCIÓN PRINCIPAL — llamada desde p03 y p04
 # =============================================================================
 
-
-# =============================================================================
-# CORRECCIÓN HEURÍSTICA: prob × (tasa_tit / tasa_rama)
-# =============================================================================
-# El modelo predice a nivel de RAMA (5 categorías). Para titulaciones de la
-# misma rama el modelo daría el mismo %, aunque su abandono histórico difiera.
-# Esta función aplica un factor de escala post-hoc basado en datos históricos.
-#
-# Limitación documentada: es univariante y lineal (no aprende interacciones).
-# Referencia: README_titulacion_vs_rama.md · Fase 3 M08 (auditoría leakage)
-# =============================================================================
-
-def _ajustar_prob_por_titulacion(prob: float,
-                                  contexto: dict,
-                                  df_ref: "pd.DataFrame") -> tuple:
-    """
-    Aplica corrección heurística cuando el contexto es una titulación concreta.
-
-    prob_ajustada = prob_modelo × (tasa_hist_titulacion / tasa_hist_rama)
-
-    El factor se limita a [0.3, 3.0] para evitar extrapolaciones extremas.
-
-    Returns
-    -------
-    prob_ajustada : float   (igual a prob si contexto no es titulación)
-    ajustada      : bool    (True si se aplicó corrección)
-    factor        : float   (el factor aplicado)
-    aviso         : str     (texto para mostrar al usuario, "" si no aplica)
-    """
-    if contexto.get("tipo") != "titulacion":
-        return prob, False, 1.0, ""
-
-    titulacion = contexto.get("valor", "")
-    col_rama   = "rama_meta" if "rama_meta" in df_ref.columns else "rama"
-
-    if "titulacion" not in df_ref.columns or "abandono" not in df_ref.columns:
-        return prob, False, 1.0, ""
-
-    df_tit  = df_ref[df_ref["titulacion"] == titulacion]
-    if len(df_tit) < 10:
-        return prob, False, 1.0, ""
-
-    tasa_tit  = float(df_tit["abandono"].mean())
-    rama_val  = df_tit[col_rama].mode()[0] if col_rama in df_tit.columns else None
-
-    if rama_val is not None:
-        df_rama  = df_ref[df_ref[col_rama] == rama_val]
-        tasa_rama = float(df_rama["abandono"].mean()) if len(df_rama) > 0 else tasa_tit
-    else:
-        tasa_rama = tasa_tit  # sin rama → no ajustamos
-
-    if tasa_rama < 0.01:
-        return prob, False, 1.0, ""
-
-    factor = tasa_tit / tasa_rama
-    factor = max(0.3, min(3.0, factor))   # límites de seguridad
-
-    prob_ajustada = float(max(0.01, min(0.99, prob * factor)))
-
-    aviso = (
-        f"⚠️ La probabilidad base del modelo ({prob*100:.1f}%) opera a nivel de "
-        f"**rama de conocimiento**. Se ha aplicado un ajuste por la tasa "
-        f"histórica de abandono de **{titulacion.replace('Grado en ', '')}** "
-        f"({tasa_tit*100:.1f}%) respecto a la media de su rama ({tasa_rama*100:.1f}%). "
-        f"Este ajuste no forma parte del modelo entrenado."
-    )
-
-    return prob_ajustada, True, factor, aviso
-
 def show_pronostico(modo: str = "prospecto"):
     """
     Renderiza la página completa de pronóstico personalizado.
@@ -288,65 +219,24 @@ def show_pronostico(modo: str = "prospecto"):
     # --- Paso 2: formulario de perfil (básico + avanzado) ---
     perfil, calcular = _formulario_perfil(modo, df_ref, contexto)
 
-    # Claves de session_state para este modo — evita colisiones entre p03 y p04
-    _key_prob   = f"_prob_{modo}"
-    _key_perfil = f"_perfil_{modo}"
-    _key_ctx    = f"_contexto_{modo}"
-    _key_df_ctx = f"_df_ctx_{modo}"
-    _key_ajuste = f"_ajuste_{modo}"
-
-    if calcular:
-        # El usuario pulsó "Calcular" — recalculamos y guardamos en session_state
-        df_ctx = contexto.get("df_contexto", df_ref)
-        if df_ctx is None or len(df_ctx) == 0:
-            df_ctx = df_ref
-
-        with st.spinner("Calculando pronóstico..."):
-            prob, error = _calcular_probabilidad(perfil, modelo, pipeline, df_ctx)
-
-        if error:
-            st.error(f"❌ Error al calcular: {error}")
-            return
-
-        prob, ajustada, factor, aviso_ajuste = _ajustar_prob_por_titulacion(
-            prob, contexto, df_ref
-        )
-
-        # Guardar en session_state — los widgets de gráficos no perderán el resultado
-        st.session_state[_key_prob]   = prob
-        st.session_state[_key_perfil] = perfil
-        st.session_state[_key_ctx]    = contexto
-        st.session_state[_key_df_ctx] = df_ctx
-        st.session_state[_key_ajuste] = (ajustada, aviso_ajuste)
-
-    elif _key_prob in st.session_state:
-        # Widget de gráfico cambió (radio percentil, etc.) — recuperar sin recalcular
-        prob                   = st.session_state[_key_prob]
-        perfil                 = st.session_state[_key_perfil]
-        contexto               = st.session_state[_key_ctx]
-        df_ctx                 = st.session_state[_key_df_ctx]
-        ajustada, aviso_ajuste = st.session_state[_key_ajuste]
-
-    else:
-        # Nunca se ha calculado — mostrar instrucciones
+    # Solo calculamos si el usuario pulsa el botón
+    if not calcular:
         _mostrar_instrucciones()
+        return
+
+    # --- Paso 3: calcular probabilidad ---
+    with st.spinner("Calculando pronóstico..."):
+        prob, error = _calcular_probabilidad(perfil, modelo, pipeline,
+                                              df_features if df_features is not None else df_ref)
+
+    if error:
+        st.error(f"❌ Error al calcular: {error}")
         return
 
     st.divider()
 
     # --- Pasos 4-8: resultados ---
     _mostrar_resultado_principal(prob, modo)
-
-    # Aviso de corrección heurística (solo si se aplicó)
-    if ajustada and aviso_ajuste:
-        st.markdown(
-            f"<div style='font-size:0.78rem; color:#718096; "
-            f"border-left:3px solid #d69e2e; padding:0.4rem 0.8rem; "
-            f"margin:0.3rem 0; border-radius:4px; background:#fffbeb;'>"
-            f"⚠️ {aviso_ajuste}</div>",
-            unsafe_allow_html=True,
-        )
-
     st.divider()
     _grafico_indicador_riesgo(prob)
     st.divider()
@@ -355,7 +245,7 @@ def show_pronostico(modo: str = "prospecto"):
     with col_radar:
         _grafico_radar(perfil, df_ref, contexto, prob)
     with col_cascada:
-        _grafico_cascada(perfil, df_ctx, prob, modelo, pipeline)
+        _grafico_cascada(perfil, df_ref, prob, modelo, pipeline)
 
     st.divider()
     _grafico_percentil(prob, df_ref, contexto, modelo, pipeline)
@@ -385,72 +275,14 @@ def show_pronostico(modo: str = "prospecto"):
 
 def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
     """
-    Permite al usuario elegir el contexto de comparación.
-
-    En modo 'en_curso':  selector directo de titulación (obligatorio).
-    En modo 'prospecto': radio buttons (todas / rama / titulación / comparar).
+    Permite al usuario elegir si quiere compararse contra una titulación
+    concreta, una rama, o toda la UJI.
 
     Devuelve un dict con:
         tipo        : "titulacion" | "rama" | "todas"
         valor       : nombre de la titulación/rama, o None
         df_contexto : subconjunto de df_ref según el contexto elegido
     """
-    col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
-
-    # =========================================================================
-    # MODO EN CURSO — selector directo, sin radio buttons
-    # =========================================================================
-    if modo == "en_curso":
-        st.markdown(f"""
-        <h4 style="color:{COLORES['texto']}; margin-bottom:0.5rem;">
-            1️⃣ ¿Qué estás estudiando?
-        </h4>
-        <p style="font-size:0.85rem; color:{COLORES['texto_suave']};">
-            Selecciona tu titulación. Las comparativas se calcularán respecto
-            a alumnos históricos de ese mismo grado.
-        </p>
-        """, unsafe_allow_html=True)
-
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            titulaciones_disp = sorted(
-                df_ref['titulacion'].dropna().unique().tolist()
-            ) if 'titulacion' in df_ref.columns else []
-            valor_tit = st.selectbox(
-                label="Tu titulación",
-                options=titulaciones_disp,
-                index=0,
-                key=f"sel_tit_{modo}",
-                help="Puedes escribir para buscar dentro de la lista.",
-            ) if titulaciones_disp else None
-
-        with col2:
-            if valor_tit and 'titulacion' in df_ref.columns:
-                df_ctx = df_ref[df_ref['titulacion'] == valor_tit]
-                tasa   = (df_ctx['abandono'].sum() / len(df_ctx) * 100) \
-                         if 'abandono' in df_ctx.columns and len(df_ctx) > 0 else 0
-                st.markdown(f"""
-                <div style="
-                    background:{COLORES['fondo']};
-                    border-left:3px solid {COLORES['primario']};
-                    border-radius:4px;
-                    padding:0.6rem 1rem;
-                    font-size:0.83rem;
-                    margin-top:1.6rem;
-                ">
-                    <strong>Alumnos en histórico:</strong> {len(df_ctx):,}<br>
-                    <strong>Tasa abandono histórica:</strong> {tasa:.1f}%
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                df_ctx = df_ref.copy()
-
-        st.divider()
-        return {"tipo": "titulacion", "valor": valor_tit, "df_contexto": df_ctx}
-
-    # =========================================================================
-    # MODO PROSPECTO — flujo original con radio buttons
-    # =========================================================================
     st.markdown(f"""
     <h4 style="color:{COLORES['texto']}; margin-bottom:0.5rem;">
         1️⃣ ¿Tienes una titulación en mente?
@@ -649,27 +481,6 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
 
     df_ctx = contexto['df_contexto']
 
-    # Recordatorio de titulación/contexto seleccionado
-    if contexto['tipo'] in ('titulacion', 'rama') and contexto.get('valor'):
-        col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
-        n_alumnos = len(df_ctx)
-        tasa = (df_ctx['abandono'].sum() / n_alumnos * 100)             if 'abandono' in df_ctx.columns and n_alumnos > 0 else None
-        tasa_txt = f" · Abandono histórico: {tasa:.1f}%" if tasa is not None else ""
-        st.markdown(f"""
-        <div style="
-            background:{COLORES['fondo']};
-            border-left:3px solid {COLORES['primario']};
-            border-radius:4px;
-            padding:0.45rem 1rem;
-            font-size:0.83rem;
-            color:{COLORES['texto']};
-            margin-bottom:0.6rem;
-        ">
-            📚 Calculando para: <strong>{contexto['valor']}</strong>
-            · {n_alumnos:,} alumnos en histórico{tasa_txt}
-        </div>
-        """, unsafe_allow_html=True)
-
     # Helper: media del contexto como valor por defecto
     def _med(col, default):
         return float(df_ctx[col].mean()) \
@@ -682,164 +493,64 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
     # -------------------------------------------------------------------------
     st.markdown(f"<p style='font-size:0.85rem; font-weight:600; color:{COLORES['texto']}; margin-bottom:0.3rem;'>📋 Datos principales</p>", unsafe_allow_html=True)
 
-    # -------------------------------------------------------------------------
-    # BLOQUE PRINCIPAL — distinto según modo
-    # en_curso:  rendimiento académico primero (los más predictivos)
-    # prospecto: datos de acceso primero (lo único disponible antes de entrar)
-    # -------------------------------------------------------------------------
+    col1, col2, col3 = st.columns(3)
 
-    if modo == "en_curso":
-        # Encabezado diferenciador visual
-        st.markdown(f"""
-        <div style="
-            background:#ebf8ff;
-            border-left:4px solid {COLORES['primario']};
-            border-radius:6px;
-            padding:0.6rem 1rem;
-            font-size:0.83rem;
-            color:{COLORES['primario']};
-            margin-bottom:0.8rem;
-        ">
-            📊 Introduce tus datos de rendimiento académico — son los predictores
-            más importantes para un alumno que ya está cursando.
-        </div>
-        """, unsafe_allow_html=True)
+    with col1:
+        _val_nota = float(np.clip(round(_med('nota_acceso', 8.0), 1), 5.0, 14.0))
+        perfil['nota_acceso'] = st.slider(
+            label="Nota de acceso (PAU / FP) *",
+            min_value=5.0, max_value=14.0,
+            value=_val_nota,
+            step=0.1,
+            help="Nota de acceso a la universidad (escala 0–14). Es uno de los predictores más importantes.",
+            key=f"nota_acceso_{modo}",
+        )
 
-        col1, col2, col3 = st.columns(3)
+        perfil['via_acceso'] = st.selectbox(
+            label="Vía de acceso *",
+            options=_OPCIONES_VIA_ACCESO,
+            index=0,
+            key=f"tipo_acceso_{modo}",
+        )
 
-        # Columna 1: rendimiento académico (protagonista en p04)
-        with col1:
-            _no_nota = st.checkbox(
-                "No recuerdo la nota",
-                value=False,
-                key=f"no_nota_1er_{modo}",
-            )
-            perfil['nota_1er_anio'] = np.nan if _no_nota else st.slider(
+    with col2:
+        perfil['situacion_laboral'] = st.selectbox(
+            label="Situación laboral *",
+            options=_OPCIONES_LABORAL,
+            index=0,
+            help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
+            key=f"laboral_{modo}",
+        )
+
+        perfil['n_anios_beca'] = st.slider(
+            label="Años con beca previstos *",
+            min_value=0, max_value=6,
+            value=int(round(_med('n_anios_beca', 2))),
+            step=1,
+            help="Factor protector muy importante. Los becarios tienen tasas de abandono significativamente más bajas.",
+            key=f"beca_{modo}",
+        )
+
+    with col3:
+        perfil['edad_entrada'] = st.number_input(
+            label="Edad al acceder",
+            min_value=17, max_value=65,
+            value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
+            step=1,
+            key=f"edad_{modo}",
+        )
+
+        # En modo en_curso: datos de rendimiento (los más predictivos)
+        if modo == "en_curso":
+            perfil['nota_1er_anio'] = st.slider(
                 label="Nota media del primer año *",
                 min_value=0.0, max_value=10.0,
                 value=round(_med('nota_1er_anio', 6.0), 1),
                 step=0.1,
-                help="Uno de los predictores más fuertes del modelo para alumnos en curso.",
+                help="Uno de los predictores más fuertes del modelo.",
                 key=f"nota_1er_{modo}",
-                disabled=_no_nota,
             )
-            _no_cred = st.checkbox(
-                "No recuerdo los créditos",
-                value=False,
-                key=f"no_cred_1er_{modo}",
-            )
-            perfil['cred_superados_anio_1er'] = np.nan if _no_cred else st.number_input(
-                label="Créditos superados en 1.º *",
-                min_value=0, max_value=80,
-                value=int(_med('cred_superados_anio_1er', 40)),
-                step=1,
-                help="Créditos aprobados durante el primer año académico.",
-                key=f"cred_1er_{modo}",
-                disabled=_no_cred,
-            )
-
-        # Columna 2: situación personal (también muy predictiva)
-        with col2:
-            perfil['situacion_laboral'] = st.selectbox(
-                label="Situación laboral *",
-                options=_OPCIONES_LABORAL,
-                index=0,
-                help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
-                key=f"laboral_{modo}",
-            )
-            perfil['n_anios_beca'] = st.slider(
-                label="Años con beca *",
-                min_value=0, max_value=6,
-                value=int(round(_med('n_anios_beca', 2))),
-                step=1,
-                help="Factor protector muy importante. Los becarios tienen tasas de abandono significativamente más bajas.",
-                key=f"beca_{modo}",
-            )
-            perfil['_anios_matriculado'] = st.number_input(
-                label="Años matriculado en total *",
-                min_value=1, max_value=10,
-                value=1,
-                step=1,
-                help="Número de cursos académicos que llevas matriculado. Se usa para calcular los años sin beca.",
-                key=f"anios_mat_bas_{modo}",
-            )
-            perfil['indicador_interrupcion'] = int(st.checkbox(
-                label="¿Has interrumpido los estudios algún año sin matricularte?",
-                value=False,
-                help="Marca si hubo algún curso en que no te matriculaste estando todavía en la carrera.",
-                key=f"interrupcion_{modo}",
-            ))
-
-        # Columna 3: edad + sexo
-        with col3:
-            perfil['edad_entrada'] = st.number_input(
-                label="Edad al acceder",
-                min_value=17, max_value=65,
-                value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
-                step=1,
-                key=f"edad_{modo}",
-            )
-            perfil['sexo'] = st.selectbox(
-                label="Sexo",
-                options=_OPCIONES_SEXO,
-                index=0,
-                key=f"sexo_bas_{modo}",
-            )
-
-    else:
-        # Modo prospecto: orden original (acceso primero)
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            _val_nota = float(np.clip(round(_med('nota_acceso', 8.0), 1), 5.0, 14.0))
-            perfil['nota_acceso'] = st.slider(
-                label="Nota de acceso (PAU / FP) *",
-                min_value=5.0, max_value=14.0,
-                value=_val_nota,
-                step=0.1,
-                help="Nota de acceso a la universidad (escala 0–14). Es uno de los predictores más importantes.",
-                key=f"nota_acceso_{modo}",
-            )
-            perfil['via_acceso'] = st.selectbox(
-                label="Vía de acceso *",
-                options=_OPCIONES_VIA_ACCESO,
-                index=0,
-                key=f"tipo_acceso_{modo}",
-            )
-
-        with col2:
-            perfil['situacion_laboral'] = st.selectbox(
-                label="Situación laboral *",
-                options=_OPCIONES_LABORAL,
-                index=0,
-                help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
-                key=f"laboral_{modo}",
-            )
-            _solicita_beca = st.checkbox(
-                label="¿Piensas solicitar beca? *",
-                value=True,
-                help=(
-                    "Los becarios tienen tasas de abandono significativamente más bajas. "
-                    "Si marcas que sí, el modelo asume una media de 4 años con beca."
-                ),
-                key=f"beca_checkbox_{modo}",
-            )
-            perfil['n_anios_beca'] = 4 if _solicita_beca else 0
-
-        with col3:
-            perfil['edad_entrada'] = st.number_input(
-                label="Edad al acceder",
-                min_value=17, max_value=65,
-                value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
-                step=1,
-                key=f"edad_{modo}",
-            )
-            perfil['sexo'] = st.selectbox(
-                label="Sexo",
-                options=_OPCIONES_SEXO,
-                index=0,
-                key=f"sexo_bas_{modo}",
-            )
+        else:
             # Prospecto: aviso claro de que no se incluye rendimiento
             st.markdown(f"""
             <div style="
@@ -873,14 +584,13 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
         adv1, adv2 = st.columns(2)
 
         with adv1:
-            if modo != "en_curso":
-                perfil['nota_selectividad'] = st.slider(
-                    label="Nota de selectividad",
-                    min_value=0.0, max_value=10.0,
-                    value=round(_med('nota_selectividad', 6.5), 1),
-                    step=0.1,
-                    key=f"selectividad_{modo}",
-                )
+            perfil['nota_selectividad'] = st.slider(
+                label="Nota de selectividad",
+                min_value=0.0, max_value=10.0,
+                value=round(_med('nota_selectividad', 6.5), 1),
+                step=0.1,
+                key=f"selectividad_{modo}",
+            )
 
             perfil['orden_preferencia'] = st.number_input(
                 label="Orden de preferencia de la titulación",
@@ -891,44 +601,44 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 key=f"orden_pref_{modo}",
             )
 
-            if modo == "en_curso":
-                perfil['anios_gap'] = st.number_input(
-                    label="Años sin matricularse durante la carrera",
-                    min_value=0, max_value=10,
-                    value=int(_med('anios_gap', 0)),
-                    step=1,
-                    help="Cursos en que no te matriculaste estando todavía en la carrera.",
-                    key=f"gap_{modo}",
-                )
-
-            if modo == "en_curso":
-                _val_nota = float(np.clip(round(_med('nota_acceso', 8.0), 1), 5.0, 14.0))
-                perfil['nota_acceso'] = st.slider(
-                    label="Nota de acceso (PAU / FP)",
-                    min_value=5.0, max_value=14.0,
-                    value=_val_nota,
-                    step=0.1,
-                    help="Nota de acceso a la universidad (escala 0–14).",
-                    key=f"nota_acceso_{modo}",
-                )
+            perfil['anios_gap'] = st.number_input(
+                label="Años de pausa antes de matricularte",
+                min_value=0, max_value=30,
+                value=int(_med('anios_gap', 0)),
+                step=1,
+                help="Años transcurridos entre acabar bachillerato/FP y matricularte. 0 = acceso directo.",
+                key=f"gap_{modo}",
+            )
 
         with adv2:
             perfil['universidad_origen'] = st.selectbox(
-                label="Universidad de preinscripción",
+                label="Universidad / centro de procedencia",
                 options=_OPCIONES_UNIVERSIDAD,
                 index=0,
-                help="Universidad a través de la cual realizaste la preinscripción. La mayoría de alumnos de bachillerato seleccionan UJI.",
                 key=f"univ_origen_{modo}",
             )
 
+            perfil['sexo'] = st.selectbox(
+                label="Sexo",
+                options=_OPCIONES_SEXO,
+                index=0,
+                key=f"sexo_{modo}",
+            )
+
             if modo == "en_curso":
-                # En prospecto, via_acceso ya está en el bloque básico
-                # En en_curso no está en básico → la recogemos aquí
-                perfil['via_acceso'] = st.selectbox(
-                    label="Vía de acceso",
-                    options=_OPCIONES_VIA_ACCESO,
-                    index=0,
-                    key=f"tipo_acceso_{modo}",
+                perfil['cred_superados_anio_1er'] = st.number_input(
+                    label="Créditos superados en 1.º",
+                    min_value=0, max_value=80,
+                    value=int(_med('cred_superados_anio_1er', 40)),
+                    step=1,
+                    key=f"cred_1er_{modo}",
+                )
+                perfil['creditos_superados'] = st.number_input(
+                    label="Créditos superados (total)",
+                    min_value=0, max_value=300,
+                    value=int(_med('creditos_superados', 40)),
+                    step=1,
+                    key=f"creditos_{modo}",
                 )
 
     # -------------------------------------------------------------------------
@@ -936,38 +646,26 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
     # (el pipeline necesita todas las features, incluso las no introducidas)
     # -------------------------------------------------------------------------
     defaults_numericos = {
-        # Variables NO disponibles para el prospecto — pasar NaN
-        # para que el SimpleImputer del pipeline use su mediana del training set
-        'nota_1er_anio':           np.nan,
-        'cred_superados_anio_1er': np.nan,
-        'creditos_superados':      np.nan,
-        'tasa_rendimiento':        np.nan,
-        'max_pagos':               np.nan,
-        'creditos_matriculados':   np.nan,
-        'indicador_interrupcion':  0,   # prospecto: asumimos que no ha interrumpido
-        'anios_sin_beca':          np.nan,
-        'anio_cohorte':            2020,
+        'nota_1er_anio':           _med('nota_1er_anio', 6.0),
+        'cred_superados_anio_1er': _med('cred_superados_anio_1er', 40.0),
+        'creditos_superados':      _med('creditos_superados', 40.0),
+        'tasa_rendimiento':        _med('tasa_rendimiento', 0.65),
+        'max_pagos':               _med('max_pagos', 1.0),
+        'creditos_matriculados':   _med('creditos_matriculados', 60.0),
+        'indicador_interrupcion':  0,
+        'anio_cohorte':            _med('anio_cohorte', 2015),
     }
     for col, val in defaults_numericos.items():
         if col not in perfil:
             perfil[col] = val
 
-    # --- Derivaciones específicas de modo en_curso ---
-    if modo == "en_curso":
-        # anios_sin_beca: calculado a partir de años matriculado total - años con beca
-        # _anios_matriculado se recoge en el bloque básico y es un campo auxiliar
-        anios_mat = perfil.pop('_anios_matriculado', 1)
-        n_beca    = perfil.get('n_anios_beca', 0)
-        perfil['anios_sin_beca'] = max(0, int(anios_mat) - int(n_beca))
-
-        # indicador_interrupcion ya viene del checkbox — no sobreescribir
-        # (el default de arriba solo aplica si no estaba en perfil, lo cual
-        # no ocurre en en_curso porque el checkbox siempre devuelve 0 o 1)
-
-        # Limpiar auxiliares del expander si existen (campos no-feature)
-        for _aux in ('_creditos_por_curso', 'creditos_superados',
-                     'creditos_matriculados', 'tasa_rendimiento'):
-            perfil.pop(_aux, None)
+    # tasa_rendimiento calculada si se tienen los datos
+    if modo == "en_curso" and 'creditos_superados' in perfil:
+        matriculados = perfil.get('creditos_matriculados',
+                                   _med('creditos_matriculados', 60.0))
+        perfil['tasa_rendimiento'] = (
+            perfil['creditos_superados'] / max(float(matriculados), 1)
+        )
 
     # Botón centrado
     st.markdown("<br>", unsafe_allow_html=True)
@@ -1056,11 +754,15 @@ def _calcular_probabilidad(perfil: dict, modelo, pipeline,
     Construye un DataFrame con el perfil del usuario en el formato
     que espera el pipeline, lo transforma y predice la probabilidad.
 
-    Estrategia de imputación (por orden de prioridad):
-      1. El usuario lo rellenó → usar directamente
-      2. Está en df_ref → usar media/moda del contexto
-      3. No está en df_ref pero el scaler tiene su media → usar media del training set
-      4. Sin información → 0
+    Estrategia de columnas:
+      1. Usamos las columnas que el pipeline conoce (feature_names_in_)
+         como fuente de verdad — no df_ref, que puede tener columnas extra
+         o renombradas (_meta).
+      2. Para cada columna esperada por el pipeline:
+         - Si está en perfil → la usamos directamente
+         - Si está en df_ref → usamos media/moda de df_ref
+         - Si no está en ningún sitio → 0 / ""
+      3. Las columnas _meta (rama_meta, sexo_meta...) NO se pasan al pipeline.
 
     Devuelve (probabilidad, mensaje_error).
     """
@@ -1072,41 +774,23 @@ def _calcular_probabilidad(perfil: dict, modelo, pipeline,
         if hasattr(pipeline, 'feature_names_in_'):
             cols_pipeline = list(pipeline.feature_names_in_)
         else:
+            # Fallback: columnas de df_ref sin metadatos
             cols_pipeline = [c for c in df_ref.columns if c not in _COLS_META]
-
-        # Extraer medias del scaler para imputación correcta
-        # El scaler fue entrenado con el training set — sus medias son los valores
-        # más representativos para imputar cuando no tenemos otra información
-        medias_scaler = {}
-        try:
-            num_pipeline = pipeline.named_transformers_.get('num')
-            if num_pipeline and hasattr(num_pipeline, 'steps'):
-                scaler = dict(num_pipeline.steps).get('scaler')
-                if scaler and hasattr(scaler, 'mean_'):
-                    # Las columnas del scaler son las mismas que feature_names_in_
-                    for col, mean in zip(cols_pipeline, scaler.mean_):
-                        medias_scaler[col] = float(mean)
-        except Exception:
-            pass  # Si falla, seguimos sin medias del scaler
 
         # Construimos la fila con EXACTAMENTE las columnas del pipeline
         fila = {}
         for col in cols_pipeline:
             if col in perfil:
-                # Prioridad 1: el usuario lo rellenó
+                # El usuario lo rellenó — usarlo directamente
                 fila[col] = perfil[col]
-            elif col in df_ref.columns and df_ref[col].notna().any():
-                # Prioridad 2: media/moda del contexto (df_ref)
+            elif col in df_ref.columns:
+                # Imputar con media/moda del contexto
                 if df_ref[col].dtype.kind in ('f', 'i'):
-                    fila[col] = float(df_ref[col].mean())
+                    fila[col] = df_ref[col].mean()
                 else:
-                    fila[col] = df_ref[col].mode()[0]
-            elif col in medias_scaler:
-                # Prioridad 3: media del training set (del scaler)
-                # Mejor que 0 — evita predicciones absurdas
-                fila[col] = medias_scaler[col]
+                    fila[col] = df_ref[col].mode()[0] if df_ref[col].notna().any() else ""
             else:
-                # Prioridad 4: sin información — valor neutro
+                # Columna no disponible — valor neutro
                 fila[col] = 0
 
         X_usuario = pd.DataFrame([fila], columns=cols_pipeline)
@@ -1484,11 +1168,27 @@ def _grafico_cascada(perfil: dict, df_ref: pd.DataFrame,
     </h4>
     """, unsafe_allow_html=True)
 
-    # Método de cálculo: solo Rápido disponible.
-    # El método Preciso (SHAP sobre CatBoost base) produce valores en escala
-    # log-odds no convertibles a % de forma fiable para el Stacking completo.
-    # Se mantiene el código _contribuciones_shap por si se resuelve en el futuro.
-    contribuciones = _contribuciones_proxy(perfil, df_ref)
+    # Selector de método — justo debajo del título
+    metodo = st.radio(
+        label="Método de cálculo:",
+        options=["⚡ Rápido (estimación instantánea)",
+                 "🔬 Preciso (SHAP real, ~2s)"],
+        index=0,
+        horizontal=True,
+        key=f"metodo_cascada_{id(perfil)}",
+        help=(
+            "Rápido: diferencia de medias por grupo (aproximación marginal). "
+            "Preciso: SHAP TreeExplainer, calcula la contribución exacta "
+            "de cada variable para TU perfil concreto."
+        ),
+    )
+
+    usar_shap = "Preciso" in metodo
+
+    if usar_shap:
+        contribuciones = _contribuciones_shap(perfil, df_ref, modelo, pipeline)
+    else:
+        contribuciones = _contribuciones_proxy(perfil, df_ref)
 
     if not contribuciones:
         st.info("No hay suficientes datos para calcular las contribuciones.")
@@ -1554,7 +1254,7 @@ def _contribuciones_proxy(perfil: dict, df_ref: pd.DataFrame) -> list[dict]:
 def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
                           modelo, pipeline) -> list[dict]:
     """
-    Método preciso: SHAP TreeExplainer sobre el estimador final del Stacking.
+    Método preciso: SHAP TreeExplainer sobre el modelo CatBoost.
     Calcula las contribuciones exactas para el perfil del usuario.
     """
     try:
@@ -1565,9 +1265,6 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
 
     with st.spinner("🔬 Calculando contribuciones SHAP..."):
         try:
-            # Traducir strings a códigos numéricos antes de construir X_usuario
-            perfil = _traducir_perfil_a_codigos(perfil)
-
             # Construimos X_usuario como en _calcular_probabilidad
             cols_features = list(pipeline.feature_names_in_)                 if hasattr(pipeline, 'feature_names_in_') else                 [c for c in df_ref.columns if c not in _COLS_META]
             fila = {}
@@ -1586,47 +1283,19 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             X_usuario = pd.DataFrame([fila])
             X_prep    = pipeline.transform(X_usuario)
 
-            # Extraemos CatBoost del Stacking para SHAP:
-            # Pipeline → named_steps['model'] (StackingClassifier)
-            #          → estimators_['CatBoost'] → Pipeline → named_steps['model']
-            # TreeExplainer es compatible con CatBoost y devuelve SHAP
-            # sobre las 19 features originales.
-            # NOTA: aproximación — SHAP del estimador base CatBoost,
-            # no del Stacking completo.
-            stacking = modelo
+            # Extraemos el modelo base si está dentro de un Pipeline sklearn
+            modelo_base = modelo
             if hasattr(modelo, 'named_steps'):
-                stacking = modelo.named_steps.get('model', modelo)
+                modelo_base = modelo.named_steps.get('model', modelo)
 
-            # Extraer CatBoost de los estimadores base del Stacking
-            catboost_model = None
-            # estimators_ contiene los estimadores ajustados (sin nombres)
-            # estimators contiene las tuplas (nombre, estimador) originales
-            if hasattr(stacking, 'estimators'):
-                for name, est in stacking.estimators:
-                    if 'CatBoost' in name or 'catboost' in name.lower():
-                        # El estimador puede ser un Pipeline con step 'model'
-                        # Buscamos el estimador ajustado en estimators_
-                        idx = [n for n, _ in stacking.estimators].index(name)
-                        est_fitted = stacking.estimators_[idx]
-                        if hasattr(est_fitted, 'named_steps'):
-                            catboost_model = est_fitted.named_steps.get('model', est_fitted)
-                        else:
-                            catboost_model = est_fitted
-                        break
-
-            if catboost_model is None:
-                raise ValueError("No se encontró CatBoost en los estimadores del Stacking.")
-
-            explainer = shap.TreeExplainer(catboost_model)
-            shap_vals = explainer.shap_values(X_prep)
+            explainer  = shap.TreeExplainer(modelo_base)
+            shap_vals  = explainer.shap_values(X_prep)
 
             # shap_values puede ser array o lista según la versión de SHAP
             if isinstance(shap_vals, list):
                 vals = shap_vals[1][0]  # clase 1 (abandono), primera fila
-            elif shap_vals.ndim == 2:
-                vals = shap_vals[0]
             else:
-                vals = shap_vals
+                vals = shap_vals[0] if shap_vals.ndim == 1 else shap_vals[0]
 
             # Nombres de features tras el pipeline
             try:
@@ -1634,39 +1303,24 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
             except AttributeError:
                 feature_names = [f"feat_{i}" for i in range(len(vals))]
 
-            # Convertir SHAP values de log-odds a escala de probabilidad
-            # Los SHAP de CatBoost están en log-odds — hay que escalarlos
-            # para que sean comparables con la probabilidad predicha (0-100%).
-            # Usamos la derivada de la sigmoid en el punto de predicción:
-            # dp/d(log-odds) = p * (1 - p)
-            import scipy.special as sp
-            log_odds_total = float(np.sum(vals)) + explainer.expected_value
-            if hasattr(explainer.expected_value, '__len__'):
-                log_odds_total = float(np.sum(vals)) + float(explainer.expected_value[1])
-            prob_pred = float(sp.expit(log_odds_total))
-            escala = prob_pred * (1 - prob_pred) * 100  # factor de escala a %
-
-            # Construimos contribuciones escaladas a %
+            # Construimos contribuciones
             contribuciones = []
             for fname, shap_val in zip(feature_names, vals):
+                # Intentamos mapear al nombre original (sin prefijo del pipeline)
                 fname_clean = fname.split('__')[-1] if '__' in fname else fname
                 nombre      = NOMBRES_VARIABLES.get(fname_clean,
                                                      fname_clean.replace('_', ' ').title())
                 contribuciones.append({
                     'variable':     nombre,
                     'valor':        fname_clean,
-                    'contribucion': float(shap_val) * escala,
+                    'contribucion': float(shap_val),
                 })
 
             contribuciones.sort(key=lambda x: abs(x['contribucion']), reverse=True)
             return contribuciones[:6]
 
         except Exception as e:
-            st.warning(
-                f"⚠️ No se pudo calcular SHAP: {e}. Usando método rápido. "
-                f"Si persiste: verificar versiones SHAP/sklearn/CatBoost y que "
-                f"stacking.estimators contenga tuplas (nombre, estimador) con 'CatBoost'."
-            )
+            st.warning(f"⚠️ No se pudo calcular SHAP: {e}. Usando método rápido.")
             return _contribuciones_proxy(perfil, df_ref)
 
 
@@ -1761,13 +1415,7 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
         df_grupo     = df_ref[df_ref['titulacion'] == contexto['valor']]
         nombre_grupo = contexto['valor']
     else:
-        # "Solo mi rama" — obtener la rama del contexto correctamente
-        # Si el contexto es titulación, la rama está en df_contexto, no en valor
-        if contexto['tipo'] == 'titulacion' and contexto.get('df_contexto') is not None:
-            df_tit = contexto['df_contexto']
-            val_rama = df_tit[col_rama].mode()[0] if col_rama in df_tit.columns and len(df_tit) > 0 else None
-        else:
-            val_rama = contexto['valor']
+        val_rama     = contexto['valor']
         df_grupo     = df_ref[df_ref[col_rama] == val_rama] \
             if val_rama else df_ref.copy()
         nombre_grupo = val_rama or "toda la UJI"
@@ -1797,43 +1445,20 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
             padding:0.8rem 1.2rem;
             font-size:0.9rem;
         ">
-            Tu riesgo predicho es <strong>{prob*100:.1f}%</strong>.<br><br>
-            Estás mejor que el
+            Tu riesgo predicho (<strong>{prob*100:.1f}%</strong>) es mayor que el
+            <strong>{percentil:.0f}%</strong> de los alumnos de <em>{nombre_grupo}</em>.<br><br>
+            Dicho de otra forma: el
             <strong style="color:{color};">{100-percentil:.0f}%</strong>
-            de los alumnos de <em>{nombre_grupo}</em> —
-            solo el <strong>{percentil:.0f}%</strong> tiene un riesgo menor que el tuyo.
+            de los alumnos tiene un riesgo igual o mayor que el tuyo.
         </div>
         """, unsafe_allow_html=True)
 
-    # --- Umbral mínimo: no tiene sentido un histograma con <10 alumnos ---
-    MIN_ALUMNOS = 10
-    if len(probs_grupo) < MIN_ALUMNOS:
-        st.info(
-            f"ℹ️ El grupo **{nombre_grupo}** tiene solo {len(probs_grupo)} alumno(s) "
-            f"en el conjunto de test — insuficiente para mostrar una distribución. "
-            f"Prueba con 'Toda la UJI' o 'Solo mi rama' para una comparativa más representativa."
-        )
-        return
-
-    # --- Eje X dinámico: centrado en el rango real de los datos ---
-    p5  = float(np.percentile(probs_grupo * 100, 3))
-    p95 = float(np.percentile(probs_grupo * 100, 97))
-    margen = max(5.0, (p95 - p5) * 0.15)
-    x_min = max(0.0,   p5  - margen)
-    x_max = min(100.0, p95 + margen)
-    # Asegurar que tanto "Tú" como "Media" quedan dentro del eje
-    x_min = min(x_min, prob * 100 - margen, probs_grupo.mean() * 100 - margen)
-    x_max = max(x_max, prob * 100 + margen, probs_grupo.mean() * 100 + margen)
-    x_min = max(0.0, x_min)
-    x_max = min(100.0, x_max)
-
     # Histograma
-    media_grupo = float(probs_grupo.mean() * 100)
     fig = go.Figure()
 
     fig.add_trace(go.Histogram(
         x=probs_grupo * 100,
-        nbinsx=30,
+        nbinsx=40,
         name=f"Distribución ({nombre_grupo})",
         marker_color=COLORES['primario'],
         opacity=0.6,
@@ -1851,6 +1476,7 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
     )
 
     # Línea vertical: media del grupo
+    media_grupo = float(probs_grupo.mean() * 100)
     fig.add_vline(
         x=media_grupo,
         line_color=COLORES['texto_suave'], line_width=1.5, line_dash="dash",
@@ -1860,33 +1486,15 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
         annotation_font_size=11,
     )
 
-    # Leyenda manual como trazas invisibles
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None], mode='lines',
-        line=dict(color=color, width=3),
-        name=f"Tu posición ({prob*100:.1f}%)",
-    ))
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None], mode='lines',
-        line=dict(color=COLORES['texto_suave'], width=1.5, dash='dash'),
-        name=f"Media grupo ({media_grupo:.1f}%)",
-    ))
-
     fig.update_layout(
         xaxis_title="Probabilidad de abandono predicha (%)",
         yaxis_title="Nº alumnos",
-        xaxis=dict(range=[x_min, x_max], ticksuffix='%'),
+        xaxis=dict(range=[0, 100], ticksuffix='%'),
         plot_bgcolor="white",
         paper_bgcolor="white",
         margin=dict(l=40, r=20, t=20, b=40),
-        height=300,
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom", y=1.02,
-            xanchor="right",  x=1,
-            font=dict(size=11),
-        ),
+        height=280,
+        showlegend=False,
         bargap=0.05,
     )
     fig.update_xaxes(showgrid=True, gridcolor=COLORES['borde'])
@@ -1908,17 +1516,12 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
                           df_ref: "pd.DataFrame", modelo, pipeline,
                           df_features: "pd.DataFrame | None" = None):
     """
-    Comparativa entre titulaciones seleccionadas.
+    Comparativa de riesgo entre 2-5 titulaciones para el mismo perfil.
 
-    DISEÑO:
-      Dato central  → tasa histórica de abandono por titulación (varía realmente)
-      Dato secundario → tu riesgo personal (calculado UNA sola vez con tu perfil)
-
-    POR QUÉ:
-      El modelo no tiene 'titulacion' como feature — solo 'rama'.
-      Tu riesgo personal es el mismo para titulaciones de la misma rama.
-      La tasa histórica sí varía entre titulaciones y es muy útil para
-      un prospecto que quiere saber qué carrera tiene más abandonos reales.
+    Estructura:
+      1. Tabla resumen (riesgo %, nivel, tasa histórica, nº alumnos)
+      2. Gráfico de barras horizontales + barras vs histórico
+      3. Detalle expandible por titulación (radar + cascada)
     """
     if len(titulaciones) < 2:
         st.warning("Selecciona al menos 2 titulaciones para ver la comparativa.")
@@ -1929,264 +1532,192 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         Comparativa de titulaciones
     </h3>
     <p style="font-size:0.88rem; color:{COLORES['texto_suave']}; margin-top:0;">
-        Abandono histórico real de cada titulación + tu riesgo personal estimado.
+        Riesgo estimado de abandono para tu perfil en cada titulación seleccionada.
     </p>
     """, unsafe_allow_html=True)
 
-    # ------------------------------------------------------------------
-    # 1. Recopilar datos históricos + calcular prob por titulación
-    #    Cada titulación usa su propio df filtrado → pronósticos distintos.
-    # ------------------------------------------------------------------
+    # Calcular probabilidad para cada titulación
+    # NOTA: el modelo no tiene 'titulacion' como feature — solo 'rama'.
+    # Titulaciones de la misma rama darán el mismo riesgo estimado.
+    # Las diferencias entre titulaciones de distinta rama son reales.
     col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
-    _PALETA_COMP = ["#3182ce", "#805ad5", "#319795", "#d69e2e", "#e53e3e"]
-
-    datos = []
-    for i, tit in enumerate(titulaciones):
-        df_tit = df_ref[df_ref["titulacion"] == tit] \
-            if "titulacion" in df_ref.columns else df_ref.copy()
-        # Fallback: si la titulación no tiene datos, usamos df_ref global
-        if len(df_tit) == 0:
-            df_tit = df_ref.copy()
-
-        tasa_hist = float(df_tit["abandono"].mean() * 100) \
-            if "abandono" in df_tit.columns and len(df_tit) > 0 else 0.0
+    resultados = []
+    for tit in titulaciones:
+        df_tit = df_ref[df_ref["titulacion"] == tit] if "titulacion" in df_ref.columns             else df_ref.copy()
+        tasa_hist = float(df_tit["abandono"].mean() * 100)             if "abandono" in df_tit.columns and len(df_tit) > 0 else 0.0
         n_alumnos = len(df_tit)
-        rama = df_tit[col_rama].mode()[0] \
-            if col_rama in df_tit.columns and len(df_tit) > 0 else "–"
 
-        # Calcular prob con las medias de ESTA titulación
-        prob_tit, err_tit = _calcular_probabilidad(perfil, modelo, pipeline, df_tit)
-        if err_tit or prob_tit is None:
-            prob_tit = 0.0
+        # Obtener la rama de esta titulación para imputar con medias de esa rama
+        rama_tit = df_tit[col_rama].mode()[0]             if col_rama in df_tit.columns and len(df_tit) > 0 else None
 
-        # Corrección heurística: ajusta por tasa histórica tit vs rama
-        ctx_tit_tmp = {"tipo": "titulacion", "valor": tit}
-        prob_tit, _, _, _ = _ajustar_prob_por_titulacion(prob_tit, ctx_tit_tmp, df_ref)
-        nivel_tit, color_tit, _, _ = _clasificar_riesgo(prob_tit)
+        # Imputar con medias de la rama (no el global) — así ramas distintas dan riesgos distintos
+        if rama_tit is not None and col_rama in df_ref.columns:
+            df_imp_base = df_ref[df_ref[col_rama] == rama_tit]
+            df_imp = df_imp_base if len(df_imp_base) > 10 else df_ref
+        else:
+            df_imp = df_features if df_features is not None else df_ref
 
-        # Nombre corto
+        prob, err = _calcular_probabilidad(perfil, modelo, pipeline, df_imp)
+        if err or prob is None:
+            prob = 0.0
+
+        nivel, color, emoji, _ = _clasificar_riesgo(prob)
+        resultados.append({
+            "titulacion": tit, "prob": prob, "pct": prob * 100,
+            "nivel": nivel, "color": color, "emoji": emoji,
+            "tasa_hist": tasa_hist, "n_alumnos": n_alumnos,
+            "rama": rama_tit or "–",
+        })
+
+    # Ordenar de menor a mayor riesgo
+    resultados.sort(key=lambda x: x["prob"])
+
+    # Detectar titulaciones de la misma rama (darán el mismo riesgo)
+    from collections import Counter as _Counter
+    ramas_contadas = _Counter(r["rama"] for r in resultados)
+    misma_rama = [rama for rama, cnt in ramas_contadas.items() if cnt > 1 and rama != "–"]
+    if misma_rama:
+        tits_misma = [r["titulacion"] for r in resultados if r["rama"] in misma_rama]
+        nombres_misma = [r.split("Grado en ")[-1][:35] for r in tits_misma]
+        st.info(
+            f"ℹ️ **Nota metodológica:** El modelo usa la **rama de conocimiento** como variable "
+            f"(no la titulación específica). Las titulaciones de la misma rama mostrarán el mismo "
+            f"riesgo estimado: {', '.join(nombres_misma)}. "
+            f"Las diferencias reales entre ellas no son capturables con este modelo."
+        )
+
+    # Paleta de colores distintos — uno por titulación (independiente del nivel de riesgo)
+    # DEBE asignarse ANTES del velocímetro y los gráficos que usan color_comp
+    _PALETA_COMP = ["#3182ce", "#805ad5", "#319795", "#d69e2e", "#e53e3e"]
+    for i, r in enumerate(resultados):
+        r["color_comp"] = _PALETA_COMP[i % len(_PALETA_COMP)]
+
+    # Velocímetro con marcadores de todas las titulaciones (un color por titulación)
+    st.markdown(f"""
+    <h4 style="color:{COLORES['texto']}; margin:1rem 0 0.3rem 0;">
+        🎯 Indicador de riesgo comparativo
+    </h4>""", unsafe_allow_html=True)
+    _grafico_velocimetro_comparativa(resultados)
+    st.divider()
+
+    # Helper: quitar prefijo "Grado en " etc.
+    def _nombre_corto(tit):
         nc = tit
         for pref in ["Grado en ", "Doble Grado en ", "Grado Universitario en "]:
             if nc.startswith(pref):
                 nc = nc[len(pref):]
                 break
-
-        datos.append({
-            "titulacion":   tit,
-            "nombre":       nc,
-            "nombre_40":    nc[:40] + "…" if len(nc) > 40 else nc,
-            "tasa_hist":    tasa_hist,
-            "n_alumnos":    n_alumnos,
-            "rama":         rama,
-            "color":        _PALETA_COMP[i % len(_PALETA_COMP)],
-            "prob":         prob_tit,
-            "nivel":        nivel_tit,
-            "color_riesgo": color_tit,
-        })
-
-    # Ordenar por tasa histórica de mayor a menor
-    datos.sort(key=lambda x: x["tasa_hist"], reverse=True)
-
-    st.divider()
+        return nc[:42] + "..." if len(nc) > 42 else nc
 
     # ------------------------------------------------------------------
-    # 4. Tabla resumen — dato central: abandono histórico
+    # BLOQUE 1: Tabla resumen
     # ------------------------------------------------------------------
-    st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin:0.5rem 0 0.4rem 0;">
-        📋 Abandono histórico por titulación
-    </h4>
-    <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0 0 0.6rem 0;">
-        Porcentaje real de estudiantes que abandonaron cada titulación
-        en el período 2010–2020. Dato independiente de tu perfil.
-    </p>
-    """, unsafe_allow_html=True)
-
-    # Cabecera
-    cols_h = st.columns([3, 1.5, 1.2, 1.8, 1.2])
-    for col, h in zip(cols_h, ["Titulación", "Abandono histórico", "Alumnos", "Rama", "Tu riesgo"]):
-        col.markdown(
-            f"<p style='font-size:0.77rem; font-weight:600; "
-            f"color:{COLORES['texto_suave']}; margin:0;'>{h}</p>",
-            unsafe_allow_html=True,
-        )
-    st.markdown(f"<hr style='margin:0.2rem 0; border-color:{COLORES['borde']}'>",
+    st.markdown(f"<h4 style=\"color:{COLORES['texto']}; margin:1rem 0 0.4rem 0;\">Resumen comparativo</h4>",
                 unsafe_allow_html=True)
 
-    for d in datos:
-        # Color de la barra de tasa histórica según nivel
-        if d["tasa_hist"] >= 40:
-            col_hist = COLORES["abandono"]
-        elif d["tasa_hist"] >= 25:
-            col_hist = COLORES["advertencia"]
-        else:
-            col_hist = COLORES["exito"]
+    cols_h = st.columns([3, 1.4, 1.1, 1.5, 1.1])
+    for col, h in zip(cols_h, ["Titulacion", "Riesgo", "Nivel", "Hist. abandono", "Alumnos"]):
+        col.markdown(f"<p style=\"font-size:0.77rem; font-weight:600; color:{COLORES['texto_suave']}; margin:0;\">{h}</p>",
+                     unsafe_allow_html=True)
+    st.markdown(f"<hr style=\"margin:0.2rem 0; border-color:{COLORES['borde']}\">", unsafe_allow_html=True)
 
-        cs = st.columns([3, 1.5, 1.2, 1.8, 1.2])
-        cs[0].markdown(
-            f"<p style='font-size:0.83rem; color:{COLORES['texto']}; "
-            f"margin:0.15rem 0;'>"
-            f"<span style='color:{d['color']};'>■</span> {d['nombre_40']}</p>",
-            unsafe_allow_html=True,
-        )
-        cs[1].markdown(
-            f"<p style='font-size:0.92rem; font-weight:bold; "
-            f"color:{col_hist}; margin:0.15rem 0;'>{d['tasa_hist']:.1f}%</p>",
-            unsafe_allow_html=True,
-        )
-        cs[2].markdown(
-            f"<p style='font-size:0.83rem; color:{COLORES['texto_suave']}; "
-            f"margin:0.15rem 0;'>{d['n_alumnos']:,}</p>",
-            unsafe_allow_html=True,
-        )
-        cs[3].markdown(
-            f"<p style='font-size:0.83rem; color:{COLORES['texto_suave']}; "
-            f"margin:0.15rem 0;'>{d['rama']}</p>",
-            unsafe_allow_html=True,
-        )
-        cs[4].markdown(
-            f"<p style='font-size:0.83rem; font-weight:bold; "
-            f"color:{d['color_riesgo']}; margin:0.15rem 0;'>{d['prob']*100:.1f}%</p>",
-            unsafe_allow_html=True,
-        )
-        st.markdown(
-            f"<hr style='margin:0.1rem 0; border-color:{COLORES['borde']}'>",
-            unsafe_allow_html=True,
-        )
+    for r in resultados:
+        nc = _nombre_corto(r["titulacion"])
+        cs = st.columns([3, 1.4, 1.1, 1.5, 1.1])
+        cs[0].markdown(f"<p style=\"font-size:0.82rem; color:{COLORES['texto']}; margin:0.15rem 0;\">{nc}</p>", unsafe_allow_html=True)
+        cs[1].markdown(f"<p style=\"font-size:0.9rem; font-weight:bold; color:{r['color']}; margin:0.15rem 0;\">{r['pct']:.1f}%</p>", unsafe_allow_html=True)
+        cs[2].markdown(f"<p style=\"font-size:0.82rem; margin:0.15rem 0;\">{r['emoji']} {r['nivel']}</p>", unsafe_allow_html=True)
+        cs[3].markdown(f"<p style=\"font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0.15rem 0;\">{r['tasa_hist']:.1f}%</p>", unsafe_allow_html=True)
+        cs[4].markdown(f"<p style=\"font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0.15rem 0;\">{r['n_alumnos']:,}</p>", unsafe_allow_html=True)
+        st.markdown(f"<hr style=\"margin:0.1rem 0; border-color:{COLORES['borde']}\">", unsafe_allow_html=True)
 
     # ------------------------------------------------------------------
-    # 5. Gráfico de barras — abandono histórico por titulación
+    # BLOQUE 2: Gráficos
     # ------------------------------------------------------------------
-    st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin:1.5rem 0 0.4rem 0;">
-        📊 Comparativa visual
-    </h4>""", unsafe_allow_html=True)
+    st.markdown(f"<h4 style=\"color:{COLORES['texto']}; margin:1.5rem 0 0.4rem 0;\">Comparativa visual</h4>",
+                unsafe_allow_html=True)
 
-    fig = go.Figure()
-    for d in datos:
-        fig.add_trace(go.Bar(
-            x=[d["tasa_hist"]],
-            y=[d["nombre_40"]],
-            orientation="h",
-            marker_color=d["color"],
-            text=f"{d['tasa_hist']:.1f}%",
-            textposition="outside",
-            name=d["nombre_40"],
-            hovertemplate=(
-                f"<b>{d['nombre']}</b><br>"
-                f"Abandono histórico: {d['tasa_hist']:.1f}%<br>"
-                f"Alumnos: {d['n_alumnos']:,}<br>"
-                f"Tu riesgo personal: {d['prob']*100:.1f}%"
-                "<extra></extra>"
-            ),
-            showlegend=False,
-        ))
+    col_bar, col_doble = st.columns([1, 1])
+    nombres = [_nombre_corto(r["titulacion"]) for r in resultados]
 
-    # Línea vertical: media UJI histórica
-    media_uji_hist = float(df_ref["abandono"].mean() * 100)         if "abandono" in df_ref.columns else 29.2
-    fig.add_vline(
-        x=media_uji_hist,
-        line_color=COLORES["texto_suave"], line_dash="dash", line_width=1.5,
-        annotation_text=f"Media UJI ({media_uji_hist:.1f}%)",
-        annotation_font_size=10,
-        annotation_font_color=COLORES["texto_suave"],
-    )
-    # (línea de riesgo personal eliminada: cada titulación tiene su prob)
-    # En su lugar: marcadores de riesgo como scatter sobre las barras
-    fig.add_trace(go.Scatter(
-        x=[d["prob"] * 100 for d in datos],
-        y=[d["nombre_40"] for d in datos],
-        mode="markers+text",
-        marker=dict(
-            symbol="diamond",
-            size=12,
-            color=[d["color_riesgo"] for d in datos],
-            line=dict(color="white", width=1.5),
-        ),
-        text=[f'{d["prob"]*100:.1f}%' for d in datos],
-        textposition="middle right",
-        textfont=dict(size=10),
-        name="Tu riesgo estimado",
-        hovertemplate=(
-            "<b>Tu riesgo en %{y}</b><br>"
-            "Probabilidad estimada: %{x:.1f}%"
-            "<extra></extra>"
-        ),
-        showlegend=True,
-    ))
-
-    fig.update_layout(
-        xaxis=dict(range=[0, 105], ticksuffix="%",
-                   title="Tasa de abandono histórica (%)"),
-        yaxis=dict(autorange="reversed"),
-        plot_bgcolor="white", paper_bgcolor="white",
-        margin=dict(l=10, r=120, t=20, b=40),
-        height=max(220, len(datos) * 65),
-        bargap=0.3,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.28,
-            xanchor="left",
-            x=0,
-            font=dict(size=11),
-            bgcolor="rgba(255,255,255,0.8)",
-            bordercolor=COLORES["borde"],
-            borderwidth=1,
-        ),
-        showlegend=True,
-    )
-    fig.update_xaxes(showgrid=True, gridcolor=COLORES["borde"])
-    st.plotly_chart(fig, use_container_width=True)
-    st.caption(
-        "📊 Barras = tasa de abandono histórica real (2010–2020). "
-        "╌╌╌ Línea gris discontinua = media UJI. "
-        "◆ Diamante de color = tu riesgo estimado para este perfil (por titulación)."
-    )
-
-
-    # ------------------------------------------------------------------
-    # 6. Detalle expandible por titulación — radar + cascada
-    # ------------------------------------------------------------------
-    st.divider()
-    st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin:0.5rem 0 0.3rem 0;">
-        🔎 Detalle por titulación
-    </h4>
-    <p style="font-size:0.83rem; color:{COLORES['texto_suave']}; margin:0 0 0.8rem 0;">
-        Despliega para ver el perfil de abandono histórico y los factores de riesgo.
-    </p>""", unsafe_allow_html=True)
-
-    for idx_d, d in enumerate(datos):
-        col_hist_nivel = COLORES["abandono"] if d["tasa_hist"] >= 40 \
-            else COLORES["advertencia"] if d["tasa_hist"] >= 25 else COLORES["exito"]
-        label = (
-            f"<span style='color:{d['color']};'>■</span> "
-            f"{d['nombre_40']} — "
-            f"Histórico: {d['tasa_hist']:.1f}% · "
-            f"Tu riesgo: {d['prob']*100:.1f}% · "
-            f"{d['n_alumnos']:,} alumnos"
+    with col_bar:
+        # Barras horizontales ordenadas
+        fig_bar = go.Figure()
+        for r, nm in zip(resultados, nombres):
+            fig_bar.add_trace(go.Bar(
+                x=[r["pct"]], y=[nm], orientation="h",
+                marker_color=r["color_comp"],
+                text=f"{r['pct']:.1f}%", textposition="outside",
+                hovertemplate=f"<b>{nm}</b><br>Riesgo: {r['pct']:.1f}%<extra></extra>",
+                showlegend=False,
+            ))
+        fig_bar.add_vline(x=29.2, line_color=COLORES["texto_suave"],
+                          line_dash="dash", line_width=1.5,
+                          annotation_text="Media UJI (29.2%)",
+                          annotation_font_size=10,
+                          annotation_font_color=COLORES["texto_suave"])
+        fig_bar.update_layout(
+            xaxis=dict(range=[0, 105], ticksuffix="%", title="Riesgo estimado (%)"),
+            yaxis=dict(autorange="reversed"),
+            plot_bgcolor="white", paper_bgcolor="white",
+            margin=dict(l=10, r=60, t=20, b=30),
+            height=max(200, len(resultados) * 65),
+            bargap=0.3,
         )
-        with st.expander(f"{d['nombre_40']} — Hist: {d['tasa_hist']:.1f}% · Tu riesgo: {d['prob']*100:.1f}%", expanded=False):
+        fig_bar.update_xaxes(showgrid=True, gridcolor=COLORES["borde"])
+        st.plotly_chart(fig_bar, use_container_width=True)
+        st.caption("Barras ordenadas de menor a mayor riesgo. Linea gris = media UJI (29.2%).")
+
+    with col_doble:
+        # Barras agrupadas: riesgo estimado (color por titulación) vs histórico (gris)
+        fig_d = go.Figure()
+        for r, nm in zip(resultados, nombres):
+            fig_d.add_trace(go.Bar(
+                name=nm,
+                x=["Tu riesgo", "Histórico"],
+                y=[r["pct"], r["tasa_hist"]],
+                marker_color=[r["color_comp"], "rgba(113,128,150,0.5)"],
+                text=[f"{r['pct']:.1f}%", f"{r['tasa_hist']:.1f}%"],
+                textposition="outside",
+                opacity=0.85,
+            ))
+        fig_d.update_layout(
+            barmode="group",
+            yaxis=dict(ticksuffix="%", title="(%)"),
+            plot_bgcolor="white", paper_bgcolor="white",
+            margin=dict(l=10, r=10, t=20, b=40),
+            height=max(220, len(resultados) * 60),
+            legend=dict(orientation="h", yanchor="bottom", y=-0.35,
+                        font=dict(size=10)),
+            bargap=0.2, bargroupgap=0.05,
+        )
+        fig_d.update_yaxes(showgrid=True, gridcolor=COLORES["borde"])
+        st.plotly_chart(fig_d, use_container_width=True)
+        st.caption("Para cada titulación: tu riesgo estimado vs tasa histórica real.")
+
+    # ------------------------------------------------------------------
+    # BLOQUE 3: Detalle expandible
+    # ------------------------------------------------------------------
+    st.markdown(f"<h4 style=\"color:{COLORES['texto']}; margin:1.5rem 0 0.3rem 0;\">Detalle por titulacion</h4>",
+                unsafe_allow_html=True)
+    st.markdown(f"<p style=\"font-size:0.83rem; color:{COLORES['texto_suave']}; margin:0 0 0.8rem 0;\">Despliega cada titulacion para ver el radar y la cascada de contribuciones.</p>",
+                unsafe_allow_html=True)
+
+    for r in resultados:
+        nc = _nombre_corto(r["titulacion"])
+        label = f"{r['emoji']} {nc} — {r['pct']:.1f}% ({r['nivel']}) · Hist: {r['tasa_hist']:.1f}%"
+        with st.expander(label, expanded=False):
             ctx_tit = {
-                "tipo":        "titulacion",
-                "valor":       d["titulacion"],
-                "df_contexto": df_ref[df_ref["titulacion"] == d["titulacion"]]
+                "tipo": "titulacion",
+                "valor": r["titulacion"],
+                "df_contexto": df_ref[df_ref["titulacion"] == r["titulacion"]]
                                if "titulacion" in df_ref.columns else df_ref.copy(),
             }
             c1, c2 = st.columns([1, 1])
             with c1:
-                _grafico_radar(perfil, df_ref, ctx_tit, d['prob'])
+                _grafico_radar(perfil, df_ref, ctx_tit, r["prob"])
             with c2:
-                df_tit_exp = df_ref[df_ref['titulacion'] == d['titulacion']].copy() if 'titulacion' in df_ref.columns else df_ref
-                _grafico_cascada(perfil, df_tit_exp, d['prob'], modelo, pipeline)
-
-    # ------------------------------------------------------------------
-    # 7. Recomendaciones personalizadas basadas en el perfil
-    # ------------------------------------------------------------------
-    st.divider()
-    _recomendaciones(perfil, datos[0]['prob'] if datos else 0.0, 'prospecto')
-
+                _grafico_cascada(perfil, df_ref, r["prob"], modelo, pipeline)
 
 # =============================================================================
 # RECOMENDACIONES PERSONALIZADAS
@@ -2195,9 +1726,7 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
 def _recomendaciones(perfil: dict, prob: float, modo: str):
     """
     Genera recomendaciones concretas basadas en el perfil y el nivel de riesgo.
-    Las recomendaciones son distintas para prospecto (antes de entrar) y
-    en_curso (ya matriculado): el alumno en curso necesita orientación
-    inmediata y acciones concretas, no consejos de acceso.
+    Siempre positivas y orientadas a la acción.
     """
     st.markdown(f"""
     <h4 style="color:{COLORES['texto']}; margin-bottom:0.5rem;">
@@ -2208,158 +1737,74 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
     nivel, color, _, _ = _clasificar_riesgo(prob)
     recomendaciones = []
 
-    # ------------------------------------------------------------------
-    # MODO EN CURSO — alumno ya matriculado
-    # Recomendaciones orientadas a la acción inmediata dentro de la UJI
-    # ------------------------------------------------------------------
-    if modo == "en_curso":
+    if perfil.get('n_anios_beca', 0) == 0:
+        recomendaciones.append({
+            'icono': '🎓',
+            'titulo': 'Infórmate sobre becas',
+            'texto': (
+                'Los años con beca son uno de los factores protectores más '
+                'importantes. Consulta las convocatorias del Ministerio y '
+                'las becas propias de la UJI antes de matricularte.'
+            ),
+        })
 
-        nota_1er = perfil.get('nota_1er_anio', 10)
-        cred_1er = perfil.get('cred_superados_anio_1er', 40)
-        trabaja  = perfil.get('situacion_laboral', 11) != 11
-        beca     = perfil.get('n_anios_beca', 0)
+    # situacion_laboral es código numérico; 11 = 'No trabaja'
+    if perfil.get('situacion_laboral', 11) != 11:
+        recomendaciones.append({
+            'icono': '⏰',
+            'titulo': 'Gestión del tiempo',
+            'texto': (
+                'Combinar trabajo y estudios aumenta el riesgo de abandono. '
+                'La UJI ofrece modalidades semipresenciales y horarios '
+                'adaptados. Consulta con tu facultad las opciones disponibles.'
+            ),
+        })
 
-        if nota_1er < 5:
-            recomendaciones.append({
-                'icono': '🆘',
-                'titulo': 'Contacta con tu tutor ahora',
-                'texto': (
-                    'Una nota media del primer año por debajo de 5 es una '
-                    'señal de alerta importante. El Servicio de Orientación '
-                    'Universitaria (SAE) de la UJI ofrece atención personalizada '
-                    'y puede ayudarte a reorganizar tu carga lectiva.'
-                ),
-            })
-        elif nota_1er < 7:
-            recomendaciones.append({
-                'icono': '📋',
-                'titulo': 'Revisión de tu plan de estudios',
-                'texto': (
-                    'Tu rendimiento tiene margen de mejora. Considera revisar '
-                    'con tu tutor si la carga de asignaturas es adecuada a '
-                    'tu situación personal. Reducir créditos un año puede '
-                    'ser más eficaz que repetir asignaturas.'
-                ),
-            })
+    if perfil.get('nota_acceso', 10) < 7:
+        recomendaciones.append({
+            'icono': '📚',
+            'titulo': 'Refuerzo académico desde el inicio',
+            'texto': (
+                'Una nota de acceso más baja se puede compensar con una '
+                'buena organización desde el primer cuatrimestre. Los '
+                'servicios de tutoría de la UJI están a tu disposición.'
+            ),
+        })
 
-        if cred_1er < 30:
-            recomendaciones.append({
-                'icono': '📉',
-                'titulo': 'Pocos créditos superados',
-                'texto': (
-                    'Superar menos de 30 créditos en el primer año es un '
-                    'factor de riesgo relevante. Habla con tu facultad sobre '
-                    'la posibilidad de adaptar tu matrícula o acceder a '
-                    'grupos de refuerzo.'
-                ),
-            })
+    if modo == 'en_curso' and perfil.get('nota_1er_anio', 10) < 5:
+        recomendaciones.append({
+            'icono': '🆘',
+            'titulo': 'Busca apoyo académico ahora',
+            'texto': (
+                'Una nota media del primer año por debajo de 5 es una señal '
+                'de alerta importante. Contacta con tu tutor académico o '
+                'con el servicio de orientación universitaria de la UJI '
+                'lo antes posible.'
+            ),
+        })
 
-        if trabaja:
-            recomendaciones.append({
-                'icono': '⏰',
-                'titulo': 'Compatibiliza trabajo y estudio',
-                'texto': (
-                    'Combinar trabajo y estudios aumenta el riesgo de abandono. '
-                    'La UJI ofrece modalidades semipresenciales y horarios '
-                    'adaptados. Consulta con tu facultad las opciones '
-                    'disponibles para tu titulación.'
-                ),
-            })
+    if perfil.get('edad_acceso', 19) > 25:
+        recomendaciones.append({
+            'icono': '🤝',
+            'titulo': 'Aprovecha tu experiencia',
+            'texto': (
+                'Los estudiantes maduros tienen más responsabilidades pero '
+                'también más motivación y experiencia vital. La UJI tiene '
+                'programas específicos de acompañamiento para este perfil.'
+            ),
+        })
 
-        if beca == 0 and nivel in ('Medio', 'Alto'):
-            recomendaciones.append({
-                'icono': '🎓',
-                'titulo': 'Solicita una beca',
-                'texto': (
-                    'Los estudiantes becados tienen tasas de abandono '
-                    'significativamente más bajas. Si cumples los requisitos '
-                    'económicos, solicita la beca del Ministerio o las '
-                    'propias de la UJI en la próxima convocatoria.'
-                ),
-            })
+    if nivel == 'Bajo' or not recomendaciones:
+        recomendaciones.append({
+            'icono': '✅',
+            'titulo': 'Buen perfil de entrada',
+            'texto': (
+                'Tu perfil muestra factores protectores importantes. '
+                'Mantén el mismo nivel de dedicación durante el primer año — '
+                'es el período más crítico para consolidar el hábito de estudio.'
+            ),
+        })
 
-        if nivel == 'Bajo' or not recomendaciones:
-            recomendaciones.append({
-                'icono': '✅',
-                'titulo': 'Vas por buen camino',
-                'texto': (
-                    'Tu perfil actual muestra factores protectores importantes. '
-                    'Mantén el ritmo de estudio y no descuides los primeros '
-                    'cuatrimestres — son los más decisivos para consolidar '
-                    'el hábito académico.'
-                ),
-            })
-
-    # ------------------------------------------------------------------
-    # MODO PROSPECTO — alumno que todavía no está matriculado
-    # Recomendaciones orientadas a la decisión de entrada
-    # ------------------------------------------------------------------
-    else:
-
-        trabaja = perfil.get('situacion_laboral', 11) != 11
-        beca    = perfil.get('n_anios_beca', 0)
-        nota    = perfil.get('nota_acceso', 10)
-        edad    = perfil.get('edad_entrada', 19)
-
-        if beca == 0:
-            recomendaciones.append({
-                'icono': '🎓',
-                'titulo': 'Infórmate sobre becas',
-                'texto': (
-                    'Los años con beca son uno de los factores protectores más '
-                    'importantes. Consulta las convocatorias del Ministerio y '
-                    'las becas propias de la UJI antes de matricularte.'
-                ),
-            })
-
-        if trabaja:
-            recomendaciones.append({
-                'icono': '⏰',
-                'titulo': 'Planifica tu carga desde el inicio',
-                'texto': (
-                    'Combinar trabajo y estudios aumenta el riesgo de abandono. '
-                    'La UJI ofrece modalidades semipresenciales y horarios '
-                    'adaptados. Consulta con tu facultad las opciones disponibles.'
-                ),
-            })
-
-        if nota < 7:
-            recomendaciones.append({
-                'icono': '📚',
-                'titulo': 'Refuerzo académico desde el inicio',
-                'texto': (
-                    'Una nota de acceso más baja se puede compensar con una '
-                    'buena organización desde el primer cuatrimestre. Los '
-                    'servicios de tutoría de la UJI están a tu disposición '
-                    'desde el primer día.'
-                ),
-            })
-
-        if edad > 25:
-            recomendaciones.append({
-                'icono': '🤝',
-                'titulo': 'Aprovecha tu experiencia',
-                'texto': (
-                    'Los estudiantes maduros tienen más responsabilidades pero '
-                    'también más motivación y experiencia vital. La UJI tiene '
-                    'programas específicos de acompañamiento para este perfil.'
-                ),
-            })
-
-        if nivel == 'Bajo' or not recomendaciones:
-            recomendaciones.append({
-                'icono': '✅',
-                'titulo': 'Buen perfil de entrada',
-                'texto': (
-                    'Tu perfil muestra factores protectores importantes. '
-                    'Mantén el mismo nivel de dedicación durante el primer año — '
-                    'es el período más crítico para consolidar el hábito de estudio.'
-                ),
-            })
-
-    # ------------------------------------------------------------------
-    # Renderizado de tarjetas (igual para ambos modos)
-    # ------------------------------------------------------------------
     cols = st.columns(min(len(recomendaciones), 3))
     for i, rec in enumerate(recomendaciones[:3]):
         with cols[i % 3]:
