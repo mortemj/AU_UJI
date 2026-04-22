@@ -164,7 +164,8 @@ RUTAS = {
     "X_test_prep": ROOT / "data" / "05_modelado" / "X_test_prep.parquet",
 
     # Fichero puente: índice posicional + per_id_ficticio (Fase 6 celda 8b)
-    "X_test_ids": ROOT / "data" / "06_evaluacion" / "X_test_prep_ids.parquet",
+    #"X_test_ids": ROOT / "data" / "06_evaluacion" / "X_test_prep_ids.parquet", revissaar 
+    "X_test_prep_ids": ROOT / "data" / "05_modelado" / "X_test_prep_ids.parquet",
 
     # Features del test sin preprocesar (valores originales legibles)
     "X_test": ROOT / "data" / "05_modelado" / "X_test.parquet",
