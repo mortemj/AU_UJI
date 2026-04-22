@@ -1,6 +1,6 @@
 {
-  "fecha_preparacion": "2026-03-23T01:04:06.868571",
-  "dataset_origen": "dataset_final_tfm.parquet (D_strict)",
+  "fecha_preparacion": "2026-04-13T17:47:47.403480",
+  "dataset_origen": "C:\\Users\\mjmor\\OneDrive - Universitat Jaume I\\2.- AU_UJI\\data\\03_features\\dataset_final_tfm.parquet",
   "random_state": 42,
   "test_size": 0.2,
   "n_total": 33621,
@@ -9,51 +9,327 @@
   "pct_abandono_total": 29.25,
   "pct_abandono_train": 29.25,
   "pct_abandono_test": 29.25,
-  "n_features": 19,
-  "features": [
+  "ratio_desbalance": 2.42,
+  "n_features_entrada": 24,
+  "n_features_final": 27,
+  "features_finales": [
     "cred_superados_anio_1er",
     "nota_1er_anio",
     "nota_acceso",
+    "nota_selectividad",
+    "via_acceso",
+    "cupo",
+    "tasa_abandono_titulacion",
     "rama",
     "sexo",
-    "edad_entrada",
     "pais_nombre",
     "provincia",
-    "via_acceso",
-    "orden_preferencia",
     "universidad_origen",
-    "tuvo_beca",
     "n_anios_beca",
+    "anios_sin_beca",
     "situacion_laboral",
-    "nota_selectividad",
+    "n_anios_trabajando",
     "max_pagos",
     "indicador_interrupcion",
+    "nota_1er_anio_missing",
+    "nota_acceso_missing",
+    "nota_selectividad_missing",
+    "orden_preferencia",
+    "cred_repetidos",
+    "tasa_repeticion",
+    "edad_entrada",
     "anios_gap",
-    "anios_sin_beca"
+    "n_anios_sin_notas"
   ],
-  "cols_numericas": [
-    "cred_superados_anio_1er",
+  "vars_log1p": [
+    "orden_preferencia",
+    "cred_repetidos",
+    "tasa_repeticion",
+    "edad_entrada",
+    "anios_gap",
+    "n_anios_sin_notas"
+  ],
+  "vars_informativas": [
     "nota_1er_anio",
     "nota_acceso",
-    "rama",
-    "sexo",
-    "edad_entrada",
+    "nota_selectividad"
+  ],
+  "decisiones_escalado": {
+    "cred_superados_anio_1er": {
+      "escalador": "robust",
+      "skew": 2.306,
+      "rango": 252.0,
+      "nuniq": 316,
+      "razon": "|skew|=2.31, rango=252 — robusto ante outliers"
+    },
+    "nota_1er_anio": {
+      "escalador": "standard",
+      "skew": 0.328,
+      "rango": 5.0,
+      "nuniq": 473,
+      "razon": "|skew|=0.33 — distribución aceptable para StandardScaler"
+    },
+    "nota_acceso": {
+      "escalador": "standard",
+      "skew": 0.463,
+      "rango": 8.8,
+      "nuniq": 866,
+      "razon": "|skew|=0.46 — distribución aceptable para StandardScaler"
+    },
+    "nota_selectividad": {
+      "escalador": "standard",
+      "skew": 0.716,
+      "rango": 7.5,
+      "nuniq": 497,
+      "razon": "|skew|=0.72 — distribución aceptable para StandardScaler"
+    },
+    "via_acceso": {
+      "escalador": "standard",
+      "skew": 1.293,
+      "rango": 12.0,
+      "nuniq": 11,
+      "razon": "|skew|=1.29 — distribución aceptable para StandardScaler"
+    },
+    "cupo": {
+      "escalador": "robust",
+      "skew": 2.699,
+      "rango": 7.0,
+      "nuniq": 8,
+      "razon": "|skew|=2.70, rango=7 — robusto ante outliers"
+    },
+    "tasa_abandono_titulacion": {
+      "escalador": "minmax",
+      "skew": 0.218,
+      "rango": 0.6,
+      "nuniq": 33,
+      "razon": "Tasa acotada [0,1] — preservar escala natural"
+    },
+    "rama": {
+      "escalador": "standard",
+      "skew": 0.318,
+      "rango": 4.0,
+      "nuniq": 5,
+      "razon": "|skew|=0.32 — distribución aceptable para StandardScaler"
+    },
+    "sexo": {
+      "escalador": "ninguno",
+      "skew": 0.206,
+      "rango": 1.0,
+      "nuniq": 2,
+      "razon": "Binaria — escalar no aporta información"
+    },
+    "pais_nombre": {
+      "escalador": "robust",
+      "skew": 5.85,
+      "rango": 4.0,
+      "nuniq": 5,
+      "razon": "|skew|=5.85, rango=4 — robusto ante outliers"
+    },
+    "provincia": {
+      "escalador": "robust",
+      "skew": 2.041,
+      "rango": 5.0,
+      "nuniq": 6,
+      "razon": "|skew|=2.04, rango=5 — robusto ante outliers"
+    },
+    "universidad_origen": {
+      "escalador": "robust",
+      "skew": 1.03,
+      "rango": 55.0,
+      "nuniq": 6,
+      "razon": "|skew|=1.03, rango=55 — robusto ante outliers"
+    },
+    "n_anios_beca": {
+      "escalador": "standard",
+      "skew": 0.647,
+      "rango": 9.0,
+      "nuniq": 10,
+      "razon": "|skew|=0.65 — distribución aceptable para StandardScaler"
+    },
+    "anios_sin_beca": {
+      "escalador": "standard",
+      "skew": 1.371,
+      "rango": 11.0,
+      "nuniq": 12,
+      "razon": "|skew|=1.37 — distribución aceptable para StandardScaler"
+    },
+    "situacion_laboral": {
+      "escalador": "standard",
+      "skew": 0.236,
+      "rango": 3.0,
+      "nuniq": 4,
+      "razon": "|skew|=0.24 — distribución aceptable para StandardScaler"
+    },
+    "n_anios_trabajando": {
+      "escalador": "standard",
+      "skew": 0.715,
+      "rango": 6.0,
+      "nuniq": 7,
+      "razon": "|skew|=0.71 — distribución aceptable para StandardScaler"
+    },
+    "max_pagos": {
+      "escalador": "standard",
+      "skew": 0.125,
+      "rango": 6.0,
+      "nuniq": 7,
+      "razon": "|skew|=0.13 — distribución aceptable para StandardScaler"
+    },
+    "indicador_interrupcion": {
+      "escalador": "ninguno",
+      "skew": 5.474,
+      "rango": 1.0,
+      "nuniq": 2,
+      "razon": "Binaria — escalar no aporta información"
+    },
+    "nota_1er_anio_missing": {
+      "escalador": "ninguno",
+      "skew": 3.371,
+      "rango": 1.0,
+      "nuniq": 2,
+      "razon": "Binaria — escalar no aporta información"
+    },
+    "nota_acceso_missing": {
+      "escalador": "ninguno",
+      "skew": 3.191,
+      "rango": 1.0,
+      "nuniq": 2,
+      "razon": "Binaria — escalar no aporta información"
+    },
+    "nota_selectividad_missing": {
+      "escalador": "ninguno",
+      "skew": 2.808,
+      "rango": 1.0,
+      "nuniq": 2,
+      "razon": "Binaria — escalar no aporta información"
+    },
+    "orden_preferencia": {
+      "escalador": "standard",
+      "skew": 0.687,
+      "rango": 3.0,
+      "nuniq": 21,
+      "razon": "|skew|=0.69 — distribución aceptable para StandardScaler"
+    },
+    "cred_repetidos": {
+      "escalador": "standard",
+      "skew": 0.915,
+      "rango": 5.8,
+      "nuniq": 347,
+      "razon": "|skew|=0.91 — distribución aceptable para StandardScaler"
+    },
+    "tasa_repeticion": {
+      "escalador": "standard",
+      "skew": 1.071,
+      "rango": 4.9,
+      "nuniq": 391,
+      "razon": "|skew|=1.07 — distribución aceptable para StandardScaler"
+    },
+    "edad_entrada": {
+      "escalador": "robust",
+      "skew": 2.435,
+      "rango": 2.4,
+      "nuniq": 51,
+      "razon": "|skew|=2.44, rango=2 — robusto ante outliers"
+    },
+    "anios_gap": {
+      "escalador": "robust",
+      "skew": 6.697,
+      "rango": 2.2,
+      "nuniq": 9,
+      "razon": "|skew|=6.70, rango=2 — robusto ante outliers"
+    },
+    "n_anios_sin_notas": {
+      "escalador": "standard",
+      "skew": 1.953,
+      "rango": 2.1,
+      "nuniq": 8,
+      "razon": "|skew|=1.95 — distribución aceptable para StandardScaler"
+    }
+  },
+  "cols_robust": [
+    "cred_superados_anio_1er",
+    "cupo",
     "pais_nombre",
     "provincia",
-    "via_acceso",
-    "orden_preferencia",
     "universidad_origen",
-    "tuvo_beca",
-    "n_anios_beca",
-    "situacion_laboral",
-    "nota_selectividad",
-    "max_pagos",
-    "indicador_interrupcion",
-    "anios_gap",
-    "anios_sin_beca"
+    "edad_entrada",
+    "anios_gap"
   ],
-  "cols_categoricas": [],
-  "nulos_en_dataset": 12740,
+  "cols_standard": [
+    "nota_1er_anio",
+    "nota_acceso",
+    "nota_selectividad",
+    "via_acceso",
+    "rama",
+    "n_anios_beca",
+    "anios_sin_beca",
+    "situacion_laboral",
+    "n_anios_trabajando",
+    "max_pagos",
+    "orden_preferencia",
+    "cred_repetidos",
+    "tasa_repeticion",
+    "n_anios_sin_notas"
+  ],
+  "cols_minmax": [
+    "tasa_abandono_titulacion"
+  ],
+  "cols_ninguno": [
+    "sexo",
+    "indicador_interrupcion",
+    "nota_1er_anio_missing",
+    "nota_acceso_missing",
+    "nota_selectividad_missing"
+  ],
+  "validacion_ks": [
+    {
+      "feature": "n_anios_beca",
+      "ks": 0.0039,
+      "p": 1.0,
+      "ok": true
+    },
+    {
+      "feature": "n_anios_trabajando",
+      "ks": 0.008,
+      "p": 0.8739,
+      "ok": true
+    },
+    {
+      "feature": "nota_1er_anio",
+      "ks": 0.007,
+      "p": 0.9502,
+      "ok": true
+    },
+    {
+      "feature": "tasa_abandono_titulacion",
+      "ks": 0.0126,
+      "p": 0.3612,
+      "ok": true
+    },
+    {
+      "feature": "cred_superados_anio_1er",
+      "ks": 0.0169,
+      "p": 0.0913,
+      "ok": true
+    },
+    {
+      "feature": "nota_acceso",
+      "ks": 0.0106,
+      "p": 0.5829,
+      "ok": true
+    },
+    {
+      "feature": "nota_selectividad",
+      "ks": 0.0088,
+      "p": 0.794,
+      "ok": true
+    },
+    {
+      "feature": "edad_entrada",
+      "ks": 0.0202,
+      "p": 0.0241,
+      "ok": false
+    }
+  ],
   "pipeline_pkl": "pipeline_preprocesamiento.pkl",
   "archivos_generados": [
     "X_train.parquet",

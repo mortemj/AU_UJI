@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-03-23T02:04:03.285641",
+  "fecha": "2026-04-14T03:18:26.207714",
   "familia": "ensambles",
   "modelos": [
     "Voting",
@@ -18,8 +18,8 @@
   "random_state": 42,
   "mejor_modelo": "Stacking",
   "mejor_estrategia": "none",
-  "mejor_auc_cv": 0.9308,
-  "mejor_f1_cv": 0.7882,
+  "mejor_auc_cv": 0.9509,
+  "mejor_f1_cv": 0.8252,
   "mejores_params": {
     "Voting": {},
     "Stacking": {},
@@ -45,5 +45,5 @@
     "CatBoost",
     "EBM"
   ],
-  "emisiones_co2_kg": null
+  "emisiones_co2_kg": 0.023486790931969308
 }

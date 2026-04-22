@@ -409,7 +409,7 @@ def _bloque_equidad_por_grupo(
 
     st.dataframe(
         tabla,
-        use_container_width=True,
+        width='stretch',
         hide_index=True,
         column_config={
             'F1 (%)': st.column_config.ProgressColumn(
@@ -495,7 +495,7 @@ def _bloque_equidad_por_grupo(
             f"Excluidos por tamaño insuficiente: {', '.join(str(g) for g in grupos_pequenos)}."
         )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
     # Interpretación automática — basada solo en grupos fiables
     df_interp = tabla_fiable if len(tabla_fiable) >= 2 else tabla
@@ -659,7 +659,7 @@ def _bloque_disparate_impact(df: pd.DataFrame, grupos_disponibles: list):
                 margin=dict(l=20, r=20, t=50, b=20),
                 height=230,
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
             st.markdown(f"""
             <div style="
                 text-align: center;
@@ -779,7 +779,7 @@ def _bloque_confusion_por_grupo(df: pd.DataFrame, grupos_disponibles: list):
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption(
         "💡 Un porcentaje de FN alto significa que el modelo deja sin detectar "
         "a muchos alumnos en riesgo de ese grupo. Un FP alto implica más "
@@ -983,7 +983,7 @@ def _bloque_simulador_politica(df: pd.DataFrame):
     fig.update_xaxes(showgrid=True, gridcolor=COLORES['borde'])
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption(
         "💡 Mueve el slider para encontrar el equilibrio óptimo entre detectar "
         "el máximo de abandonos (recall alto) y no saturar los servicios de "

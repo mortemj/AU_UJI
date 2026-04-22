@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M04: Encoding de Categorías - TFM Abandono Universitario</title>
+    <title>Índice - TFM Abandono Universitario</title>
     <link rel="stylesheet" href="../style.css">
     <style>
     /* ================================================================
@@ -174,8 +174,8 @@
             <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo"
                  onerror="this.style.display='none'">
             <div class="header-title">
-                <h1>🔧 M04: Encoding de Categorías</h1>
-                <p>Fase 3: Feature Engineering | TFM Abandono Universitario</p>
+                <h1>Índice</h1>
+                <p>Fase 3: Features | TFM Abandono Universitario</p>
             </div>
             <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo"
                  onerror="this.style.display='none'">
@@ -186,7 +186,7 @@
         <nav class="nav-fases">
   <a href="../index.html" class="">🏠 Inicio</a>
   <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
-  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Datos Originales</a>
   <a href="../fase3/fase3_index.html" class="active">🔧 Features</a>
   <a href="../fase4/fase4_index.html" class="">🔬 EDA Final</a>
   <a href="../fase5/fase5_index.html" class="">🤖 Modelado</a>
@@ -211,44 +211,75 @@
     </div>
 
     <div class="container">
-        
+        <div class="kpis">
+
+    <div class="kpi">
+        <div class="value" style="color:#3182ce">49</div>
+        <div class="label">Cols AutoML</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#38a169">49</div>
+        <div class="label">Cols EDA</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#ed8936">0</div>
+        <div class="label">Strings en AutoML</div>
+    </div>
+    
+    <div class="kpi">
+        <div class="value" style="color:#e53e3e">10</div>
+        <div class="label">Strings en EDA</div>
+    </div>
+    </div>
     <section class="seccion">
-        <h2>🔧 📦 DOS VERSIONES DE ENCODING</h2>
+        <h2>🔧 📦 Dos versiones de encoding</h2>
         <div class="grid-tarjetas">
 
         <a href="m04_automl.html" class="tarjeta" style="border-left-color: #3182ce">
-            <h3 style="color: #3182ce">🤖 100% NUMÉRICO - AutoML</h3>
-            <p>One-hot encoding completo. Listo para PyCaret, H2O, AutoGluon. ~70 columnas numéricas.</p>
+            <h3 style="color: #3182ce">🤖 M04a — 100% Numérico (AutoML)</h3>
+            <p>49 columnas 100% numéricas. Mapas de encoding desde src/config_datos.py. Listo para Stacking, PyCaret, H2O, AutoGluon.</p>
             <div class="link" style="color: #3182ce">Ver detalles →</div>
         </a>
         
         <a href="m04_eda.html" class="tarjeta" style="border-left-color: #ed8936">
-            <h3 style="color: #ed8936">📊 MIXTO - EDA + Modelado</h3>
-            <p>Mantiene strings sin codificar. Compatible con CatBoost, LightGBM. ~50-55 columnas.</p>
+            <h3 style="color: #ed8936">📊 M04b — Mixto (EDA + CatBoost)</h3>
+            <p>10 strings + 39 numéricos = 49 cols. Strings nativos para CatBoost. titulacion y cupo legibles para EDA.</p>
             <div class="link" style="color: #ed8936">Ver detalles →</div>
         </a>
         </div>
     </section>
     
     <section class="seccion">
-        <h2>📌 Contexto del Módulo</h2>
-        <div style="background:#f0f4f8;padding:20px;border-radius:10px;border-left:4px solid #3182ce;">
-  <p><strong>🎯 Objetivo M04:</strong> Convertir variables categóricas a numéricas mediante encoding.</p>
-  <p><strong>📥 Entrada:</strong> df_expediente_features.parquet (43 columnas con forma_de_pago)</p>
-  <p><strong>📤 Salida:</strong> Dos versiones independientes para diferentes propósitos.</p>
-  <p><strong>⏱️ Tiempo:</strong> ~2-3 minutos cada una (4-6 minutos total)</p>
-</div>
+        <h2>📋 Comparativa</h2>
+        
+<table style="width:100%;border-collapse:collapse;">
+<tr style="background:#3182ce;color:white;">
+  <th style="padding:10px;text-align:left;">Aspecto</th>
+  <th style="text-align:center;">M04a — AutoML</th>
+  <th style="text-align:center;">M04b — EDA/CatBoost</th>
+</tr>
+<tr><td style="padding:8px;">Strings</td><td style="text-align:center;">0 — todo numérico</td><td style="text-align:center;">Mantiene strings legibles</td></tr>
+<tr style="background:#f7fafc;"><td style="padding:8px;">titulacion</td><td style="text-align:center;">Eliminada (M05 añade tasa_abandono)</td><td style="text-align:center;">String nativo para CatBoost</td></tr>
+<tr><td style="padding:8px;">cupo</td><td style="text-align:center;">Codificado (0-7)</td><td style="text-align:center;">String legible</td></tr>
+<tr style="background:#f7fafc;"><td style="padding:8px;">Encoding</td><td style="text-align:center;">Mapas fijos desde config_datos.py</td><td style="text-align:center;">Solo booleans y floats</td></tr>
+<tr><td style="padding:8px;">Uso</td><td style="text-align:center;">Stacking, AutoML, RF, LogReg</td><td style="text-align:center;">CatBoost, EDA, gráficos</td></tr>
+<tr style="background:#f7fafc;"><td style="padding:8px;">Siguiente</td><td style="text-align:center;">M05 → D_strict</td><td style="text-align:center;">M05 → df_eda_con_target</td></tr>
+</table>
     </section>
     
     <section class="seccion">
-        <h2>📋 Comparativa</h2>
-        <table style="width:100%;border-collapse:collapse;">
-<tr style="background:#3182ce;color:white;"><th style="padding:12px;text-align:left;">Aspecto</th><th style="text-align:center;">AutoML</th><th style="text-align:center;">EDA</th></tr>
-<tr><td style="padding:10px;"><strong>Objetivo</strong></td><td style="text-align:center;">Fase 3.5</td><td style="text-align:center;">Fase 4</td></tr>
-<tr style="background:#f7fafc;"><td style="padding:10px;"><strong>Tipo</strong></td><td style="text-align:center;">100% Numérico</td><td style="text-align:center;">Mixto</td></tr>
-<tr><td style="padding:10px;"><strong>Columnas</strong></td><td style="text-align:center;">~70</td><td style="text-align:center;">~50-55</td></tr>
-<tr style="background:#f7fafc;"><td style="padding:10px;"><strong>Frameworks</strong></td><td style="text-align:center;">PyCaret, H2O</td><td style="text-align:center;">CatBoost, LightGBM</td></tr>
-</table>
+        <h2>⚙️ Fuente única de encoding</h2>
+        
+<div style="background:#f0f4f8;padding:15px;border-radius:10px;border-left:4px solid #3182ce;">
+  <p><strong>Sin hardcodes.</strong> Todos los mapas de encoding (via_acceso, rama, sexo, provincia,
+  pais_nombre, universidad_origen, situacion_laboral, cupo, egresado) están definidos
+  en <code>src/config_datos.py</code>.</p>
+  <p>Si un valor cambia de nombre entre años académicos (ej: renombrar una vía de acceso),
+  solo hay que añadir la variante en <code>config_datos.py</code> — funciona
+  automáticamente en M04a y en la app Streamlit.</p>
+</div>
     </section>
     
     </div>
@@ -259,9 +290,9 @@
         <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
         
         &nbsp;·&nbsp;
-        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase3_feature_engineering/f3_m04_index.ipynb" target="_blank">📓 Ver Notebook</a>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase3_features/f3_m04_index.ipynb" target="_blank">📓 Ver Notebook</a>
         
-        &nbsp;·&nbsp; Generado: 23/03/2026
+        &nbsp;·&nbsp; Generado: 13/04/2026
     </footer>
 
     

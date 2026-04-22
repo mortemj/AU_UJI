@@ -108,6 +108,19 @@ EXCEL_PREINSCRIPCION = RUTA_RAW / 'preinscripcion_si.xlsx'
 DATASET_FINAL_PARQUET = RUTA_PROCESSED / 'df_alumno.parquet'
 DATASET_FINAL_CSV = RUTA_PROCESSED / 'df_alumno.csv'
 
+# Dataset de producción para modelado supervisado
+# Generado por Fase 3 (f3_m05_dataset_modelado.ipynb) tras auditoría de leakage
+# 33.621 expedientes × 24 features + target `abandono`
+# Ubicación definitiva: data/03_features/ (movido desde data/automl/ — ver Chat 3)
+# FUENTE ÚNICA: todos los notebooks de Fase 5, AutoML y App deben usar esta constante
+DATASET_MODELADO = RUTA_FEATURES / 'dataset_final_tfm.parquet'
+
+# Alias de compatibilidad — eliminar cuando Fase 3 y AutoML estén actualizados
+# TODO Chat 3: mover fichero físico de data/automl/ a data/03_features/
+# TODO Chat 4: actualizar notebooks AutoML para usar DATASET_MODELADO
+# TODO Chat 8: actualizar config_app.py para usar DATASET_MODELADO
+DATASET_MODELADO_LEGACY = RUTA_AUTOML / 'dataset_final_tfm.parquet'
+
 ARCHIVO_LOG = BASE_PATH / 'logs' / 'tfm_abandono.log'
 
 
@@ -134,3 +147,91 @@ MAPEO_HOJAS = {
 # Listas derivadas (para iterar cómodamente en los notebooks)
 HOJAS_EXCEL_PRINCIPAL = list(MAPEO_HOJAS.keys())
 NOMBRES_PARQUET = list(MAPEO_HOJAS.values())
+
+
+# ============================================================================
+# 4. RAMAS DE CONOCIMIENTO — NOMBRES Y COLORES
+# ============================================================================
+# Fuente única de verdad para abreviaturas, nombres completos y colores de rama.
+# Usados en notebooks de todas las fases y en la app Streamlit (config_app.py
+# los importa desde aquí para no duplicar).
+#
+# Abreviaturas usadas en los datos: SO, TE, SA, HU, EX
+
+RAMAS_NOMBRES = {
+    "SO": "Ciencias Sociales y Jurídicas",
+    "TE": "Ingeniería y Arquitectura",
+    "SA": "Ciencias de la Salud",
+    "HU": "Artes y Humanidades",
+    "EX": "Ciencias Experimentales",
+}
+
+# Colores fijos por rama — paleta Dark24, consistente en todos los gráficos
+COLORES_RAMAS = {
+    "Ciencias Sociales y Jurídicas": "#1CA71C",  # verde
+    "Ingeniería y Arquitectura":     "#2E91E5",  # azul
+    "Ciencias de la Salud":          "#E15F99",  # rosa
+    "Artes y Humanidades":           "#DA16FF",  # violeta
+    "Ciencias Experimentales":       "#FB0D0D",  # rojo
+}
+
+# Colores directamente por abreviatura (para gráficos matplotlib)
+COLORES_RAMAS_ABR = {
+    abr: COLORES_RAMAS[nombre]
+    for abr, nombre in RAMAS_NOMBRES.items()
+}
+
+
+# ============================================================================
+# 5. FEATURES DEL MODELO — CLASIFICACIÓN POR TIPO
+# ============================================================================
+# 27 features de X_test_prep (24 originales + 3 indicadores _missing).
+# Definidas aquí para que todos los notebooks las usen de forma consistente
+# sin riesgo de incluir columnas de contexto (rama, titulacion, tipo, etc.)
+# que se añaden después y causarían TypeError al llamar .mean().
+
+# Features numéricas del modelo (las que acepta predict/SHAP/.mean())
+FEATURES_NUM_MODELO = [
+    'cred_superados_anio_1er', 'cupo', 'pais_nombre', 'provincia',
+    'universidad_origen', 'edad_entrada', 'anios_gap', 'nota_1er_anio',
+    'nota_acceso', 'nota_selectividad', 'via_acceso', 'rama',
+    'n_anios_beca', 'anios_sin_beca', 'situacion_laboral', 'n_anios_trabajando',
+    'max_pagos', 'orden_preferencia', 'cred_repetidos', 'tasa_repeticion',
+    'n_anios_sin_notas', 'tasa_abandono_titulacion', 'sexo',
+    'indicador_interrupcion', 'nota_1er_anio_missing',
+    'nota_acceso_missing', 'nota_selectividad_missing',
+]
+
+# Features de contexto recuperadas por join (NO están en X_test_prep)
+FEATURES_CONTEXTO = ['titulacion', 'rama_nombre', 'per_id_ficticio']
+
+# Nombres legibles para gráficos (sin guiones bajos)
+NOMBRES_LEGIBLES_FEATURES = {
+    'cred_superados_anio_1er':  'Créditos superados 1er año',
+    'cupo':                     'Cupo de acceso',
+    'pais_nombre':              'País de origen',
+    'provincia':                'Provincia',
+    'universidad_origen':       'Universidad origen',
+    'edad_entrada':             'Edad de entrada',
+    'anios_gap':                'Años de gap',
+    'nota_1er_anio':            'Nota 1er año',
+    'nota_acceso':              'Nota de acceso',
+    'nota_selectividad':        'Nota selectividad',
+    'via_acceso':               'Vía de acceso',
+    'rama':                     'Rama de conocimiento',
+    'n_anios_beca':             'Años con beca',
+    'anios_sin_beca':           'Años sin beca',
+    'situacion_laboral':        'Situación laboral',
+    'n_anios_trabajando':       'Años trabajando',
+    'max_pagos':                'Máx. pagos por curso',
+    'orden_preferencia':        'Orden de preferencia',
+    'cred_repetidos':           'Créditos repetidos',
+    'tasa_repeticion':          'Tasa de repetición',
+    'n_anios_sin_notas':        'Años sin notas',
+    'tasa_abandono_titulacion': 'Tasa abandono titulación',
+    'sexo':                     'Sexo',
+    'indicador_interrupcion':   'Interrupción formal',
+    'nota_1er_anio_missing':    'Nota 1er año (ausente)',
+    'nota_acceso_missing':      'Nota acceso (ausente)',
+    'nota_selectividad_missing':'Nota selectividad (ausente)',
+}

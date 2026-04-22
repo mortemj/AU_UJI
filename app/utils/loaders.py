@@ -151,7 +151,7 @@ def cargar_modelo():
         raise FileNotFoundError(
             f"No se encontró el modelo en:\n{ruta}\n\n"
             "Verifica que has ejecutado los notebooks de Fase 5 y que "
-            "el fichero CatBoost__balanced.pkl está en data/05_modelado/models/"
+            "el fichero Stacking__balanced.pkl está en data/05_modelado/models/"
         )
 
     # joblib.load() deserializa el objeto Python guardado en el .pkl
@@ -409,19 +409,43 @@ def cargar_todo() -> dict:
 
 
 # =============================================================================
-# FUNCIÓN 3b: Versión para la app — titulaciones fusionadas
+# FUNCIÓN 3b: Versión para la app — parquet unificado (sin joins en tiempo real)
 # =============================================================================
-# Esta es la función que deben usar TODOS los gráficos y filtros de la app.
-# Idéntica a cargar_meta_test() pero con los planes antiguos fusionados
-# en sus titulaciones actuales. Ver _MAPEO_TITULACIONES para detalle.
+# Carga meta_test_app.parquet generado por f6_m00b_preparacion_app.ipynb.
+# Contiene: metadatos + features originales + flags _missing (6.725 × 34 cols).
+# Es más rápido que cargar_meta_test() porque no requiere cruzar ficheros.
+#
+# USAR ESTA FUNCIÓN en todos los gráficos, filtros y ejemplos de la app.
+# cargar_meta_test() se mantiene para compatibilidad y análisis históricos.
 
 @st.cache_data(show_spinner="Cargando datos de evaluación...")
 def cargar_meta_test_app() -> "pd.DataFrame":
     """
-    Igual que cargar_meta_test() pero con titulaciones antiguas fusionadas.
-    Usar esta función en todos los gráficos y filtros de la app.
-    Para análisis históricos detallados, usar cargar_meta_test().
+    Carga el fichero unificado meta_test_app.parquet para la app.
+
+    Contiene metadatos + features originales + flags _missing en un único
+    fichero. No requiere joins. Generado por f6_m00b_preparacion_app.ipynb.
+
+    Si el fichero no existe (p.ej. en despliegue nuevo), recae en
+    cargar_meta_test() con fusión de titulaciones como fallback.
+
+    Returns
+    -------
+    df : pd.DataFrame  6.725 × 34 cols con titulaciones fusionadas
     """
+    ruta = RUTAS.get("meta_test_app")
+
+    # Ruta disponible y fichero existe → carga directa (camino rápido)
+    if ruta is not None and ruta.exists():
+        df = pd.read_parquet(ruta)
+        return _fusionar_titulaciones(df)
+
+    # Fallback: construir desde los ficheros base (más lento pero siempre funciona)
+    st.warning(
+        "⚠️ meta_test_app.parquet no encontrado. "
+        "Ejecuta f6_m00b_preparacion_app.ipynb para generarlo. "
+        "Usando fallback con join en tiempo real."
+    )
     df = cargar_meta_test()
     return _fusionar_titulaciones(df)
 

@@ -1,5 +1,5 @@
 # =============================================================================
-# main.py — versión estable con sidebar y radio buttons
+# main.py — navegación por pestañas horizontales, sin sidebar
 # =============================================================================
 
 import sys
@@ -16,28 +16,14 @@ st.set_page_config(
     page_title=APP_CONFIG["titulo"],
     page_icon=APP_CONFIG["icono"],
     layout=APP_CONFIG["layout"],
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 st.markdown(f"""
 <style>
-    [data-testid="stSidebarNav"] {{display: none !important;}}
-    section[data-testid="stSidebar"] > div:first-child {{padding-top: 0.5rem !important;}}
+    section[data-testid="stSidebar"] {{display: none !important;}}
+    [data-testid="collapsedControl"] {{display: none !important;}}
     .main {{background-color: {COLORES["fondo"]};}}
-    .metrica-card {{
-        background-color: white;
-        border: 1px solid {COLORES["borde"]};
-        border-radius: 8px;
-        padding: 1rem 1.5rem;
-        margin-bottom: 1rem;
-    }}
-    .sidebar-titulo {{
-        font-size: 0.85rem;
-        color: {COLORES["texto_suave"]};
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 0.5rem;
-    }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -48,95 +34,48 @@ if errores:
         st.markdown(f"- `{e}`")
     st.stop()
 
-# Sidebar
-with st.sidebar:
-    # Logos universidades
-    _ROOT = Path(__file__).resolve().parent.parent
-    _logo_uji = _ROOT / "docs" / "assets" / "logo_uji.jpg"
-    _logo_uoc = _ROOT / "docs" / "assets" / "logo_uoc.jpg"
+# Banner superior con logos — visible en todas las páginas
+_ROOT = Path(__file__).resolve().parent.parent
+_logo_uji = _ROOT / "docs" / "assets" / APP_CONFIG["logo_universidad_datos"]
+_logo_uoc = _ROOT / "docs" / "assets" / APP_CONFIG["logo_universidad_master"]
 
-    # --- NAVEGACIÓN ARRIBA ---
-    st.markdown(f"""
-    <div style="text-align:center; padding: 0 0 0.2rem 0;">
-        <div style="font-size:2rem;">{APP_CONFIG["icono"]}</div>
-        <div style="font-size:1rem; font-weight:bold; color:{COLORES["primario"]};">
-            Abandono UJI
-        </div>
-        <div style="font-size:0.72rem; color:{COLORES["texto_suave"]};">
-            {APP_CONFIG["subtitulo"]}
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.divider()
-
-    st.markdown('<p class="sidebar-titulo">Navegación</p>', unsafe_allow_html=True)
-
-    opcion_inicio = "🏠  Inicio"
-    opciones = [opcion_inicio] + [f"{p['icono']}  {p['titulo']}" for p in PESTANAS]
-
-    if "nav_idx" not in st.session_state:
-        st.session_state["nav_idx"] = 0
-
-    def _on_radio_change():
-        st.session_state["nav_idx"] = opciones.index(st.session_state["radio_nav"])
-
-    st.radio(
-        label="Selecciona una sección:",
-        options=opciones,
-        index=st.session_state["nav_idx"],
-        label_visibility="collapsed",
-        key="radio_nav",
-        on_change=_on_radio_change,
-    )
-    idx_pagina = st.session_state["nav_idx"]
-
-    st.divider()
-
-    # --- ACCESO RÁPIDO ---
-    st.markdown('<p class="sidebar-titulo">Acceso rápido</p>', unsafe_allow_html=True)
-    for i, p in enumerate(PESTANAS):
-        if st.button(
-            f"{p['icono']}  {p['titulo']}",
-            key=f"acceso_{p['id']}",
-            use_container_width=True,
-        ):
-            st.session_state["nav_idx"] = i + 1
-            st.rerun()
-
-    st.divider()
-
-    # --- LOGOS ABAJO ---
+col_uji, col_titulo, col_uoc = st.columns([1, 4, 1])
+with col_uji:
     if _logo_uji.exists():
-        st.image(str(_logo_uji), width=160)
-    if _logo_uoc.exists():
-        st.image(str(_logo_uoc), width=160)
-
+        st.image(str(_logo_uji), width='stretch')
+with col_titulo:
     st.markdown(f"""
-    <div style="font-size:0.7rem; color:{COLORES["texto_suave"]}; text-align:center; margin-top:0.8rem;">
-        TFM · UOC + UJI · 2025<br>María José Morte Ruiz
+    <div style="text-align:center; padding:0.3rem 0;">
+        <span style="font-size:1.6rem; font-weight:bold; color:{COLORES['primario']};">
+            {APP_CONFIG['icono']} {APP_CONFIG['titulo']}
+        </span><br>
+        <span style="font-size:0.8rem; color:{COLORES['texto_suave']};">
+            {APP_CONFIG['subtitulo']}
+        </span>
     </div>
     """, unsafe_allow_html=True)
+with col_uoc:
+    if _logo_uoc.exists():
+        st.image(str(_logo_uoc), width='stretch')
 
-# Enrutamiento — nav_idx puede venir del radio button O de un botón de p00
-idx_pagina = st.session_state.get("nav_idx", 0)
-id_pagina = "inicio" if idx_pagina == 0 else PESTANAS[idx_pagina - 1]["id"]
+st.divider()
 
-if id_pagina == "inicio":
-    from pages import p00_inicio as pagina
-    pagina.show()
-elif id_pagina == "institucional":
-    from pages import p01_institucional as pagina
-    pagina.show()
-elif id_pagina == "titulacion":
-    from pages import p02_titulacion as pagina
-    pagina.show()
-elif id_pagina == "prospecto":
-    from pages import p03_prospecto as pagina
-    pagina.show()
-elif id_pagina == "en_curso":
-    from pages import p04_en_curso as pagina
-    pagina.show()
-elif id_pagina == "equidad":
-    from pages import p05_equidad as pagina
-    pagina.show()
+# Pestañas horizontales — Streamlit gestiona cuál se ve
+tab0, *tabs_resto = st.tabs(
+    [f"{APP_CONFIG['icono']} {APP_CONFIG['tab_inicio']}"] + [f"{p['icono']} {p['titulo']}" for p in PESTANAS]
+)
+
+with tab0:
+    from pages import p00_inicio as _p00; _p00.show()
+for tab, p in zip(tabs_resto, PESTANAS):
+    with tab:
+        if p["id"] == "institucional":
+            from pages import p01_institucional as _p01; _p01.show()
+        elif p["id"] == "titulacion":
+            from pages import p02_titulacion as _p02; _p02.show()
+        elif p["id"] == "prospecto":
+            from pages import p03_prospecto as _p03; _p03.show()
+        elif p["id"] == "en_curso":
+            from pages import p04_en_curso as _p04; _p04.show()
+        elif p["id"] == "equidad":
+            from pages import p05_equidad as _p05; _p05.show()

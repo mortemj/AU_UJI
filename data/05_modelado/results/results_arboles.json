@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-03-23T01:05:03.050843",
+  "fecha": "2026-04-13T18:20:59.786085",
   "familia": "arboles",
   "modelos": [
     "DecisionTree",
@@ -16,9 +16,9 @@
   "cv_folds": 5,
   "random_state": 42,
   "mejor_modelo": "RandomForest",
-  "mejor_estrategia": "none",
-  "mejor_auc_cv": 0.9256,
-  "mejor_f1_cv": 0.758,
+  "mejor_estrategia": "smote",
+  "mejor_auc_cv": 0.9473,
+  "mejor_f1_cv": 0.817,
   "mejores_params": {
     "DecisionTree": {
       "max_depth": 8,

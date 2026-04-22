@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M04: Dataset Final - TFM Abandono Universitario</title>
+    <title>Union Preinscripcion - TFM Abandono Universitario</title>
     <link rel="stylesheet" href="../style.css">
     <style>
     /* ================================================================
@@ -174,8 +174,8 @@
             <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo"
                  onerror="this.style.display='none'">
             <div class="header-title">
-                <h1>🎯 M04: Dataset Final</h1>
-                <p>Fase 1: Transformación de Datos</p>
+                <h1>Union Preinscripcion</h1>
+                <p>Fase 1: Transformación | TFM Abandono Universitario</p>
             </div>
             <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo"
                  onerror="this.style.display='none'">
@@ -186,7 +186,7 @@
         <nav class="nav-fases">
   <a href="../index.html" class="">🏠 Inicio</a>
   <a href="../fase1/fase1_index.html" class="active">📥 Transformación</a>
-  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Datos Originales</a>
   <a href="../fase3/fase3_index.html" class="">🔧 Features</a>
   <a href="../fase4/fase4_index.html" class="">🔬 EDA Final</a>
   <a href="../fase5/fase5_index.html" class="">🤖 Modelado</a>
@@ -202,7 +202,7 @@
   <a href="m01_reportes_raw.html" class="">📋 Reportes Raw</a>
   <a href="m02_limpieza.html" class="">🧹 Limpieza</a>
   <a href="m03_reportes_clean.html" class="">✨ Reportes Clean</a>
-  <a href="m04_dataset_final.html" class="active">🎯 Dataset Final</a>
+  <a href="m04_dataset_final.html" class="">🎯 Dataset Final</a>
   <a href="m05_dashboard.html" class="">📊 Dashboard</a>
   <a href="m06_grafo.html" class="">🕸️ Grafo</a>
 </nav>
@@ -395,6 +395,34 @@
     </tbody>
 </table>
 
+<details style="margin-top: 20px;">
+    <summary style="cursor:pointer; font-weight:bold; color:#4a5568; padding:10px;
+                    background:#f7fafc; border-radius:6px; border:1px solid #e2e8f0;">
+        🔍 Ver trazabilidad de merges — registros antes y después de cada unión
+    </summary>
+    <div style="margin-top:10px;">
+        <p style="color:#718096; font-size:0.85em; margin-bottom:10px;">
+            Todos los merges son <strong>LEFT JOIN</strong> sobre expedientes como tabla base
+            (109.568 registros). Los asserts en el notebook verifican que ningún merge
+            introduce ni elimina registros.
+        </p>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th><th>Tabla</th><th>Clave de merge</th>
+                    <th>Registros tras merge</th><th>Registros perdidos</th>
+                </tr>
+            </thead>
+            <tbody><tr><td>1</td><td>📋 Expedientes</td><td><code>BASE</code></td><td style="text-align:center;">BASE</td><td style="text-align:center; color:#38a169;">—</td></tr><tr><td>2</td><td>🎓 Titulaciones</td><td><code>exp_tit_id</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr><tr><td>3</td><td>📊 Demográficos</td><td><code>per_id_ficticio</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr><tr><td>4</td><td>🏠 Domicilios</td><td><code>per_id_ficticio + curso_aca</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr><tr><td>5</td><td>💰 Becas</td><td><code>per_id_ficticio + curso_aca</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr><tr><td>6</td><td>💼 Trabajo</td><td><code>per_id + tit + curso_aca</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr><tr><td>7</td><td>📝 Notas</td><td><code>per_id + tit + curso_aca</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr><tr><td>8</td><td>💳 Recibos</td><td><code>per_id_ficticio + curso_aca</code></td><td style="text-align:center;">109.568</td><td style="text-align:center; color:#38a169;">✅ 0</td></tr></tbody>
+        </table>
+        <p style="margin-top:10px; color:#718096; font-size:0.85em;">
+            Los NaN introducidos en columnas opcionales (beca, trabajo, recibos)
+            son esperados: indican que el alumno no tiene ese dato en ese curso.
+            Se tratan en Fase 3 (feature engineering).
+        </p>
+    </div>
+</details>
+
     </section>
     
     <section class="seccion">
@@ -405,17 +433,64 @@
     (95.733 de 109.568)
 </p>
 
-<h3 style="margin-top: 15px; color: #4a5568;">Columnas añadidas</h3>
+<h3 style="margin-top: 15px; color: #4a5568;">Columnas incorporadas (4 de 24)</h3>
 <table>
     <thead><tr><th>Original</th><th>Nombre final</th><th>Descripción</th></tr></thead>
-    <tbody>
-        <tr><td>VIA_ESTUDIOS</td><td><code>via_acceso</code></td><td>Vía de acceso (Bachiller, FP...)</td></tr><tr><td>ORDEN_TITULACION</td><td><code>orden_preferencia</code></td><td>Orden de preferencia (1-20)</td></tr><tr><td>NOM_CUPO</td><td><code>cupo</code></td><td>Tipo de cupo</td></tr><tr><td>UNIVERSIDAD</td><td><code>universidad_origen</code></td><td>Universidad más cercana</td></tr>
-    </tbody>
+    <tbody><tr><td>VIA_ESTUDIOS</td><td><code>via_acceso</code></td><td>Vía de acceso (Bachiller, FP...)</td></tr><tr><td>ORDEN_TITULACION</td><td><code>orden_preferencia</code></td><td>Orden de preferencia (1-20)</td></tr><tr><td>NOM_CUPO</td><td><code>cupo</code></td><td>Tipo de cupo</td></tr><tr><td>UNIVERSIDAD</td><td><code>universidad_origen</code></td><td>Universidad más cercana</td></tr></tbody>
 </table>
 
 <p style="margin-top: 15px; color: #718096; font-size: 0.85em;">
     <strong>Nota:</strong> La nota de selectividad ya existe en el dataset base (nota_selectividad).
 </p>
+
+<details style="margin-top: 20px;">
+    <summary style="cursor:pointer; font-weight:bold; color:#4a5568; padding: 10px;
+                    background:#f7fafc; border-radius:6px; border: 1px solid #e2e8f0;">
+        📋 Ver columnas descartadas (20 de 24) — razones de exclusión
+    </summary>
+    <div style="margin-top: 10px;">
+        <p style="color:#718096; font-size:0.85em; margin-bottom:10px;">
+            El Excel de preinscripción contiene 24 columnas. Solo se incorporan 4 al dataset final.
+            Las 20 restantes se descartan por los motivos indicados.
+            La columna <strong style="color:#e53e3e;">MATRICULADO</strong> se excluye por leakage directo:
+            indica si el alumno se matriculó, información no disponible en el momento de predicción.
+        </p>
+        <table>
+            <thead><tr><th>Columna descartada</th><th>Motivo</th></tr></thead>
+            <tbody><tr><td><code>ANO</code></td><td style="color:#718096;">Usado solo como clave temporal de merge — no se incorpora al dataset</td></tr><tr><td><code>UNIVERSIDAD</code></td><td style="color:#718096;">Redundante con NOMBRE_UNIVERSIDAD</td></tr><tr><td><code>MUNICIPIO</code></td><td style="color:#718096;">Dato geográfico ya cubierto por la tabla de domicilios</td></tr><tr><td><code>CP</code></td><td style="color:#718096;">Código postal ya disponible en domicilios</td></tr><tr><td><code>CUPO</code></td><td style="color:#718096;">Duplicado de NOM_CUPO — eliminado explícitamente antes del merge</td></tr><tr><td><code>ESTADO</code></td><td style="color:#718096;">Estado de la solicitud de preinscripción — no relevante para el modelo</td></tr><tr><td><code>NOTA_TXT</code></td><td style="color:#718096;">Nota en formato texto — ya existe nota_selectividad numérica en el dataset base</td></tr><tr><td><code>SOLICITUD_ID</code></td><td style="color:#718096;">Identificador interno de preinscripción — sin valor predictivo</td></tr><tr><td><code>COD_ESTUDIOS</code></td><td style="color:#718096;">Código de estudios — ya cubierto por exp_tit_id</td></tr><tr><td><code>CONVOCATORIA</code></td><td style="color:#718096;">Convocatoria de acceso — muy correlada con ANO</td></tr><tr><td><code>NOTA_1</code></td><td style="color:#718096;">Nota parcial de acceso — ya cubierta por nota_selectividad</td></tr><tr><td><code>NOTA_2</code></td><td style="color:#718096;">Nota parcial de acceso — ya cubierta por nota_selectividad</td></tr><tr><td><code>ANO_1</code></td><td style="color:#718096;">Año parcial — redundante con ANO</td></tr><tr><td><code>CON_1</code></td><td style="color:#718096;">Convocatoria parcial — redundante</td></tr><tr><td><code>TITULACION_CENTRO</code></td><td style="color:#718096;">Nombre literal del centro — alta cardinalidad, cubierto por exp_tit_id</td></tr><tr><td><code>ESTADO_TITULACION</code></td><td style="color:#718096;">Estado de la titulación en preinscripción — no disponible en predicción</td></tr><tr><td><code>UNI_ID</code></td><td style="color:#718096;">Usado solo para filtrar UJI (== 40) — varianza cero tras el filtro</td></tr><tr><td><code>NOMBRE_UNIVERSIDAD</code></td><td style="color:#718096;">Siempre Universitat Jaume I tras el filtro — varianza cero</td></tr><tr><td><code>ESTUDIO</code></td><td style="color:#718096;">Nombre literal del estudio — alta cardinalidad, cubierto por exp_tit_id</td></tr><tr style="background:#fff5f5;"><td><code style="color:#e53e3e;font-weight:bold;">MATRICULADO</code></td><td style="color:#e53e3e;">⚠️ LEAKAGE DIRECTO — indica si el alumno se matriculó finalmente. No disponible en el momento de predicción.</td></tr></tbody>
+        </table>
+    </div>
+</details>
+
+<div style="margin-top:20px; padding:15px; background:#f0fff4;
+            border-left:4px solid #38a169; border-radius:6px;">
+    <h4 style="color:#276749; margin-bottom:10px;">
+        ⚖️ Decisión metodológica: LEFT JOIN vs INNER JOIN
+    </h4>
+    <table style="width:100%; margin-bottom:12px;">
+        <thead>
+            <tr><th>Tipo de join</th><th>Registros resultantes</th><th>Impacto</th></tr>
+        </thead>
+        <tbody>
+            <tr style="background:#f0fff4;">
+                <td><strong>LEFT JOIN ✅ (elegido)</strong></td>
+                <td><strong>109.568</strong></td>
+                <td>Conserva todos los expedientes</td>
+            </tr>
+            <tr style="background:#fff5f5;">
+                <td>INNER JOIN ❌</td>
+                <td>~95.733</td>
+                <td style="color:#e53e3e;">Eliminaría 13.835 registros (12.6%)</td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="color:#4a5568; font-size:0.9em; margin:0;">
+        Los <strong>13.835 registros sin preinscripción</strong> (12.6%)
+        corresponden principalmente a traslados, accesos por mayores de 25 años y accesos directos
+        desde otras universidades. Eliminarlos con un inner join introduciría sesgo sistemático
+        en el modelo. Los valores NaN resultantes se tratan en la Fase 3 (feature engineering).
+    </p>
+</div>
 
     </section>
     
@@ -478,7 +553,7 @@
 <div class="archivos-grid">
     <div class="archivo" style="background: #ebf8ff;">
         <div class="nombre">🐍 df_alumno.parquet</div>
-        <div class="uso">Python / Análisis (2.26 MB)</div>
+        <div class="uso">Python / Análisis (2.27 MB)</div>
     </div>
     <div class="archivo" style="background: #ebf8ff;">
         <div class="nombre">📊 df_alumno.csv</div>
@@ -521,201 +596,11 @@
         <a href="mailto:morte@uji.es">morte@uji.es</a> (UJI)
         
         &nbsp;·&nbsp;
-        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase1_transformacion/f1_m04_dataset_final.ipynb" target="_blank">📓 Ver Notebook</a>
+        <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase1_transformacion/f1_m04b_union_preinscripcion.ipynb" target="_blank">📓 Ver Notebook</a>
         
-        &nbsp;·&nbsp; Generado: 23/03/2026
+        &nbsp;·&nbsp; Generado: 12/04/2026
     </footer>
 
-    
-    <script>
-
-(function() {
-    const canvas = document.getElementById('grafo-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    function resize() {
-        canvas.width = canvas.offsetWidth * 2;
-        canvas.height = canvas.offsetHeight * 2;
-        ctx.scale(2, 2);
-    }
-    resize();
-    window.addEventListener('resize', resize);
-
-    const nodes = [
-        { id: 'alumno', label: '👤 ALUMNO', x: 0, y: 0, vx: 0, vy: 0, radius: 40, color: '#3182ce', fixed: true },
-        { id: 'expedientes', label: '📋 Expedientes', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#3182ce' },
-        { id: 'titulaciones', label: '🎓 Titulaciones', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#805ad5' },
-        { id: 'demograficos', label: '👤 Demograficos', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#ed8936' },
-        { id: 'domicilios', label: '🏠 Domicilios', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#e53e3e' },
-        { id: 'becas', label: '💰 Becas', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#38a169' },
-        { id: 'trabajo', label: '💼 Trabajo', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#319795' },
-        { id: 'notas', label: '📝 Notas', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#d69e2e' },
-        { id: 'recibos', label: '💳 Recibos', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#667eea' },
-        { id: 'preinscripcion', label: '📄 Preinscripcion', x: 0, y: 0, vx: 0, vy: 0, radius: 28, color: '#ed64a6' },
-
-    ];
-
-    const links = [
-                { source: 'alumno', target: 'expedientes' },
-        { source: 'alumno', target: 'titulaciones' },
-        { source: 'alumno', target: 'demograficos' },
-        { source: 'alumno', target: 'domicilios' },
-        { source: 'alumno', target: 'becas' },
-        { source: 'alumno', target: 'trabajo' },
-        { source: 'alumno', target: 'notas' },
-        { source: 'alumno', target: 'recibos' },
-        { source: 'alumno', target: 'preinscripcion' },
-        { source: 'expedientes', target: 'titulaciones' },
-        { source: 'expedientes', target: 'notas' },
-        { source: 'becas', target: 'recibos' },
-
-    ];
-
-    const w = canvas.offsetWidth, h = canvas.offsetHeight;
-    nodes[0].x = w / 2;
-    nodes[0].y = h / 2;
-
-    for (let i = 1; i < nodes.length; i++) {
-        const angle = (i - 1) * (2 * Math.PI / (nodes.length - 1));
-        const dist = 110 + Math.random() * 30;
-        nodes[i].x = w/2 + Math.cos(angle) * dist;
-        nodes[i].y = h/2 + Math.sin(angle) * dist;
-    }
-
-    const particles = [];
-    for (let i = 0; i < 30; i++) {
-        particles.push({x: Math.random()*w, y: Math.random()*h, vx: (Math.random()-0.5)*0.3, vy: (Math.random()-0.5)*0.3, r: Math.random()*2+1, a: Math.random()*0.3+0.1});
-    }
-
-    let time = 0, dragNode = null;
-
-    function simulate() {
-        nodes.forEach(n => { if (!n.fixed) { n.vx += (w/2-n.x)*0.0003; n.vy += (h/2-n.y)*0.0003; } });
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i+1; j < nodes.length; j++) {
-                const dx = nodes[j].x-nodes[i].x, dy = nodes[j].y-nodes[i].y;
-                const dist = Math.sqrt(dx*dx+dy*dy) || 1;
-                const minD = nodes[i].radius + nodes[j].radius + 25;
-                if (dist < minD) {
-                    const f = (minD - dist) * 0.02;
-                    if (!nodes[i].fixed) { nodes[i].vx -= (dx/dist)*f; nodes[i].vy -= (dy/dist)*f; }
-                    if (!nodes[j].fixed) { nodes[j].vx += (dx/dist)*f; nodes[j].vy += (dy/dist)*f; }
-                }
-            }
-        }
-        links.forEach(l => {
-            const s = nodes.find(n => n.id === l.source);
-            const t = nodes.find(n => n.id === l.target);
-            if (!s || !t) return;
-            const dx = t.x-s.x, dy = t.y-s.y, dist = Math.sqrt(dx*dx+dy*dy) || 1;
-            const f = (dist - 90) * 0.002;
-            if (!s.fixed) { s.vx += (dx/dist)*f; s.vy += (dy/dist)*f; }
-            if (!t.fixed) { t.vx -= (dx/dist)*f; t.vy -= (dy/dist)*f; }
-        });
-        nodes.forEach(n => {
-            if (!n.fixed) {
-                n.vx *= 0.92; n.vy *= 0.92;
-                n.x += n.vx; n.y += n.vy;
-                n.x = Math.max(n.radius, Math.min(w - n.radius, n.x));
-                n.y = Math.max(n.radius, Math.min(h - n.radius, n.y));
-            }
-        });
-    }
-
-    function draw() {
-        time += 0.02;
-        ctx.clearRect(0, 0, w, h);
-
-        // Partículas de fondo
-        particles.forEach(p => {
-            p.x += p.vx; p.y += p.vy;
-            if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
-            if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(99, 179, 237, ${p.a})`;
-            ctx.fill();
-        });
-
-        // Enlaces con partículas viajando
-        links.forEach((l, i) => {
-            const s = nodes.find(n => n.id === l.source);
-            const t = nodes.find(n => n.id === l.target);
-            if (!s || !t) return;
-            ctx.beginPath();
-            ctx.moveTo(s.x, s.y);
-            ctx.lineTo(t.x, t.y);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            // Partícula viajando
-            const progress = (Math.sin(time * 2 + i) + 1) / 2;
-            ctx.beginPath();
-            ctx.arc(s.x + (t.x - s.x) * progress, s.y + (t.y - s.y) * progress, 3, 0, Math.PI * 2);
-            ctx.fillStyle = '#63b3ed';
-            ctx.fill();
-        });
-
-        // Nodos
-        nodes.forEach(n => {
-            // Glow
-            const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.radius * 1.4);
-            g.addColorStop(0, n.color + '40');
-            g.addColorStop(1, 'transparent');
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, n.radius * 1.4, 0, Math.PI * 2);
-            ctx.fillStyle = g;
-            ctx.fill();
-            // Círculo
-            ctx.beginPath();
-            ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-            ctx.fillStyle = n.color;
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            // Texto
-            ctx.fillStyle = 'white';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            const parts = n.label.split(' ');
-            ctx.font = n.fixed ? '14px Segoe UI' : '12px Segoe UI';
-            ctx.fillText(parts[0], n.x, n.y - 6);
-            ctx.font = n.fixed ? 'bold 9px Segoe UI' : '8px Segoe UI';
-            ctx.fillText(parts.slice(1).join(' '), n.x, n.y + 8);
-        });
-    }
-
-    function animate() {
-        simulate();
-        draw();
-        requestAnimationFrame(animate);
-    }
-    animate();
-
-    // Interacción con mouse
-    canvas.addEventListener('mousedown', e => {
-        const rect = canvas.getBoundingClientRect();
-        const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-        nodes.forEach(n => {
-            if (Math.sqrt((n.x - mx) ** 2 + (n.y - my) ** 2) < n.radius) dragNode = n;
-        });
-    });
-    canvas.addEventListener('mousemove', e => {
-        if (dragNode) {
-            const rect = canvas.getBoundingClientRect();
-            dragNode.x = e.clientX - rect.left;
-            dragNode.y = e.clientY - rect.top;
-            dragNode.vx = 0;
-            dragNode.vy = 0;
-        }
-    });
-    canvas.addEventListener('mouseup', () => { dragNode = null; });
-    canvas.addEventListener('mouseleave', () => { dragNode = null; });
-})();
-
-</script>
     
 
 </body>

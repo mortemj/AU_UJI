@@ -49,8 +49,42 @@ import streamlit as st
 # _path_setup añade app/ a sys.path de forma robusta en Windows/OneDrive
 import _path_setup  # noqa: F401
 
-from config_app import COLORES, COLORES_RAMAS, COLORES_RIESGO, NOMBRES_VARIABLES, UMBRALES
-from utils.loaders import cargar_meta_test, cargar_modelo, cargar_pipeline
+from config_app import (
+    APP_CONFIG,
+    COLORES,
+    COLORES_RAMAS,
+    COLORES_RIESGO,
+    NOMBRES_VARIABLES,
+    RAMAS_NOMBRES,
+    SEXO_INV,
+    SITUACION_LABORAL_INV,
+    UMBRALES,
+    UMBRALES_MUESTRA,
+    UNIVERSIDAD_ORIGEN_INV,
+)
+from config_app import RUTAS as _RUTAS
+from utils.loaders import cargar_meta_test_app, cargar_modelo, cargar_pipeline
+import pandas as _pd
+
+
+# =============================================================================
+# CONSTANTES LOCALES — Colores del sparkline multi-línea (KPI Alumnos)
+# =============================================================================
+# Bug FASE C #14: el sparkline del KPI Alumnos mostraba una sola línea
+# (N total por cohorte). María José pidió 3 líneas separadas por sexo:
+#   - Total  (gris oscuro neutro)
+#   - Hombre (azul institucional UJI)
+#   - Mujer  (rosa reutilizado de la paleta de ramas)
+#
+# No hay una paleta "sexo" en COLORES (no había convención previa).
+# Opción adoptada: reutilizar el rosa Dark24 de COLORES_RAMAS['Ciencias
+# de la Salud'] para Mujer. Si mañana cambia ese color en SRC, el del
+# sparkline cambiará también — es consciente, documentado, y se puede
+# desacoplar aquí (basta editar la línea correspondiente).
+
+_COLOR_SPARKLINE_MUJER  = COLORES_RAMAS['Ciencias de la Salud']  # #E15F99 rosa Dark24
+_COLOR_SPARKLINE_HOMBRE = COLORES['primario']                    # #1e4d8c azul UJI
+_COLOR_SPARKLINE_TOTAL  = COLORES['texto']                       # #2d3748 gris oscuro
 
 
 # =============================================================================
@@ -58,76 +92,217 @@ from utils.loaders import cargar_meta_test, cargar_modelo, cargar_pipeline
 # =============================================================================
 
 def show():
-    """Renderiza la pestaña de visión institucional completa."""
+    """
+    Renderiza la pestaña de visión institucional completa — LAYOUT DASHBOARD.
 
-    # Título de la página
-    st.markdown(f"""
-    <h2 style="color: {COLORES['primario']}; margin-bottom: 0.2rem;">
-        🏛️ Visión institucional
-    </h2>
-    <p style="color: {COLORES['texto_suave']}; margin-top: 0; font-size: 0.95rem;">
-        Panorama global de abandono universitario en la UJI · Datos de test (2010–2020)
-    </p>
-    """, unsafe_allow_html=True)
+    Estructura:
+      1. Cabecera (título · subtítulo · badge fecha)
+      2. Filtros (5 visibles + 6 en expander · botón borrar · badge muestra)
+      3. Aviso de muestra pequeña (si aplica)
+      4. Fila KPIs (4 tarjetas full width)
+      5. Fila evolución (60%) + abandono por rama (40%)
+      6. Fila top titulaciones (65%) + distribución riesgo (35%)
+      7. Nota metodológica (expander)
+    """
 
-    # --- Carga de datos ---
-    # Intentamos cargar. Si algo falla, mostramos error amigable y paramos.
+    # -------------------------------------------------------------------
+    # 1. CABECERA DE LA PÁGINA
+    # -------------------------------------------------------------------
+    col_tit, col_badge = st.columns([4, 1])
+    with col_tit:
+        st.markdown(f"""
+        <h2 style="color: {COLORES['primario']}; margin-bottom: 0.2rem;">
+            🏛️ Visión institucional
+        </h2>
+        <p style="color: {COLORES['texto_suave']}; margin-top: 0; font-size: 0.95rem;">
+            Panorama global de abandono universitario ·
+            {APP_CONFIG['universidad_datos']} · Datos de test (2010–2020)
+        </p>
+        """, unsafe_allow_html=True)
+    with col_badge:
+        import datetime as _dt
+        fecha_hoy = _dt.date.today().strftime("%d/%m/%Y")
+        st.markdown(f"""
+        <div style="text-align:right; padding-top:0.8rem;">
+            <span style="background:{COLORES['blanco']};
+                border:1px solid {COLORES['borde']};
+                padding:0.3rem 0.7rem; border-radius:6px;
+                font-size:0.75rem; color:{COLORES['texto_suave']};">
+                Actualizado · {fecha_hoy}
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------
+    # 2. CARGA DE DATOS
+    # -------------------------------------------------------------------
     with st.spinner("Cargando datos..."):
         try:
-            df_raw = cargar_meta_test()
-            modelo  = cargar_modelo()
+            df_raw   = cargar_meta_test_app()
+            modelo   = cargar_modelo()
             pipeline = cargar_pipeline()
         except FileNotFoundError as e:
             st.error(f"❌ No se pudieron cargar los datos:\n\n{e}")
             st.stop()
 
-    # --- Calcular probabilidades predichas ---
-    # El modelo necesita los datos preprocesados por el pipeline.
-    # Separamos las columnas que son features de las que son metadatos.
-    # Las features son las que el pipeline sabe transformar.
+    # -------------------------------------------------------------------
+    # 3. PREPARACIÓN DEL DATAFRAME
+    # -------------------------------------------------------------------
+    # Calcular probabilidades y nivel de riesgo (bajo/medio/alto)
     df = _añadir_probabilidades(df_raw, modelo, pipeline)
 
-    # --- Añadir columna de nivel de riesgo (bajo / medio / alto) ---
-    # Basada en los umbrales definidos en config_app.py
+    # Alias _meta para compatibilidad con filtros y gráficos (texto legible)
+    for col in ['rama', 'sexo', 'via_acceso', 'pais_nombre', 'provincia']:
+        if col in df.columns and f'{col}_meta' not in df.columns:
+            df[f'{col}_meta'] = df[col]
+
+    # Traducir abreviaturas de rama (SO, TE...) a nombres completos
+    if 'rama_meta' in df.columns:
+        df['rama_meta'] = df['rama_meta'].map(RAMAS_NOMBRES).fillna(df['rama_meta'])
+
+    # Añadir nivel de riesgo a partir de la probabilidad predicha
     df = _añadir_nivel_riesgo(df)
 
-    # --- Filtros en sidebar ---
-    # Los filtros se aplican ANTES de pasar los datos a cada bloque.
-    # Así todos los bloques ven exactamente los mismos datos filtrados.
-    df_filtrado = _aplicar_filtros_sidebar(df)
+    # -------------------------------------------------------------------
+    # FILTRO IMPLÍCITO: universo de análisis = cursos 2010-2020
+    # -------------------------------------------------------------------
+    # FASE F Bloque 3: el TFM está definido sobre cursos 2010-2020. En el
+    # parquet meta_test_app hay ~129 alumnos con curso_aca_ini < 2010 que
+    # no forman parte del universo del TFM.
+    #
+    # Motivo del cambio: antes, el bloque amarillo mostraba "6.596 de 6.725
+    # observaciones (98,1%)" incluso sin filtros, lo cual era incoherente.
+    # Ahora df_completo YA excluye los cursos previos a 2010, así que el
+    # universo de referencia coincide con el que realmente analizamos y
+    # sin filtros aparece "6.596 de 6.596 (100%)".
+    #
+    # Los filtros posteriores de _aplicar_filtros_grid aplican el mismo
+    # filtro curso >= 2010, así que este cambio NO altera df_filtrado —
+    # solo alinea el total de referencia para que sea coherente.
+    if 'curso_aca_ini' in df.columns:
+        df = df[df['curso_aca_ini'] >= 2010].reset_index(drop=True)
 
-    # --- Aviso si los filtros dejan muy pocos datos ---
-    if len(df_filtrado) < 10:
+    # -------------------------------------------------------------------
+    # 4. BLOQUE DE FILTROS (nuevo: 5 visibles + 6 expander + borrar)
+    # -------------------------------------------------------------------
+    df_filtrado = _aplicar_filtros_grid(df)
+
+    # -------------------------------------------------------------------
+    # 5. AVISO DE MUESTRA PEQUEÑA (basado en UMBRALES_MUESTRA)
+    # -------------------------------------------------------------------
+    n_muestra = len(df_filtrado)
+    if n_muestra < UMBRALES_MUESTRA['minima']:
+        st.error(
+            f"❌ Muestra insuficiente ({n_muestra} alumnos). "
+            f"Los porcentajes no son fiables estadísticamente. "
+            f"Interpreta los resultados con cautela."
+        )
+    elif n_muestra < UMBRALES_MUESTRA['aceptable']:
         st.warning(
-            f"⚠️ La combinación de filtros seleccionada solo contiene "
-            f"{len(df_filtrado)} registros. Los resultados pueden no ser representativos."
+            f"⚠️ Muestra muy pequeña ({n_muestra} alumnos). "
+            f"Los resultados son orientativos — poco representativos."
+        )
+    elif n_muestra < UMBRALES_MUESTRA['fiable']:
+        st.info(
+            f"ℹ️ Muestra pequeña ({n_muestra} alumnos). "
+            f"Los porcentajes son indicativos."
         )
 
+    # --------------------------------------------------------------
+    # VALORES DE REFERENCIA — Tasas del test completo SIN filtros
+    # --------------------------------------------------------------
+    # Se usan en los KPIs como líneas "vs media UJI": permiten comparar
+    # la selección actual (con filtros aplicados) contra la media global.
+    #
+    # - _tasa_ref   : % de alumnos que abandonan en todo el test
+    # - _riesgo_ref : % de alumnos clasificados como 'Alto' en todo el test
+    #
+    # Bug FASE C #12: antes _riesgo_ref no existía y el delta vs UJI del
+    # KPI Riesgo alto estaba hardcoded a 0.0. Ahora se calcula real.
+    #
+    # FASE F iter 8: si la columna 'abandono' no existe, leemos la tasa
+    # desde metricas_modelo.json (dinámico). Si tampoco está el JSON, usamos
+    # 29.25 como último recurso documentado.
+    if 'abandono' in df.columns:
+        _tasa_ref = df['abandono'].mean() * 100
+    else:
+        _metricas_mod = _leer_metricas_modelo()
+        _tasa_json    = _metricas_mod.get('tasa_abandono')
+        _tasa_ref     = float(_tasa_json) * 100 if _tasa_json is not None else 29.25
+
+    _riesgo_ref = (
+        (df['nivel_riesgo'] == 'Alto').mean() * 100
+        if 'nivel_riesgo' in df.columns else 0.0
+    )
+
+    # -------------------------------------------------------------------
+    # 6. FILA KPIs (4 tarjetas a full width)
+    # -------------------------------------------------------------------
+    _bloque_kpis(df_filtrado, tasa_ref=_tasa_ref, riesgo_ref=_riesgo_ref)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------
+    # 7. FILA 2: Evolución temporal (50%) + Abandono por rama (50%)
+    # -------------------------------------------------------------------
+    # FASE D #18: antes era [3, 2] (60/40). El gráfico de Rama quedaba
+    # demasiado estrecho para ver las etiquetas de nombres completos.
+    # 50/50 da más aire a ambos gráficos.
+    col_evo, col_rama = st.columns([1, 1])
+    with col_evo:
+        _bloque_evolucion_temporal(df_filtrado)
+    with col_rama:
+        _bloque_abandono_por_rama(df_filtrado)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------
+    # 8. FILA 3: Gráficos de riesgo arriba + Tabla titulaciones abajo
+    # -------------------------------------------------------------------
+    # FASE D+E #8 (ITERACIÓN 2): mjmr prefiere el orden visual estándar de
+    # dashboard — resumen general primero (gráficos), detalle después (tabla):
+    #
+    #   ┌──────────────────────┬──────────────────────┐
+    #   │  Barras por rama     │  Donut distribución  │
+    #   │  (50%)               │  (50%)               │
+    #   └──────────────────────┴──────────────────────┘
+    #   ┌─────────────────────────────────────────────┐
+    #   │  Tabla titulaciones (ancho completo)        │
+    #   └─────────────────────────────────────────────┘
+    #
+    # Ventaja: el usuario ve primero el panorama (donut + barras) y luego
+    # baja al detalle por titulación. Orden natural de lectura.
+    col_barras, col_donut = st.columns([1, 1])
+    with col_barras:
+        _bloque_barras_riesgo_por_rama(df_filtrado)
+    with col_donut:
+        _bloque_donut_riesgo(df_filtrado)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Tabla de titulaciones — no ocupa el ancho completo para que respire
+    # FASE D+E iter 3 #4: mjmr pidió no tan ancha, con margen a ambos lados.
+    # Proporción [1, 14, 1] → tabla ocupa ~87% del ancho, 6.5% margen cada lado.
+    _col_margen_izq, col_tabla, _col_margen_der = st.columns([1, 14, 1])
+    with col_tabla:
+        _bloque_top_titulaciones(df_filtrado)
+
     st.divider()
 
-    # --- Bloques de contenido ---
-    # Cada bloque recibe el DataFrame ya filtrado.
-    _bloque_kpis(df_filtrado)
-    st.divider()
-    _bloque_evolucion_temporal(df_filtrado)
-    st.divider()
-    _bloque_abandono_por_rama(df_filtrado)
-    st.divider()
-    _bloque_top_titulaciones(df_filtrado)
-    st.divider()
-    _bloque_distribucion_riesgo(df_filtrado)
-
-    st.divider()
-
-    # Nota metodológica — igual que en p00 y p02
+    # -------------------------------------------------------------------
+    # 9. NOTA METODOLÓGICA (general + selección actual)
+    # -------------------------------------------------------------------
+    # FASE D+E iter 6 #A: ahora son 2 expanders separados.
+    #   - Primero: nota metodológica general (dataset, modelo, limitaciones)
+    #   - Segundo: resumen de la selección actual con fondo amarillo claro,
+    #     2 bloques (resultados vs UJI y demografía), comparativa vs global.
     with st.expander("📋 Nota metodológica — haz clic para ampliar", expanded=False):
         st.markdown("""
-        **Dataset:** 109.568 registros · 30.872 alumnos únicos · Universitat Jaume I · Cursos 2010–2020.
+        **Dataset:** 33.621 registros de modelado · 30.872 alumnos únicos · Universitat Jaume I · Cursos 2010–2020.
 
         **Variable objetivo:** abandono definitivo del grado (definición estricta). Tasa de abandono en test: **29,2 %**.
 
-        **Modelo final:** Stacking con CatBoost, XGBoost, LightGBM y Random Forest como modelos base,
-        y regresión logística como meta-learner. AUC = 0.931 · F1 = 0.799.
+        **Modelo final:** Stacking con CatBoost y Random Forest como modelos base, y regresión logística como meta-learner. AUC = 0.931 · F1 = 0.799.
 
         **Sobre los gráficos:** los porcentajes de riesgo son predicciones del modelo, no valores reales observados.
         La tasa de abandono real corresponde a los datos históricos del conjunto de test (6.725 observaciones).
@@ -136,6 +311,9 @@ def show():
         posteriores deben interpretarse con cautela.
         """)
 
+        # Bloque "Tu selección actual" — fondo amarillo claro con resultados + demografía
+        _bloque_resumen_seleccion(df, df_filtrado, _tasa_ref)
+
 
 # =============================================================================
 # HELPERS DE DATOS
@@ -143,29 +321,28 @@ def show():
 
 def _añadir_probabilidades(df_raw: pd.DataFrame, modelo, pipeline) -> pd.DataFrame:
     """
-    Calcula la probabilidad de abandono predicha por el modelo para cada
-    alumno del conjunto de test y la añade como columna 'prob_abandono'.
-
-    El pipeline transforma las features brutas al formato que espera el modelo.
-    Solo aplicamos el pipeline a las columnas que él conoce (las features),
-    no a los metadatos (titulacion, rama, etc.).
+    Calcula prob_abandono usando X_test_prep.parquet (ya preprocesado en Fase 5).
+    Se une por índice con df_raw (meta_test_app). Así evitamos pasar columnas
+    categóricas en texto crudo al pipeline, que espera valores numéricos.
     """
     df = df_raw.copy()
 
-    # Usamos pipeline.feature_names_in_ para saber exactamente qué columnas
-    # necesita el pipeline — robusto, sin listas manuales que queden desfasadas
-    cols_features   = list(pipeline.feature_names_in_)
-    cols_disponibles = [c for c in cols_features if c in df.columns]
-    X = df[cols_disponibles]
-
-    # Transformamos con el pipeline y predecimos probabilidades
-    # predict_proba devuelve [[prob_no_abandono, prob_abandono], ...]
-    # nos quedamos con la columna 1 (prob de abandono)
     try:
-        X_prep = pipeline.transform(X)
-        df['prob_abandono'] = modelo.predict_proba(X_prep)[:, 1]
+        # Cargar X_test_prep — features ya preprocesadas por el pipeline de Fase 5
+        ruta_xprep = _RUTAS.get("X_test_prep")
+        if ruta_xprep is None or not ruta_xprep.exists():
+            raise FileNotFoundError(f"X_test_prep no encontrado en {ruta_xprep}")
+
+        X_prep = _pd.read_parquet(ruta_xprep)
+
+        # Calcular probabilidades directamente sobre X_test_prep
+        prob = modelo.predict_proba(X_prep)[:, 1]
+
+        # Unir por índice — ambos tienen el mismo índice posicional
+        prob_series = _pd.Series(prob, index=X_prep.index, name="prob_abandono")
+        df = df.join(prob_series, how="left")
+
     except Exception as e:
-        # Si falla la predicción, ponemos NaN y avisamos
         st.warning(f"⚠️ No se pudieron calcular las probabilidades: {e}")
         df['prob_abandono'] = np.nan
 
@@ -193,58 +370,500 @@ def _añadir_nivel_riesgo(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _aplicar_filtros_sidebar(df: pd.DataFrame) -> pd.DataFrame:
+# =============================================================================
+# HELPER — Leer métricas del modelo desde metricas_modelo.json
+# =============================================================================
+
+@st.cache_data(show_spinner=False)
+def _leer_metricas_modelo() -> dict:
     """
-    Filtros en fila horizontal debajo del título de la página.
-    Encadenados: sexo → rama → año de cohorte.
+    Lee el fichero metricas_modelo.json generado por la Fase 6 (evaluación).
+
+    FASE F (iter 8): centraliza la lectura del JSON para evitar que varias
+    funciones repitan la misma lógica con fallbacks hardcodeados diferentes.
+
+    Returns
+    -------
+    dict
+        Diccionario con las métricas del modelo. Claves típicas:
+          - 'tasa_abandono' (float entre 0 y 1)
+          - 'f1', 'auc', 'accuracy', 'precision', 'recall' (floats)
+          - 'fecha_entrenamiento' (str, opcional)
+          - 'modelo' (str, opcional — p.ej. "Stacking__balanced")
+        Si el fichero no existe o falla la lectura, devuelve {} (dict vacío).
+
+    Notas
+    -----
+    - Usa @st.cache_data para no leer el fichero en cada rerun.
+    - NUNCA lanza excepción: si algo falla, devuelve {} silenciosamente.
+      Esto permite que las funciones que lo usen traten la ausencia de
+      datos con su propia lógica (ej. mostrar "N/D").
     """
-    col_f1, col_f2, col_f3, col_info = st.columns([1, 1.5, 1.5, 1])
-    df_f = df.copy()
+    try:
+        import json as _json
+        from config_app import RUTAS as _RUTAS
+        ruta_m = _RUTAS.get("metricas_modelo")
+        if ruta_m and ruta_m.exists():
+            with open(ruta_m, encoding="utf-8") as _f:
+                return _json.load(_f)
+    except Exception:
+        pass
+    return {}
 
-    with col_f1:
-        # Usar sexo_meta (texto legible) en lugar de sexo (numérico del pipeline)
-        col_sexo = 'sexo_meta' if 'sexo_meta' in df.columns else 'sexo'
-        opciones_sexo = ["Todos"] + sorted(df[col_sexo].dropna().unique().tolist()) \
-            if col_sexo in df.columns else ["Todos"]
-        sexo_sel = st.selectbox("Sexo", options=opciones_sexo, index=0,
-                                help="Filtra por sexo", key="filtro_sexo_p01")
-        if sexo_sel != "Todos":
-            df_f = df_f[df_f[col_sexo] == sexo_sel]
 
-    with col_f2:
-        col_rama_s = 'rama_meta' if 'rama_meta' in df_f.columns else 'rama'
-        ramas_disp = sorted(df_f[col_rama_s].dropna().unique().tolist()) \
-            if col_rama_s in df_f.columns else []
-        ramas_sel = st.multiselect(
-            "Rama", options=ramas_disp,
-            default=[],
-            placeholder="Todas las ramas",
-            key="filtro_rama_p01",
-            help="Deja vacío para ver todas. Selecciona para filtrar."
-        )
-        # Si no selecciona nada → todas las ramas
-        if ramas_sel:
-            df_f = df_f[df_f[col_rama_s].isin(ramas_sel)]
-    with col_f3:
-        if 'curso_aca_ini' in df_f.columns and df_f['curso_aca_ini'].notna().any():
-            a_min = int(df_f['curso_aca_ini'].min())
-            a_max = int(df_f['curso_aca_ini'].max())
-            if a_min < a_max:
-                rango = st.slider("Cohorte", min_value=a_min, max_value=a_max,
-                                  value=(a_min, a_max), step=1, key="filtro_anios_p01")
-                df_f = df_f[
-                    (df_f['curso_aca_ini'] >= rango[0]) &
-                    (df_f['curso_aca_ini'] <= rango[1])
-                ]
+def _aplicar_filtros_grid(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Bloque de filtros con layout en grid — 5 visibles + 6 en expander.
 
-    with col_info:
+    Visibles (siempre):
+      1. Sexo          (selectbox)
+      2. Rama          (multiselect)
+      3. Cohorte       (slider de rango)
+      4. Situación     (selectbox con código → texto vía SITUACION_LABORAL_INV)
+      5. Nota acceso   (slider de rango)
+
+    Avanzados (expander, plegado por defecto):
+      6. Nivel riesgo  (multiselect Bajo/Medio/Alto)
+      7. Titulación    (multiselect)
+      8. Vía acceso    (multiselect)
+      9. Universidad   (multiselect con código → texto vía UNIVERSIDAD_ORIGEN_INV)
+     10. Cupo          (multiselect — NaN se muestra como 'Sin dato')
+     11. Años beca     (slider de rango)
+
+    Adicionales:
+      - Botón 🗑️ Borrar filtros → resetea session_state
+      - Badge "📋 Mostrando X de Y · N filtros activos"
+    """
+
+    # Lista documental de todas las keys de widgets de filtros (NO se usa
+    # directamente para borrar — cada tipo se limpia con su propia técnica).
+    # Se mantiene como referencia para desarrolladores.
+    _claves_filtros_p01 = [
+        "filtro_sexo_p01", "filtro_rama_p01",
+        "filtro_anios_p01 (slider, versionada)",
+        "filtro_sit_lab_p01", "filtro_nota_acc_p01 (slider, versionada)",
+        "filtro_riesgo_p01", "filtro_titulacion_p01", "filtro_via_p01",
+        "filtro_universidad_p01", "filtro_cupo_p01",
+        "filtro_beca_p01 (slider, versionada)",
+    ]
+
+    # PATRÓN ITER 5 (Streamlit 1.45+) — reseteo de filtros sin callback.
+    #
+    # Problema de iter 4: el patrón callback + flag + st.rerun() no reseteaba
+    # los sliders en versión 1.45.1. Hipótesis: el callback `on_click` se
+    # ejecuta DENTRO del script run actual, y el rerun que Streamlit provoca
+    # automáticamente después NO vuelve a leer el bloque de borrado (lee el
+    # valor cacheado de session_state[flag] antes del cambio).
+    #
+    # Solución iter 5: detectar el click del botón DIRECTAMENTE con la
+    # expresión `if st.button(...)` (que devuelve True en el rerun inmediato
+    # después del click), y ejecutar el borrado ANTES de instanciar los
+    # widgets. Así nos saltamos toda la lógica de flags y callbacks.
+    #
+    # Sobre sliders: usamos keys versionadas (filtro_xxx_p01_v{N}) donde N
+    # se incrementa al pulsar Borrar. Al cambiar la key, Streamlit crea un
+    # widget nuevo y respeta el `value` por defecto.
+    if "_p01_filtros_version" not in st.session_state:
+        st.session_state["_p01_filtros_version"] = 0
+
+    _valores_defecto_filtros = {
+        "filtro_sexo_p01":        "Todos",
+        "filtro_rama_p01":        [],
+        "filtro_sit_lab_p01":     "Todas",
+        "filtro_riesgo_p01":      [],
+        "filtro_titulacion_p01":  [],
+        "filtro_via_p01":         [],
+        "filtro_universidad_p01": [],
+        "filtro_cupo_p01":        [],
+    }
+
+    # Versión actual para las keys de los sliders (se usa abajo en st.slider)
+    _v_filtros = st.session_state["_p01_filtros_version"]
+
+    # -------------------------------------------------------------------
+    # Cabecera del bloque de filtros
+    # -------------------------------------------------------------------
+    col_titulo, col_btn = st.columns([5, 1])
+    with col_titulo:
         st.markdown(f"""
-        <div style="font-size:0.78rem; color:{COLORES['texto_suave']};
-            background:{COLORES['fondo']}; border-radius:6px;
-            padding:0.5rem 0.75rem; margin-top:1.6rem;">
-            📋 <strong>{len(df_f):,}</strong> de {len(df):,}
+        <div style="font-weight:600; color:{COLORES['texto']};
+            font-size:0.95rem; padding-top:0.3rem;">
+            🔎 Filtros
         </div>
         """, unsafe_allow_html=True)
+    with col_btn:
+        # ITER 5: detección directa del click (sin on_click).
+        # Si se pulsa, ejecutamos la lógica de borrado aquí mismo y llamamos
+        # st.rerun() para regenerar todo el bloque desde cero.
+        _click_borrar = st.button(
+            "🗑️ Borrar filtros",
+            key="btn_borrar_filtros_p01",
+            width='stretch',
+            help="Limpia todos los filtros y vuelve a ver el conjunto completo"
+        )
+        if _click_borrar:
+            # 1. Resetear selectbox/multiselect → valor por defecto
+            for k, v_default in _valores_defecto_filtros.items():
+                st.session_state[k] = v_default
+            # 2. Sliders → incrementar versión (fuerza key nueva, widget nuevo)
+            st.session_state["_p01_filtros_version"] += 1
+            # 3. Borrar filtros auxiliares
+            for extra in ["rama_filtro_tabla"]:
+                if extra in st.session_state:
+                    try:
+                        del st.session_state[extra]
+                    except KeyError:
+                        pass
+            # 4. Rerun inmediato → todos los widgets se regeneran desde cero
+            st.rerun()
+
+    df_f = df.copy()
+
+    # -------------------------------------------------------------------
+    # FILA VISIBLE — 5 filtros principales
+    # -------------------------------------------------------------------
+    col1, col2, col3, col4, col5 = st.columns(5)
+
+    # --- 1. Sexo ---
+    with col1:
+        col_sexo = 'sexo_meta' if 'sexo_meta' in df.columns else 'sexo'
+        if col_sexo in df.columns:
+            opciones_sexo = ["Todos"] + sorted(df[col_sexo].dropna().unique().tolist())
+            sexo_sel = st.selectbox(
+                "Sexo",
+                options=opciones_sexo,
+                key="filtro_sexo_p01",
+                help="Filtra por sexo"
+            )
+            if sexo_sel != "Todos":
+                df_f = df_f[df_f[col_sexo] == sexo_sel]
+
+    # --- 2. Rama ---
+    with col2:
+        col_rama_s = 'rama_meta' if 'rama_meta' in df_f.columns else 'rama'
+        if col_rama_s in df_f.columns:
+            ramas_disp = sorted(df_f[col_rama_s].dropna().unique().tolist())
+            ramas_sel = st.multiselect(
+                "Rama",
+                options=ramas_disp,
+                placeholder="Todas",
+                key="filtro_rama_p01",
+                help="Deja vacío para ver todas. Selecciona una o varias para filtrar."
+            )
+            if ramas_sel:
+                df_f = df_f[df_f[col_rama_s].isin(ramas_sel)]
+
+    # --- 3. Cohorte (rango de años) ---
+    with col3:
+        if 'curso_aca_ini' in df_f.columns and df_f['curso_aca_ini'].notna().any():
+            # Excluir 2009: alumnos pre-grado (curso idiomas/valenciano)
+            df_f = df_f[df_f['curso_aca_ini'] >= 2010]
+            if len(df_f) > 0:
+                a_min = int(df_f['curso_aca_ini'].min())
+                a_max = int(df_f['curso_aca_ini'].max())
+                if a_min < a_max:
+                    rango_anios = st.slider(
+                        "Cohorte",
+                        min_value=a_min,
+                        max_value=a_max,
+                        value=(a_min, a_max),
+                        step=1,
+                        key=f"filtro_anios_p01_v{_v_filtros}",
+                        help="Rango de años de inicio de estudios"
+                    )
+                    df_f = df_f[
+                        (df_f['curso_aca_ini'] >= rango_anios[0]) &
+                        (df_f['curso_aca_ini'] <= rango_anios[1])
+                    ]
+
+    # --- 4. Situación laboral (código → texto) ---
+    with col4:
+        if 'situacion_laboral' in df.columns:
+            # Códigos únicos presentes en los datos (antes de filtrar más)
+            codigos_presentes = sorted(df['situacion_laboral'].dropna().unique().tolist())
+            # Convertir código → etiqueta legible usando SITUACION_LABORAL_INV
+            # Si un código no está en el diccionario, mostrar "Código N"
+            opciones_sit = ["Todas"] + [
+                SITUACION_LABORAL_INV.get(int(c), f"Código {int(c)}")
+                for c in codigos_presentes
+            ]
+            sit_sel = st.selectbox(
+                "Situación laboral",
+                options=opciones_sit,
+                key="filtro_sit_lab_p01",
+                help="Filtra por situación laboral del alumno"
+            )
+            if sit_sel != "Todas":
+                # Buscar el código que corresponde a la etiqueta elegida
+                codigo_sel = None
+                for c in codigos_presentes:
+                    etiqueta = SITUACION_LABORAL_INV.get(int(c), f"Código {int(c)}")
+                    if etiqueta == sit_sel:
+                        codigo_sel = int(c)
+                        break
+                if codigo_sel is not None:
+                    df_f = df_f[df_f['situacion_laboral'] == codigo_sel]
+
+    # --- 5. Nota de acceso (rango numérico) ---
+    with col5:
+        if 'nota_acceso' in df_f.columns and df_f['nota_acceso'].notna().any():
+            nota_min = float(df['nota_acceso'].min())
+            nota_max = float(df['nota_acceso'].max())
+            if nota_min < nota_max:
+                rango_nota = st.slider(
+                    "Nota acceso",
+                    min_value=round(nota_min, 1),
+                    max_value=round(nota_max, 1),
+                    value=(round(nota_min, 1), round(nota_max, 1)),
+                    step=0.1,
+                    key=f"filtro_nota_acc_p01_v{_v_filtros}",
+                    help="Rango de nota de acceso a la universidad"
+                )
+                df_f = df_f[
+                    (df_f['nota_acceso'] >= rango_nota[0]) &
+                    (df_f['nota_acceso'] <= rango_nota[1])
+                ]
+
+    # -------------------------------------------------------------------
+    # EXPANDER — 6 filtros avanzados
+    # -------------------------------------------------------------------
+    with st.expander("🔧 Filtros avanzados (6) — riesgo · titulación · vía · universidad · cupo · beca", expanded=False):
+
+        col_a, col_b, col_c = st.columns(3)
+
+        # --- 6. Nivel de riesgo (CASCADA) ---
+        # Cascada: solo se muestran niveles presentes en df_f (ya filtrado
+        # por Sexo, Rama, Cohorte, Situación, Nota). Se limpian automáticamente
+        # selecciones incompatibles de session_state.
+        with col_a:
+            if 'nivel_riesgo' in df_f.columns:
+                niveles_posibles = ["Bajo", "Medio", "Alto"]
+                # Niveles realmente presentes en df_f (cascada real)
+                niveles_disp = [n for n in niveles_posibles if n in df_f['nivel_riesgo'].unique()]
+                # Limpieza automática de selecciones incompatibles
+                _sel_previa = st.session_state.get("filtro_riesgo_p01", [])
+                _sel_valida = [r for r in _sel_previa if r in niveles_disp]
+                if _sel_valida != _sel_previa:
+                    st.session_state["filtro_riesgo_p01"] = _sel_valida
+                riesgo_sel = st.multiselect(
+                    "Nivel de riesgo",
+                    options=niveles_disp,
+                    placeholder="Todos",
+                    key="filtro_riesgo_p01",
+                    help=(
+                        "Filtra por nivel de riesgo predicho por el modelo. "
+                        "Nota: este filtro afecta a KPIs, tabla de titulaciones y "
+                        "abandono por rama. No se aplica a Evolución temporal ni "
+                        "Distribución del riesgo para preservar su interpretación."
+                    )
+                )
+                if riesgo_sel:
+                    df_f = df_f[df_f['nivel_riesgo'].isin(riesgo_sel)]
+
+        # --- 7. Titulación (CASCADA) ---
+        # Las opciones se construyen sobre df_f (ya filtrado por Sexo, Rama,
+        # Cohorte, Situación, Nota). Si el usuario tenía seleccionadas
+        # titulaciones que ya no están en df_f (por cambio de filtros previos),
+        # se limpian automáticamente de session_state ANTES de instanciar el
+        # widget, para evitar warnings de Streamlit y chips huérfanos.
+        with col_b:
+            if 'titulacion' in df_f.columns:
+                # Opciones = solo titulaciones presentes en df_f (cascada real)
+                titulaciones_disp = sorted(df_f['titulacion'].dropna().unique().tolist())
+                # Limpieza automática de selecciones incompatibles
+                _sel_previa = st.session_state.get("filtro_titulacion_p01", [])
+                _sel_valida = [t for t in _sel_previa if t in titulaciones_disp]
+                if _sel_valida != _sel_previa:
+                    st.session_state["filtro_titulacion_p01"] = _sel_valida
+                titul_sel = st.multiselect(
+                    "Titulación",
+                    options=titulaciones_disp,
+                    placeholder="Todas",
+                    key="filtro_titulacion_p01",
+                    help="Filtra por uno o varios grados concretos"
+                )
+                if titul_sel:
+                    df_f = df_f[df_f['titulacion'].isin(titul_sel)]
+
+        # --- 8. Vía de acceso (CASCADA) ---
+        # Cascada: solo se muestran vías presentes en df_f (ya filtrado por
+        # Sexo, Rama, Cohorte, Situación, Nota, Riesgo, Titulación).
+        with col_c:
+            if 'via_acceso' in df_f.columns:
+                # Vías presentes en df_f (cascada real)
+                vias_disp = sorted(df_f['via_acceso'].dropna().unique().tolist())
+                # Limpieza automática de selecciones incompatibles
+                _sel_previa = st.session_state.get("filtro_via_p01", [])
+                _sel_valida = [v for v in _sel_previa if v in vias_disp]
+                if _sel_valida != _sel_previa:
+                    st.session_state["filtro_via_p01"] = _sel_valida
+                via_sel = st.multiselect(
+                    "Vía de acceso",
+                    options=vias_disp,
+                    placeholder="Todas",
+                    key="filtro_via_p01",
+                    help="Filtra por vía de acceso a la universidad"
+                )
+                if via_sel:
+                    df_f = df_f[df_f['via_acceso'].isin(via_sel)]
+
+        col_d, col_e, col_f = st.columns(3)
+
+        # --- 9. Universidad de origen (CASCADA) ---
+        # Cascada: solo se muestran universidades presentes en df_f (ya filtrado
+        # por Sexo, Rama, Cohorte, Situación, Nota, Titulación). Se limpian
+        # automáticamente selecciones incompatibles de session_state.
+        with col_d:
+            if 'universidad_origen' in df_f.columns:
+                # Códigos presentes en df_f (cascada real)
+                codigos_uni = sorted(df_f['universidad_origen'].dropna().unique().tolist())
+                opciones_uni = [
+                    UNIVERSIDAD_ORIGEN_INV.get(int(c), f"Código {int(c)}")
+                    for c in codigos_uni
+                ]
+                # Limpieza automática de selecciones incompatibles (sobre etiquetas,
+                # que es lo que guarda session_state)
+                _sel_previa = st.session_state.get("filtro_universidad_p01", [])
+                _sel_valida = [u for u in _sel_previa if u in opciones_uni]
+                if _sel_valida != _sel_previa:
+                    st.session_state["filtro_universidad_p01"] = _sel_valida
+                uni_sel = st.multiselect(
+                    "Universidad de origen",
+                    options=opciones_uni,
+                    placeholder="Todas",
+                    key="filtro_universidad_p01",
+                    help="Universidad de la que procede el alumno"
+                )
+                if uni_sel:
+                    # Traducir etiquetas seleccionadas a códigos
+                    codigos_sel = []
+                    for c in codigos_uni:
+                        etiqueta = UNIVERSIDAD_ORIGEN_INV.get(int(c), f"Código {int(c)}")
+                        if etiqueta in uni_sel:
+                            codigos_sel.append(int(c))
+                    if codigos_sel:
+                        df_f = df_f[df_f['universidad_origen'].isin(codigos_sel)]
+
+        # --- 10. Cupo (CASCADA, con opción "Sin dato" para NaN) ---
+        # Cascada: solo se muestran cupos presentes en df_f (ya filtrado por
+        # Sexo, Rama, Cohorte, Situación, Nota, Riesgo, Titulación, Vía,
+        # Universidad). "Sin dato" solo aparece si df_f contiene NaN en cupo.
+        with col_e:
+            if 'cupo' in df_f.columns:
+                # Valores no nulos presentes en df_f (cascada real)
+                valores_cupo = sorted(df_f['cupo'].dropna().unique().tolist())
+                hay_nan = df_f['cupo'].isna().any()
+                opciones_cupo = valores_cupo + (["Sin dato"] if hay_nan else [])
+                # Limpieza automática de selecciones incompatibles
+                _sel_previa = st.session_state.get("filtro_cupo_p01", [])
+                _sel_valida = [c for c in _sel_previa if c in opciones_cupo]
+                if _sel_valida != _sel_previa:
+                    st.session_state["filtro_cupo_p01"] = _sel_valida
+                cupo_sel = st.multiselect(
+                    "Cupo",
+                    options=opciones_cupo,
+                    placeholder="Todos",
+                    key="filtro_cupo_p01",
+                    help="Cupo de admisión (General, discapacidad, deportista...)"
+                )
+                if cupo_sel:
+                    if "Sin dato" in cupo_sel:
+                        # Incluir NaN + los valores seleccionados
+                        valores_no_nan = [v for v in cupo_sel if v != "Sin dato"]
+                        mask = df_f['cupo'].isna()
+                        if valores_no_nan:
+                            mask = mask | df_f['cupo'].isin(valores_no_nan)
+                        df_f = df_f[mask]
+                    else:
+                        df_f = df_f[df_f['cupo'].isin(cupo_sel)]
+
+        # --- 11. Años de beca ---
+        with col_f:
+            if 'n_anios_beca' in df_f.columns and df_f['n_anios_beca'].notna().any():
+                beca_min = int(df['n_anios_beca'].min())
+                beca_max = int(df['n_anios_beca'].max())
+                if beca_min < beca_max:
+                    rango_beca = st.slider(
+                        "Años con beca",
+                        min_value=beca_min,
+                        max_value=beca_max,
+                        value=(beca_min, beca_max),
+                        step=1,
+                        key=f"filtro_beca_p01_v{_v_filtros}",
+                        help="Número de años con beca durante la carrera"
+                    )
+                    df_f = df_f[
+                        (df_f['n_anios_beca'] >= rango_beca[0]) &
+                        (df_f['n_anios_beca'] <= rango_beca[1])
+                    ]
+
+    # -------------------------------------------------------------------
+    # BADGE DE MUESTRA (cuántos filtros están activos y cuántos alumnos)
+    # -------------------------------------------------------------------
+    # Contar filtros activos (cualquier clave con valor no neutro en session_state)
+    # NOTA: los sliders usan key versionada (f"filtro_xxx_p01_v{_v_filtros}")
+    # para permitir reset real desde el botón Borrar. Aquí leemos la versión
+    # actual para saber qué clave buscar en session_state.
+    n_activos = 0
+    # Sexo
+    if st.session_state.get("filtro_sexo_p01", "Todos") != "Todos":
+        n_activos += 1
+    # Rama
+    if st.session_state.get("filtro_rama_p01", []):
+        n_activos += 1
+    # Cohorte — activo solo si el rango no cubre todos los años
+    cohorte_val = st.session_state.get(f"filtro_anios_p01_v{_v_filtros}")
+    if cohorte_val and 'curso_aca_ini' in df.columns:
+        a_total_min = int(df.loc[df['curso_aca_ini'] >= 2010, 'curso_aca_ini'].min())
+        a_total_max = int(df.loc[df['curso_aca_ini'] >= 2010, 'curso_aca_ini'].max())
+        if cohorte_val != (a_total_min, a_total_max):
+            n_activos += 1
+    # Situación laboral
+    if st.session_state.get("filtro_sit_lab_p01", "Todas") != "Todas":
+        n_activos += 1
+    # Nota acceso — activo si no cubre el rango total
+    nota_val = st.session_state.get(f"filtro_nota_acc_p01_v{_v_filtros}")
+    if nota_val and 'nota_acceso' in df.columns:
+        nota_total_min = round(float(df['nota_acceso'].min()), 1)
+        nota_total_max = round(float(df['nota_acceso'].max()), 1)
+        if nota_val != (nota_total_min, nota_total_max):
+            n_activos += 1
+    # Avanzados: listas → activos si no están vacías
+    for k in ("filtro_riesgo_p01", "filtro_titulacion_p01", "filtro_via_p01",
+              "filtro_universidad_p01", "filtro_cupo_p01"):
+        if st.session_state.get(k, []):
+            n_activos += 1
+    # Años beca — activo si no cubre el rango total
+    beca_val = st.session_state.get(f"filtro_beca_p01_v{_v_filtros}")
+    if beca_val and 'n_anios_beca' in df.columns:
+        beca_total_min = int(df['n_anios_beca'].min())
+        beca_total_max = int(df['n_anios_beca'].max())
+        if beca_val != (beca_total_min, beca_total_max):
+            n_activos += 1
+
+    texto_activos = (
+        "Sin filtros activos" if n_activos == 0
+        else f"{n_activos} filtro{'s' if n_activos != 1 else ''} activo{'s' if n_activos != 1 else ''}"
+    )
+
+    # Color del badge según si hay filtros o no
+    color_badge   = COLORES['primario'] if n_activos > 0 else COLORES['texto_suave']
+    fondo_badge   = COLORES['fondo_pagina'] if n_activos > 0 else COLORES['fondo']
+
+    st.markdown(f"""
+    <div style="display:flex; justify-content:flex-end; margin-top:0.5rem;">
+        <span style="background:{fondo_badge};
+            color:{color_badge};
+            padding:0.35rem 0.8rem;
+            border-radius:6px;
+            font-size:0.8rem;
+            font-weight:500;">
+            📋 Mostrando <strong>{len(df_f):,}</strong> de <strong>{len(df):,}</strong> · {texto_activos}
+        </span>
+    </div>
+    """.replace(",", "."), unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     return df_f
 
@@ -253,58 +872,818 @@ def _aplicar_filtros_sidebar(df: pd.DataFrame) -> pd.DataFrame:
 # BLOQUE 1: KPIs rápidos
 # =============================================================================
 
-def _bloque_kpis(df: pd.DataFrame):
-    """Fila de métricas clave calculadas sobre los datos filtrados."""
+def _generar_sparkline_svg(
+    valores: list,
+    color: str,
+    width: int = 200,
+    height: int = 40,
+) -> str:
+    """
+    Genera un sparkline SVG simple a partir de una lista de valores.
 
-    st.markdown(f"""
-    <h4 style="color: {COLORES['texto']}; margin-bottom: 0.8rem;">
-        📌 Indicadores clave
-    </h4>
-    """, unsafe_allow_html=True)
+    Devuelve HTML <svg>...</svg> listo para insertar en markdown.
+    Dibuja una polyline + un área suave bajo la línea con opacidad.
 
-    # Calculamos las métricas
-    n_total        = len(df)
-    n_abandono     = df['abandono'].sum() if 'abandono' in df.columns else 0
-    tasa_abandono  = (n_abandono / n_total * 100) if n_total > 0 else 0
-    n_riesgo_alto  = (df['nivel_riesgo'] == 'Alto').sum()
-    pct_riesgo_alto = (n_riesgo_alto / n_total * 100) if n_total > 0 else 0
-    n_titulaciones = df['titulacion'].nunique() if 'titulacion' in df.columns else 0
-    col_rama_kpi   = 'rama_meta' if 'rama_meta' in df.columns else 'rama'
-    n_ramas        = df[col_rama_kpi].nunique() if col_rama_kpi in df.columns else 0
+    - valores: lista de números (pueden ser NaN → se filtran)
+    - color  : hex del color principal (ej. COLORES['primario'])
+    - width  : ancho en px
+    - height : alto en px
+    """
+    # Limpiar NaN o valores no numéricos
+    serie = [v for v in valores if v is not None and not _pd.isna(v)]
+    if len(serie) < 2:
+        # No hay datos suficientes → devolver un SVG vacío con línea plana
+        return (f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" '
+                f'preserveAspectRatio="none"><line x1="0" y1="{height//2}" '
+                f'x2="{width}" y2="{height//2}" stroke="{color}" '
+                f'stroke-width="1" opacity="0.3"/></svg>')
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    # Escalar valores al rango del SVG (invertido: más alto = menor Y)
+    v_min, v_max = min(serie), max(serie)
+    rango = v_max - v_min if v_max > v_min else 1  # evitar división por cero
+    n = len(serie)
+    margen = 4  # margen arriba/abajo
+    alto_util = height - 2 * margen
 
-    with c1:
-        st.metric(
-            label="👥 Alumnos (test)",
-            value=f"{n_total:,}",
-            help="Número de registros en el conjunto de test con los filtros activos"
+    puntos = []
+    for i, v in enumerate(serie):
+        x = i / (n - 1) * width
+        # Normalizar e invertir (eje Y del SVG crece hacia abajo)
+        y = margen + alto_util - ((v - v_min) / rango) * alto_util
+        puntos.append(f"{x:.1f},{y:.1f}")
+
+    # Puntos para cerrar el área (añadir esquinas inferiores)
+    puntos_area = puntos + [f"{width:.1f},{height}", f"0,{height}"]
+
+    polyline_linea = " ".join(puntos)
+    polygon_area   = " ".join(puntos_area)
+
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" '
+        f'preserveAspectRatio="none" style="display:block;">'
+        # Área bajo la línea (opacidad baja)
+        f'<polyline points="{polygon_area}" fill="{color}" opacity="0.15" stroke="none"/>'
+        # Línea principal
+        f'<polyline points="{polyline_linea}" fill="none" stroke="{color}" stroke-width="2" '
+        f'stroke-linecap="round" stroke-linejoin="round"/>'
+        f'</svg>'
+    )
+
+
+def _generar_sparkline_multi_svg(
+    series: dict,
+    width: int = 200,
+    height: int = 40,
+) -> str:
+    """
+    Genera un sparkline SVG con MÚLTIPLES líneas superpuestas.
+
+    A diferencia de _generar_sparkline_svg (que dibuja 1 serie con área),
+    esta función dibuja N polilíneas sin área, cada una con su color.
+    Todas comparten el mismo rango Y (normalización conjunta), para que
+    la comparación visual sea honesta.
+
+    Bug FASE C #14: sparkline de KPI Alumnos antes tenía 1 sola línea
+    (N total por cohorte). Ahora muestra desglose Mujer/Hombre/Total.
+
+    Parámetros
+    ----------
+    series : dict[str, tuple[list, str]]
+        Diccionario con estructura:
+          {"Etiqueta": (valores, color_hex), ...}
+        Ejemplo:
+          {
+            "Total":  ([100, 150, 200], "#2d3748"),
+            "Hombre": ([45, 70, 95],    "#1e4d8c"),
+            "Mujer":  ([55, 80, 105],   "#E15F99"),
+          }
+        Las etiquetas solo se usan internamente; no se dibujan en el SVG
+        (eso va en la leyenda externa, en la tarjeta KPI).
+    width : int
+        Ancho en píxeles del SVG.
+    height : int
+        Alto en píxeles del SVG.
+
+    Returns
+    -------
+    str
+        HTML <svg>...</svg> listo para insertar en markdown.
+        Si no hay datos suficientes, devuelve un SVG con línea plana.
+    """
+    # --- Validar y limpiar series ---
+    # Filtramos NaN de cada serie y descartamos series vacías
+    series_limpias = {}
+    for etiqueta, (valores, color) in series.items():
+        serie = [v for v in valores if v is not None and not _pd.isna(v)]
+        if len(serie) >= 2:
+            series_limpias[etiqueta] = (serie, color)
+
+    # Si ninguna serie tiene suficientes puntos, línea plana de fallback
+    if not series_limpias:
+        return (f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" '
+                f'preserveAspectRatio="none"><line x1="0" y1="{height//2}" '
+                f'x2="{width}" y2="{height//2}" stroke="{COLORES["borde"]}" '
+                f'stroke-width="1" opacity="0.3"/></svg>')
+
+    # --- Escalado conjunto: todas las series en el mismo rango Y ---
+    # Esto es esencial para comparar visualmente (si una serie se
+    # normaliza por separado, las alturas no se pueden comparar entre ellas)
+    todos_valores = [v for (serie, _c) in series_limpias.values() for v in serie]
+    v_min, v_max = min(todos_valores), max(todos_valores)
+    rango = v_max - v_min if v_max > v_min else 1
+    margen = 4
+    alto_util = height - 2 * margen
+
+    # --- Construir polilíneas ---
+    polilineas_svg = []
+    for etiqueta, (serie, color) in series_limpias.items():
+        n = len(serie)
+        puntos = []
+        for i, v in enumerate(serie):
+            x = i / (n - 1) * width
+            # Normalizar e invertir (eje Y del SVG crece hacia abajo)
+            y = margen + alto_util - ((v - v_min) / rango) * alto_util
+            puntos.append(f"{x:.1f},{y:.1f}")
+        polilineas_svg.append(
+            f'<polyline points="{" ".join(puntos)}" fill="none" '
+            f'stroke="{color}" stroke-width="1.8" '
+            f'stroke-linecap="round" stroke-linejoin="round"/>'
         )
-    with c2:
-        st.metric(
-            label="📉 Tasa abandono real",
-            value=f"{tasa_abandono:.1f} %",
-            help="Porcentaje de abandono observado en los datos (etiqueta real, no predicción)"
+
+    # --- Construir SVG completo ---
+    return (
+        f'<svg viewBox="0 0 {width} {height}" width="100%" height="{height}" '
+        f'preserveAspectRatio="none" style="display:block;">'
+        + "".join(polilineas_svg)
+        + '</svg>'
+    )
+
+
+def _tarjeta_kpi_html(
+    icono: str,
+    label: str,
+    valor: str,
+    color_barra: str,
+    sparkline_html: str = "",
+    leyenda_html: str = "",
+    delta_temporal: str = "",
+    delta_ref: str = "",
+    tooltip: str = "",
+) -> str:
+    """
+    Genera HTML de una tarjeta KPI al estilo mockup.
+
+    Estructura:
+      - Barra vertical de color a la izquierda (4px)
+      - Header: icono + label arriba
+      - Valor grande en el centro
+      - Sparkline SVG (si se pasa)
+      - Leyenda del sparkline (si se pasa) — solo para sparklines multi-línea
+      - 2 deltas (temporal + referencia) en la parte inferior
+
+    Los deltas ya deben venir como HTML con flecha + color aplicado desde
+    la función que llama (_formato_delta_html).
+
+    Bug FASE C #14: se añadió leyenda_html para poder distinguir las
+    líneas del sparkline multi-línea del KPI Alumnos (Mujer/Hombre/Total).
+    """
+    # Sección de deltas: solo aparece si hay al menos uno
+    deltas_html = ""
+    if delta_temporal or delta_ref:
+        lineas = []
+        if delta_temporal:
+            lineas.append(delta_temporal)
+        if delta_ref:
+            lineas.append(delta_ref)
+        deltas_html = (
+            f'<div style="border-top:1px solid {COLORES["borde"]}; '
+            f'padding-top:0.4rem; margin-top:0.4rem; '
+            f'display:flex; flex-direction:column; gap:0.15rem;">'
+            + "".join(lineas)
+            + '</div>'
         )
-    with c3:
-        st.metric(
-            label="🔴 En riesgo alto",
-            value=f"{n_riesgo_alto:,}",
-            delta=f"{pct_riesgo_alto:.1f} % del total",
-            delta_color="inverse",  # rojo si sube (más riesgo = peor)
-            help=f"Alumnos con probabilidad predicha ≥ {UMBRALES['riesgo_medio']:.0%}"
+
+    # Sparkline: solo si se pasa
+    sparkline_bloque = (
+        f'<div style="margin:0.3rem 0 0.3rem 0;">{sparkline_html}</div>'
+        if sparkline_html else ""
+    )
+
+    # Leyenda del sparkline: solo si se pasa (tarjetas con sparkline multi-línea)
+    leyenda_bloque = (
+        f'<div style="margin:0 0 0.3rem 0;">{leyenda_html}</div>'
+        if leyenda_html else ""
+    )
+
+    # IMPORTANTE: la plantilla de la tarjeta se construye SIN saltos de línea
+    # ni indentación entre bloques HTML dinámicos ({sparkline_bloque},
+    # {leyenda_bloque}, {deltas_html}). Streamlit.markdown pasa el string
+    # por un renderizador Markdown antes de tratar el HTML: cualquier línea
+    # en blanco entre elementos se interpreta como fin de párrafo, corta el
+    # HTML y escapa el resto como texto (se ve "<div style=..." literal).
+    # Bug reportado por María José: los deltas y leyendas se mostraban como
+    # código fuente. Arreglo: usar una sola línea para los bloques opcionales.
+    return (
+        f'<div style="position:relative;'
+        f'background:{COLORES["blanco"]};'
+        f'border:1px solid {COLORES["borde"]};'
+        f'border-left:4px solid {color_barra};'
+        f'border-radius:10px;'
+        f'padding:0.9rem 1.1rem 0.8rem 1.1rem;'
+        f'height:100%;'
+        f'box-shadow:0 1px 3px rgba(0,0,0,0.04);" title="{tooltip}">'
+        f'<div style="display:flex;justify-content:space-between;'
+        f'align-items:center;margin-bottom:0.25rem;">'
+        f'<span style="font-size:0.82rem;color:{COLORES["texto_suave"]};'
+        f'font-weight:500;">{label}</span>'
+        f'<span style="font-size:1.1rem;">{icono}</span>'
+        f'</div>'
+        f'<div style="font-size:1.9rem;font-weight:700;'
+        f'color:{COLORES["texto"]};line-height:1.1;margin-bottom:0.2rem;">'
+        f'{valor}'
+        f'</div>'
+        f'{sparkline_bloque}{leyenda_bloque}{deltas_html}'
+        f'</div>'
+    )
+
+
+def _formato_delta_html(
+    delta_valor: float,
+    etiqueta: str,
+    subir_es_bueno: bool,
+    sufijo_unidad: str = "pp",
+) -> str:
+    """
+    Devuelve HTML de una línea de delta con flecha + color coherente.
+
+    REGLA (confirmada con mjmr — FASE C):
+      - Si algo MEJORA  → flecha ▲ verde (exito)
+      - Si algo EMPEORA → flecha ▼ rojo  (abandono)
+      - Si no cambia     → flecha · gris (texto_muy_suave)
+
+    La dirección de la flecha NO depende del signo del número, sino de si
+    el cambio representa una mejora o empeoramiento según el KPI.
+
+    Parámetros:
+      - delta_valor:  número (positivo o negativo)
+      - etiqueta:     texto descriptivo ("vs cohorte anterior", "vs media UJI")
+      - subir_es_bueno: True si que el valor suba es algo bueno (ej. AUC),
+                        False si subir es malo (ej. tasa abandono)
+      - sufijo_unidad: "pp" (puntos porcentuales) o "%" o lo que sea
+    """
+    # Tolerancia para considerar "sin cambio"
+    if abs(delta_valor) < 0.05:
+        flecha      = "·"
+        color_delta = COLORES['texto_muy_suave']
+    else:
+        sube = delta_valor > 0
+        # "Mejora" = sube y subir es bueno · O · baja y subir es malo
+        mejora = (sube and subir_es_bueno) or (not sube and not subir_es_bueno)
+        if mejora:
+            flecha      = "▲"
+            color_delta = COLORES['exito']
+        else:
+            flecha      = "▼"
+            color_delta = COLORES['abandono']
+
+    # Signo explícito (+ o -) y coma decimal española
+    signo = "+" if delta_valor > 0 else ("-" if delta_valor < 0 else "")
+    valor_str = f"{abs(delta_valor):.1f}".replace(".", ",")
+
+    # FASE F Bloque 2 — Tooltip "pp" (puntos porcentuales)
+    # Cuando el sufijo es "pp", lo envolvemos en un <span title="..."> con borde
+    # inferior punteado para señalar visualmente que hay información adicional
+    # al pasar el ratón. Para otros sufijos (ej. "%") no se añade tooltip.
+    if sufijo_unidad == "pp":
+        sufijo_html = (
+            f'<span title="pp = puntos porcentuales. '
+            f'Diferencia absoluta entre dos tasas expresadas en porcentaje." '
+            f'style="cursor:help; border-bottom:1px dotted currentColor;">'
+            f'{sufijo_unidad}'
+            f'</span>'
         )
-    with c4:
-        st.metric(
-            label="🎓 Titulaciones",
-            value=f"{n_titulaciones}",
-            help="Número de titulaciones distintas con los filtros activos"
+    else:
+        sufijo_html = sufijo_unidad
+
+    return (
+        f'<div style="display:flex; justify-content:space-between; '
+        f'align-items:center; font-size:0.75rem;">'
+        f'<span style="color:{COLORES["texto_muy_suave"]};">{etiqueta}</span>'
+        f'<span style="color:{color_delta}; font-weight:600;">'
+        f'{flecha} {signo}{valor_str} {sufijo_html}'
+        f'</span>'
+        f'</div>'
+    )
+
+
+# =============================================================================
+# GUARDIA ANTI-DF-VACÍO — Helper común para todos los _bloque_*
+# =============================================================================
+# FASE F B3: se detectó que varios bloques gráficos (_bloque_evolucion_temporal,
+# _bloque_abandono_por_rama, etc.) petaban con TypeError cuando el usuario
+# aplicaba filtros tan restrictivos que df_filtrado quedaba con 0 filas.
+#
+# Ejemplo del error original:
+#     File ..., line 1649, in _bloque_evolucion_temporal
+#         anio_max = int(evolucion['anio_cohorte'].max())
+#     TypeError: int() argument must be a string, a bytes-like object or a
+#     real number, not 'NAType'
+#
+# Causa: .max() / .min() sobre una Serie vacía devuelve pd.NA (NAType), y
+# int(pd.NA) explota. Lo mismo pasa con conteos, groupbys, etc.
+#
+# Solución: cada bloque gráfico llama a _guardia_df_vacio() al principio.
+# Si devuelve True, el bloque muestra un aviso visual amigable y retorna
+# sin intentar calcular nada. Así la app degrada con elegancia cuando el
+# usuario provoca una muestra vacía (filtros muy restrictivos).
+
+def _guardia_df_vacio(df: pd.DataFrame, titulo_bloque: str) -> bool:
+    """
+    Comprueba si un DataFrame está vacío y, si lo está, renderiza un aviso
+    visual coherente con el estilo de la app.
+
+    Devuelve:
+      - True  → df está vacío, el bloque que lo llame debe hacer `return`
+      - False → df tiene datos, el bloque puede continuar normalmente
+
+    Parámetros:
+      df            → DataFrame a comprobar (típicamente df_filtrado)
+      titulo_bloque → Nombre del bloque para el aviso (ej: "Evolución temporal")
+    """
+    if df is None or len(df) == 0:
+        st.markdown(f"""
+        <div style="background:{COLORES['fondo']};
+            border:1px dashed {COLORES['texto_muy_suave']};
+            border-radius:8px;
+            padding:1.5rem 1rem;
+            text-align:center;
+            color:{COLORES['texto_suave']};
+            font-size:0.85rem;
+            margin:0.5rem 0;">
+            <div style="font-weight:600; margin-bottom:0.3rem;
+                color:{COLORES['texto']};">
+                {titulo_bloque}
+            </div>
+            📭 No hay datos para mostrar con los filtros actuales.
+            <br>
+            <span style="font-size:0.78rem;">
+                Prueba a relajar los filtros para ver este bloque.
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+        return True
+    return False
+
+
+def _bloque_kpis(df: pd.DataFrame, tasa_ref: float = 29.25,
+                 riesgo_ref: float = 0.0):
+    """
+    Fila de 4 tarjetas KPI grandes estilo dashboard.
+
+    Nota FASE F (iter 8) sobre defaults:
+    - `tasa_ref = 29.25` es el valor histórico del conjunto de test
+      (F1 2025-11). Se usa SOLO si se llama a esta función sin pasar
+      `tasa_ref` explícitamente. En show() siempre se pasa el valor
+      real calculado en tiempo de ejecución. Se mantiene como default
+      documentado por seguridad, no como fuente de verdad.
+
+    Métricas:
+      1. 👥 Alumnos          — sin deltas (valor absoluto) + sparkline multi-línea
+                                (Mujer / Hombre / Total) por cohorte
+      2. 📉 Tasa abandono    — 2 deltas (vs cohorte anterior + vs UJI) + sparkline
+      3. 🔴 Riesgo alto (%)  — 2 deltas + sparkline
+      4. 🎓 Titulaciones     — sin deltas (valor absoluto) · sin sparkline
+
+    Parámetros
+    ----------
+    df : DataFrame con los datos YA filtrados (lo que el usuario ha seleccionado).
+    tasa_ref : float
+        Tasa de abandono (%) del test completo SIN filtros. Se usa para el
+        delta "vs UJI" del KPI Tasa abandono.
+    riesgo_ref : float
+        % de alumnos con nivel_riesgo='Alto' en el test completo SIN filtros.
+        Se usa para el delta "vs UJI" del KPI Riesgo alto.
+        Bug FASE C #12: antes este valor no existía y el delta estaba
+        hardcoded a 0.0. Ahora se recibe real desde show().
+
+    Debajo: expander "💰 Coste estimado del abandono" con number_input editable.
+
+    REGLA DE FLECHAS (acordada FASE C):
+      - Mejora → ▲ verde     · Empeora → ▼ rojo     · Sin cambio → · gris
+    """
+
+    # --------------------------------------------------------------
+    # Cabecera: título grande + toggle-switch a la derecha (Opción 4)
+    # --------------------------------------------------------------
+    # FASE D+E iter 7: el expander nativo de Streamlit se parecía demasiado
+    # a un filtro avanzado. Ahora usamos un encabezado más institucional:
+    # título <h4> a la izquierda y un st.toggle "Visibles" a la derecha,
+    # con borde inferior gris. Streamlit 1.31+ soporta st.toggle.
+    if "_p01_kpis_visible" not in st.session_state:
+        st.session_state["_p01_kpis_visible"] = True
+
+    _col_titulo_k, _col_toggle_k = st.columns([4, 1])
+    with _col_titulo_k:
+        st.markdown(f"""
+        <h4 style="color:{COLORES['texto']}; margin:0; padding:6px 0;
+                   border-bottom:2px solid {COLORES['borde']};">
+            📌 Indicadores clave
+        </h4>
+        """, unsafe_allow_html=True)
+    with _col_toggle_k:
+        kpis_visibles = st.toggle(
+            "Visibles",
+            value=st.session_state["_p01_kpis_visible"],
+            key="_toggle_kpis_p01",
+            help="Desactiva para ocultar los indicadores y ver mejor los gráficos",
         )
-    with c5:
-        st.metric(
-            label="📚 Ramas",
-            value=f"{n_ramas}",
-            help="Número de ramas de conocimiento con los filtros activos"
+        st.session_state["_p01_kpis_visible"] = kpis_visibles
+
+    # Solo dibujamos los KPIs si el toggle está activado
+    if kpis_visibles:
+
+        # FASE F B3-guardia: si el df está vacío (filtros muy restrictivos),
+        # no intentamos calcular ni sparklines ni tarjetas — solo mostramos
+        # un aviso amigable y salimos.
+        if _guardia_df_vacio(df, "📌 Indicadores clave"):
+            return
+
+        # --------------------------------------------------------------
+        # Métricas agregadas sobre el df filtrado
+        # --------------------------------------------------------------
+        n_total         = len(df)
+        n_abandono      = df['abandono'].sum()              if 'abandono' in df.columns else 0
+        tasa_abandono   = (n_abandono / n_total * 100)      if n_total > 0 else 0
+        n_riesgo_alto   = (df['nivel_riesgo'] == 'Alto').sum() if 'nivel_riesgo' in df.columns else 0
+        pct_riesgo_alto = (n_riesgo_alto / n_total * 100)   if n_total > 0 else 0
+        n_titulaciones  = df['titulacion'].nunique()        if 'titulacion' in df.columns else 0
+
+        # --------------------------------------------------------------
+        # Tasa de riesgo alto de referencia (sobre todo el df SIN filtros)
+        # — se usa para el delta "vs media UJI" del KPI riesgo alto
+        # --------------------------------------------------------------
+        # NOTA: tasa_ref ya viene como % calculado sobre df completo sin filtros.
+        # Para riesgo alto no tenemos el df sin filtros aquí, así que el delta
+        # vs UJI se calcula sobre prob_abandono medio. Lo calculamos por simplicidad:
+        # si no hay columna nivel_riesgo en df completo, usamos el propio df.
+        # (Para v1 dejamos esta aproximación y en FASE F la afinamos.)
+
+        # --------------------------------------------------------------
+        # Preparar sparklines por cohorte (si hay columna curso_aca_ini)
+        # --------------------------------------------------------------
+        # Bug FASE C #14: el sparkline de Alumnos antes mostraba 1 sola línea
+        # (N total por cohorte). Ahora muestra 3 líneas: Mujer / Hombre / Total.
+        # Si sexo_meta no está disponible, cae al comportamiento viejo (1 línea).
+        sparkline_alumnos = ""
+        sparkline_tasa    = ""
+        sparkline_riesgo  = ""
+        leyenda_alumnos   = ""    # leyenda HTML de colores del sparkline multi-línea
+        delta_tasa_tempo  = ""
+        delta_riesgo_tempo = ""
+
+        if 'curso_aca_ini' in df.columns and df['curso_aca_ini'].notna().any():
+            # Agrupar por cohorte para construir las series temporales base
+            # (tasa abandono, riesgo alto) — usadas por los otros 2 sparklines.
+            df_valid = df[df['curso_aca_ini'] >= 2010].copy()
+            if len(df_valid) > 0:
+                por_cohorte = df_valid.groupby('curso_aca_ini').agg(
+                    n=('abandono', 'count'),
+                    abandonos=('abandono', 'sum'),
+                    riesgo_altos=('nivel_riesgo', lambda s: (s == 'Alto').sum()),
+                ).reset_index().sort_values('curso_aca_ini')
+                por_cohorte['tasa_pct']  = por_cohorte['abandonos'] / por_cohorte['n'] * 100
+                por_cohorte['riesgo_pct'] = por_cohorte['riesgo_altos'] / por_cohorte['n'] * 100
+
+                # --------------------------------------------------------------
+                # Sparkline Alumnos (MULTI-LÍNEA) — Mujer / Hombre / Total
+                # --------------------------------------------------------------
+                # Elegimos la columna de sexo legible:
+                #   - sexo_meta si existe (texto "Mujer"/"Hombre" del meta_test)
+                #   - sexo      como fallback (puede ser código numérico 0/1)
+                col_sexo_spark = None
+                if 'sexo_meta' in df_valid.columns and df_valid['sexo_meta'].notna().any():
+                    col_sexo_spark = 'sexo_meta'
+                elif 'sexo' in df_valid.columns and df_valid['sexo'].notna().any():
+                    col_sexo_spark = 'sexo'
+
+                if col_sexo_spark is not None:
+                    # Si la columna tiene códigos numéricos, traducir a texto
+                    # usando SEXO_INV (0→Mujer, 1→Hombre). Si ya es texto
+                    # ("Mujer"/"Hombre"), .map devuelve NaN y .fillna lo recupera.
+                    serie_sexo = df_valid[col_sexo_spark]
+                    if _pd.api.types.is_numeric_dtype(serie_sexo):
+                        df_valid['_sexo_texto'] = serie_sexo.map(SEXO_INV).fillna(serie_sexo.astype(str))
+                    else:
+                        df_valid['_sexo_texto'] = serie_sexo.astype(str)
+
+                    # Agrupar por (cohorte, sexo) y pivotar: columnas = sexo
+                    por_cohorte_sexo = (
+                        df_valid
+                        .groupby(['curso_aca_ini', '_sexo_texto'])
+                        .size()
+                        .unstack(fill_value=0)
+                        .reset_index()
+                        .sort_values('curso_aca_ini')
+                    )
+
+                    # Construir las 3 series. Si alguna no existe, se omite
+                    # (la función _generar_sparkline_multi_svg lo maneja).
+                    series_sexo = {}
+                    if 'Mujer' in por_cohorte_sexo.columns:
+                        series_sexo['Mujer'] = (
+                            por_cohorte_sexo['Mujer'].tolist(),
+                            _COLOR_SPARKLINE_MUJER,
+                        )
+                    if 'Hombre' in por_cohorte_sexo.columns:
+                        series_sexo['Hombre'] = (
+                            por_cohorte_sexo['Hombre'].tolist(),
+                            _COLOR_SPARKLINE_HOMBRE,
+                        )
+                    # Total = N por cohorte (ya lo tenemos en por_cohorte['n'])
+                    series_sexo['Total'] = (
+                        por_cohorte['n'].tolist(),
+                        _COLOR_SPARKLINE_TOTAL,
+                    )
+
+                    sparkline_alumnos = _generar_sparkline_multi_svg(series_sexo)
+
+                    # Construir leyenda HTML — una etiqueta por serie dibujada.
+                    # Se muestra debajo del sparkline en la tarjeta KPI.
+                    items_leyenda = []
+                    for etiqueta, (_serie, color) in series_sexo.items():
+                        items_leyenda.append(
+                            f'<span style="display:inline-flex; align-items:center; '
+                            f'gap:4px; font-size:0.7rem; color:{COLORES["texto_suave"]};">'
+                            f'<span style="width:10px; height:2px; background:{color}; '
+                            f'border-radius:1px; display:inline-block;"></span>'
+                            f'{etiqueta}</span>'
+                        )
+                    leyenda_alumnos = (
+                        f'<div style="display:flex; gap:10px; flex-wrap:wrap; '
+                        f'margin-top:0.15rem;">'
+                        + "".join(items_leyenda)
+                        + '</div>'
+                    )
+                else:
+                    # Fallback: no hay columna de sexo → sparkline clásico 1 línea
+                    sparkline_alumnos = _generar_sparkline_svg(
+                        por_cohorte['n'].tolist(), COLORES['primario']
+                    )
+                    # Sin leyenda: una línea sola no la necesita
+
+                # --------------------------------------------------------------
+                # Sparklines de tasa abandono y riesgo (línea única, sin cambio)
+                # --------------------------------------------------------------
+                sparkline_tasa = _generar_sparkline_svg(
+                    por_cohorte['tasa_pct'].tolist(), COLORES['abandono']
+                )
+                sparkline_riesgo = _generar_sparkline_svg(
+                    por_cohorte['riesgo_pct'].tolist(), COLORES['advertencia']
+                )
+
+                # Delta temporal: última cohorte vs penúltima
+                if len(por_cohorte) >= 2:
+                    ult = int(por_cohorte['curso_aca_ini'].iloc[-1])
+                    pen = int(por_cohorte['curso_aca_ini'].iloc[-2])
+                    # Delta tasa abandono
+                    d_tasa = por_cohorte['tasa_pct'].iloc[-1] - por_cohorte['tasa_pct'].iloc[-2]
+                    delta_tasa_tempo = _formato_delta_html(
+                        d_tasa,
+                        f"{ult} vs {pen}",
+                        subir_es_bueno=False,   # abandono sube = empeora
+                    )
+                    # Delta riesgo alto
+                    d_riesgo = por_cohorte['riesgo_pct'].iloc[-1] - por_cohorte['riesgo_pct'].iloc[-2]
+                    delta_riesgo_tempo = _formato_delta_html(
+                        d_riesgo,
+                        f"{ult} vs {pen}",
+                        subir_es_bueno=False,   # riesgo alto sube = empeora
+                    )
+
+        # --------------------------------------------------------------
+        # Delta "vs media UJI" (tasa de referencia sin filtros)
+        # --------------------------------------------------------------
+        # Ambos deltas comparan la SELECCIÓN ACTUAL (con filtros) contra
+        # el TEST COMPLETO (sin filtros). Positivo = peor que la media UJI.
+        delta_tasa_uji = _formato_delta_html(
+            tasa_abandono - tasa_ref,
+            "vs media UJI",
+            subir_es_bueno=False,
+        )
+        # Bug FASE C #12 ARREGLADO: antes era 0.0 hardcoded. Ahora usa
+        # riesgo_ref recibido como parámetro, calculado en show() sobre df
+        # sin filtros. subir_es_bueno=False porque más riesgo = peor.
+        delta_riesgo_uji = _formato_delta_html(
+            pct_riesgo_alto - riesgo_ref,
+            "vs media UJI",
+            subir_es_bueno=False,
+        )
+
+        # --------------------------------------------------------------
+        # Formatear valores para mostrar
+        # --------------------------------------------------------------
+        v_alumnos       = f"{n_total:,}".replace(",", ".")
+        v_tasa          = f"{tasa_abandono:.1f} %".replace(".", ",")
+        v_riesgo        = f"{pct_riesgo_alto:.1f} %".replace(".", ",")
+        v_titulaciones  = f"{n_titulaciones}"
+
+        # --------------------------------------------------------------
+        # Renderizar 4 tarjetas en columnas iguales
+        # --------------------------------------------------------------
+        c1, c2, c3, c4 = st.columns(4)
+
+        with c1:
+            st.markdown(
+                _tarjeta_kpi_html(
+                    icono="👥",
+                    label="Alumnos (test)",
+                    valor=v_alumnos,
+                    color_barra=COLORES['primario'],
+                    sparkline_html=sparkline_alumnos,
+                    leyenda_html=leyenda_alumnos,
+                    tooltip="Número de registros en el conjunto de test con los filtros activos",
+                ),
+                unsafe_allow_html=True,
+            )
+
+        with c2:
+            st.markdown(
+                _tarjeta_kpi_html(
+                    icono="📉",
+                    label="Tasa abandono real",
+                    valor=v_tasa,
+                    color_barra=COLORES['abandono'],
+                    sparkline_html=sparkline_tasa,
+                    delta_temporal=delta_tasa_tempo,
+                    delta_ref=delta_tasa_uji,
+                    tooltip=(f"Porcentaje de abandono observado. "
+                             f"Sin filtros: {tasa_ref:.1f}%".replace(".", ",")),
+                ),
+                unsafe_allow_html=True,
+            )
+
+        with c3:
+            st.markdown(
+                _tarjeta_kpi_html(
+                    icono="🔴",
+                    label="En riesgo alto",
+                    valor=v_riesgo,
+                    color_barra=COLORES['advertencia'],
+                    sparkline_html=sparkline_riesgo,
+                    delta_temporal=delta_riesgo_tempo,
+                    delta_ref=delta_riesgo_uji,
+                    tooltip=(f"Alumnos con probabilidad predicha ≥ "
+                             f"{UMBRALES['riesgo_medio']:.0%}"),
+                ),
+                unsafe_allow_html=True,
+            )
+
+        with c4:
+            st.markdown(
+                _tarjeta_kpi_html(
+                    icono="🎓",
+                    label="Titulaciones activas",
+                    valor=v_titulaciones,
+                    color_barra=COLORES['exito'],
+                    sparkline_html="",   # sin sparkline — no tiene sentido temporalmente
+                    tooltip="Número de titulaciones distintas con los filtros activos",
+                ),
+                unsafe_allow_html=True,
+            )
+
+        # --------------------------------------------------------------
+        # Expander: Coste estimado del abandono
+        # --------------------------------------------------------------
+        _expander_coste_abandono(df)
+
+
+def _expander_coste_abandono(df: pd.DataFrame):
+    """
+    Expander opcional con el cálculo del coste económico del abandono.
+
+    FASE F Bloque 4: el valor de 60 créditos medios ya NO está hardcoded.
+    Ahora es editable mediante un segundo st.number_input, usando como
+    valor por defecto la constante CREDITOS_MEDIOS_ABANDONO_DEFAULT de
+    config_app.py (actualmente 60 = 1 año académico EEES).
+
+    Fórmula del cálculo:
+        coste = n_abandonos × créditos_medios × precio_por_crédito
+
+    Ambos parámetros (créditos medios y precio) son editables por el
+    usuario. Así el cálculo se adapta a los valores exactos de cada
+    momento y el tribunal puede ver tanto el supuesto como el resultado.
+
+    Limitación conocida (ver pendiente F7-APP-B4-V2):
+        Asumimos que TODOS los alumnos con abandono=1 cursaron la misma
+        cantidad media de créditos. En realidad, cada alumno abandona en
+        un momento distinto de su trayectoria. Una mejora futura usará
+        la media real de `cred_superados` desde df_alumno.parquet.
+    """
+    # Import local — solo se cargan si el expander se usa.
+    # Importamos también CREDITOS_MEDIOS_ABANDONO_DEFAULT (añadido en B4).
+    from config_app import (
+        PRECIO_CREDITO_UJI_DEFAULT,
+        CREDITOS_MEDIOS_ABANDONO_DEFAULT,
+    )
+
+    # Guardia anti df vacío (FASE F B3-guardia, 7º bloque — uniformidad).
+    # Aunque este bloque no petaría con df vacío (sum() devuelve 0 limpiamente),
+    # mostrar "0 abandonos × 60 × 18 = 0 €" no tiene sentido y confunde al
+    # usuario. Con la guardia mostramos el mismo aviso amigable que en el
+    # resto de bloques y no renderizamos el expander.
+    if _guardia_df_vacio(df, "💰 Coste estimado del abandono"):
+        return
+
+    with st.expander("💰 Coste estimado del abandono — haz clic para ampliar", expanded=False):
+
+        # Texto introductorio — explica qué se estima y qué se puede ajustar.
+        # Mejora FASE F Bloque 4: ahora se mencionan AMBOS parámetros
+        # ajustables (antes solo el precio).
+        st.markdown(f"""
+        <p style="color:{COLORES['texto_suave']}; font-size:0.88rem;
+                  margin-bottom:0.8rem;">
+            Estimación del impacto económico del abandono en el subgrupo actual.
+            Puedes ajustar tanto el precio del crédito como el número de
+            créditos medios cursados antes del abandono para ver el impacto
+            en tiempo real.
+        </p>
+        """, unsafe_allow_html=True)
+
+        # Layout: 3 columnas — 2 parámetros editables + resultado grande.
+        # FASE F Bloque 4: antes era [1, 2] con 1 sólo input. Ahora [1, 1, 2]
+        # para acomodar el segundo input sin que el resultado pierda tamaño.
+        col_precio, col_creditos, col_result = st.columns([1, 1, 2])
+
+        with col_precio:
+            precio_credito = st.number_input(
+                "Precio por crédito (€)",
+                min_value=0.0,
+                max_value=500.0,
+                value=float(PRECIO_CREDITO_UJI_DEFAULT),
+                step=0.5,
+                key="precio_credito_p01",
+                help=(f"Valor por defecto: {PRECIO_CREDITO_UJI_DEFAULT} €/crédito. "
+                      f"Grado primera matrícula (orientativo)."),
+            )
+
+        with col_creditos:
+            # FASE F Bloque 4: NUEVO — créditos medios editable.
+            # Default desde config_app. El usuario puede bajarlo si sabe que
+            # en su titulación los alumnos abandonan antes del primer año,
+            # o subirlo si abandonan más tarde (ej: 120 = 2 años).
+            creditos_medios = st.number_input(
+                "Créditos medios cursados",
+                min_value=0,
+                max_value=240,
+                value=int(CREDITOS_MEDIOS_ABANDONO_DEFAULT),
+                step=5,
+                key="creditos_medios_p01",
+                help=(f"Valor por defecto: {CREDITOS_MEDIOS_ABANDONO_DEFAULT} créditos "
+                      f"(= 1 año académico completo según EEES). Ajusta si conoces "
+                      f"la media real de tu colectivo."),
+            )
+
+        # Cálculo del coste estimado — fórmula transparente al usuario.
+        n_abandonos  = int(df['abandono'].sum()) if 'abandono' in df.columns else 0
+        coste_total  = n_abandonos * creditos_medios * precio_credito
+
+        # Formato en euros con separadores de miles españoles (punto, no coma).
+        coste_fmt = f"{coste_total:,.0f} €".replace(",", ".")
+
+        with col_result:
+            # Tarjeta con el resultado y la fórmula desplegada.
+            st.markdown(f"""
+            <div style="background:{COLORES['fondo']};
+                border:1px solid {COLORES['borde']};
+                border-left:4px solid {COLORES['abandono']};
+                border-radius:8px;
+                padding:0.8rem 1rem;
+                margin-top:1.5rem;">
+                <div style="font-size:0.82rem; color:{COLORES['texto_suave']};">
+                    Coste estimado con los filtros actuales
+                </div>
+                <div style="font-size:1.6rem; font-weight:700;
+                    color:{COLORES['abandono']}; line-height:1.2;">
+                    {coste_fmt}
+                </div>
+                <div style="font-size:0.78rem; color:{COLORES['texto_suave']};
+                    margin-top:0.3rem;">
+                    Fórmula: <strong>{n_abandonos:,}</strong> abandonos ×
+                    <strong>{creditos_medios}</strong> créditos medios ×
+                    <strong>{precio_credito:.2f} €</strong>
+                </div>
+            </div>
+            """.replace(",", "."), unsafe_allow_html=True)
+
+        # Caption explicativo — ya NO dice "afinaremos en Fase F".
+        # Ahora documenta el supuesto y explica que es editable.
+        st.caption(
+            f"⚠️ Estimación orientativa. La fórmula asume que los "
+            f"{n_abandonos:,} alumnos con abandono cursaron de media "
+            f"{creditos_medios} créditos antes de dejar los estudios. "
+            f"Ambos parámetros son editables arriba para reflejar el "
+            f"contexto real del subgrupo analizado."
+            .replace(",", ".")
         )
 
 
@@ -320,6 +1699,11 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
         📈 Evolución temporal del abandono
     </h4>
     """, unsafe_allow_html=True)
+
+    # FASE F B3-guardia: si df vacío, mostrar aviso y salir (evita TypeError
+    # al hacer int(pd.NA) cuando no hay filas para calcular min/max de cohorte).
+    if _guardia_df_vacio(df, "📈 Evolución temporal del abandono"):
+        return
 
     if 'curso_aca_ini' not in df.columns or 'abandono' not in df.columns:
         st.info("No hay datos de cohorte disponibles con los filtros actuales.")
@@ -385,7 +1769,7 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
         showarrow=True, arrowhead=2,
         arrowcolor=COLORES['advertencia'],
         font=dict(size=11, color=COLORES['advertencia']),
-        bgcolor="white",
+        bgcolor=COLORES['blanco'],   # FASE D #23a: era "white" hardcoded
         bordercolor=COLORES['advertencia'],
         borderwidth=1,
         ax=-70, ay=-40,
@@ -400,11 +1784,11 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
             yanchor="top", y=-0.18,
             xanchor="center", x=0.5,
             font=dict(size=13),
-            bgcolor="rgba(255,255,255,0.0)",
+            bgcolor="rgba(255,255,255,0.0)",   # transparente — ok
             borderwidth=0,
         ),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        plot_bgcolor=COLORES['blanco'],    # FASE D #23a: era "white"
+        paper_bgcolor=COLORES['blanco'],   # FASE D #23a: era "white"
         margin=dict(l=40, r=20, t=30, b=80),
         height=400,
         hovermode="x unified",
@@ -412,7 +1796,7 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
     fig.update_xaxes(showgrid=True, gridcolor=COLORES['borde'])
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')   # FASE D #28: use_container_width deprecado
 
     st.caption(
         "💡 La caída en cohortes recientes (2018-2020) refleja truncamiento temporal: "
@@ -434,7 +1818,10 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
     </h4>
     """, unsafe_allow_html=True)
 
-    # Usamos rama_meta (legible) si existe, sino rama (puede ser numérica del pipeline)
+    # FASE F B3-guardia: salir temprano si no hay datos.
+    if _guardia_df_vacio(df, "📚 Abandono por rama"):
+        return
+
     col_rama = 'rama_meta' if 'rama_meta' in df.columns else 'rama'
     if col_rama not in df.columns or 'abandono' not in df.columns:
         st.info("No hay datos de rama disponibles con los filtros actuales.")
@@ -453,10 +1840,33 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
     por_rama['tasa_pct'] = (
         por_rama['n_abandono'] / por_rama['n_total'] * 100
     ).round(1)
-    por_rama = por_rama.sort_values('tasa_pct', ascending=True)  # orden ascendente para barras horizontales
+    por_rama = por_rama.sort_values('tasa_pct', ascending=True)
 
-    # Asignamos color fijo por rama usando paleta Opción C
-    colores_barras = [COLORES_RAMAS.get(r, COLORES['primario']) for r in por_rama['rama']]
+    # Tasa global UJI desde metricas_modelo.json — lectura centralizada
+    # FASE F iter 8: antes había lectura duplicada con fallback 29.25.
+    # Ahora usamos _leer_metricas_modelo() (cacheado) y fallback explícito.
+    _metricas = _leer_metricas_modelo()
+    _tasa_json = _metricas.get("tasa_abandono")
+    if _tasa_json is not None:
+        tasa_global_pct = float(_tasa_json) * 100
+    else:
+        # Fallback documentado: valor del test original (F1 2025-11) —
+        # se mantiene solo como último recurso si el JSON no está disponible.
+        tasa_global_pct = 29.25
+
+    import math
+
+    # Tasa filtrada actual
+    tasa_filtrada_pct = (df['abandono'].sum() / len(df) * 100)         if 'abandono' in df.columns and len(df) > 0 else 0.0
+
+    # Tasa rama (solo si hay 1 rama visible)
+    tasa_rama_pct = float(por_rama['tasa_pct'].iloc[0]) if len(por_rama) == 1 else None
+
+    # Eje X: máximo real * 1.35, mínimo 40%, redondeado al 10 superior
+    max_val = max(por_rama['tasa_pct'].max(), tasa_global_pct, tasa_filtrada_pct)
+    eje_max = math.ceil((max_val + 5) / 5) * 5  # +5 puntos, redondeado al múltiplo de 5 superior
+    tasa_linea = math.ceil(tasa_global_pct / 10) * 10
+
     fig = px.bar(
         por_rama,
         x='tasa_pct',
@@ -468,11 +1878,10 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
         custom_data=['n_total', 'n_abandono'],
         labels={'tasa_pct': 'Tasa abandono (%)', 'rama': ''},
     )
-
     fig.update_traces(
         texttemplate='%{text:.1f}%',
         textposition='outside',
-        showlegend=True,
+        showlegend=False,   # FASE D #20: leyenda redundante — rama ya está en eje Y
         hovertemplate=(
             "<b>%{y}</b><br>"
             "Tasa abandono: %{x:.1f}%<br>"
@@ -480,17 +1889,71 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
             "Abandonos: %{customdata[1]}<extra></extra>"
         )
     )
+
+    # Banda sombreada: zona por debajo de la media UJI
+    # FASE D #23a: antes era "rgba(56,161,105,0.07)" (verde hex hardcoded).
+    # Ahora usamos rgba a partir del verde oficial de la paleta (COLORES['exito']).
+    # Valor: #10b981 → rgb(16,185,129) — mantenemos alpha 0.07.
+    fig.add_vrect(
+        x0=0, x1=tasa_global_pct,
+        fillcolor="rgba(16,185,129,0.07)",
+        layer="below", line_width=0,
+    )
+
+    # FASE D+E iter 7 #3: mjmr pidió quitar las anotaciones "Media UJI" y
+    # "Selección" porque solapaban con los valores del final de las barras
+    # y esa info ya está en la caption inferior. Mantenemos las líneas
+    # verticales (MÁS GRUESAS Y VISIBLES), pero sin texto encima.
+
+    # Línea naranja discontinua — media UJI (referencia fija)
+    fig.add_vline(
+        x=tasa_global_pct,
+        line_dash="dash",
+        line_color=COLORES["advertencia"],
+        line_width=3,
+    )
+
+    # Línea azul sólida — selección actual (solo si hay filtros)
+    if tasa_filtrada_pct > 0:
+        fig.add_vline(
+            x=tasa_filtrada_pct,
+            line_dash="solid",
+            line_color=COLORES["primario"],
+            line_width=3,
+        )
+
+    # Línea azul gruesa — tasa de la rama (solo si hay 1 sola rama filtrada)
+    if tasa_rama_pct is not None:
+        fig.add_vline(
+            x=tasa_rama_pct,
+            line_dash="solid",
+            line_color=COLORES["primario"],
+            line_width=3.5,
+        )
+
     fig.update_layout(
         coloraxis_showscale=False,
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(l=20, r=60, t=20, b=40),
-        height=max(250, len(por_rama) * 55),  # altura dinámica según nº ramas
-        xaxis=dict(range=[0, por_rama['tasa_pct'].max() * 1.15], showgrid=True, gridcolor=COLORES['borde']),
+        plot_bgcolor=COLORES['blanco'],    # FASE D #23a
+        paper_bgcolor=COLORES['blanco'],   # FASE D #23a
+        # FASE D+E iter 7: sin anotaciones arriba/abajo, reducimos margen t/b
+        margin=dict(l=20, r=100, t=20, b=40),
+        height=max(260, len(por_rama) * 55),
+        xaxis=dict(
+            range=[0, eje_max],
+            showgrid=True,
+            gridcolor=COLORES['borde'],
+            dtick=10,
+            ticksuffix="%",
+        ),
         yaxis=dict(showgrid=False),
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')   # FASE D #28: deprecación
+    st.caption(
+        f"🔵 Selección: {tasa_filtrada_pct:.1f}% · "
+        f"🟠 Media UJI: {tasa_global_pct:.1f}%. "
+        "Zona sombreada = por debajo de la media UJI."
+    )
 
 
 # =============================================================================
@@ -505,6 +1968,10 @@ def _bloque_top_titulaciones(df: pd.DataFrame):
         🎓 Abandono por titulación
     </h4>
     """, unsafe_allow_html=True)
+
+    # FASE F B3-guardia: salir temprano si no hay datos.
+    if _guardia_df_vacio(df, "🎓 Abandono por titulación"):
+        return
 
     if 'titulacion' not in df.columns or 'abandono' not in df.columns:
         st.info("No hay datos de titulación disponibles con los filtros actuales.")
@@ -573,10 +2040,11 @@ def _bloque_top_titulaciones(df: pd.DataFrame):
         tit = str(row['titulacion_corta'])
 
         # Barra de abandono
+        # FASE E #23b: fondo barra #eee → COLORES['borde']
         barra_ab = f"""
         <div style="display:flex; align-items:center; gap:6px;">
             <span>{emoji}</span>
-            <div style="flex:1; background:#eee; border-radius:4px; height:8px;">
+            <div style="flex:1; background:{COLORES['borde']}; border-radius:4px; height:8px;">
                 <div style="width:{min(row['tasa_pct'],100)}%; background:{color};
                             border-radius:4px; height:8px;"></div>
             </div>
@@ -586,7 +2054,7 @@ def _bloque_top_titulaciones(df: pd.DataFrame):
         # Barra de riesgo predicho
         barra_riesgo = f"""
         <div style="display:flex; align-items:center; gap:6px;">
-            <div style="flex:1; background:#eee; border-radius:4px; height:8px;">
+            <div style="flex:1; background:{COLORES['borde']}; border-radius:4px; height:8px;">
                 <div style="width:{min(row['riesgo_pct'],100)}%; background:{COLORES['primario']};
                             border-radius:4px; height:8px;"></div>
             </div>
@@ -594,36 +2062,35 @@ def _bloque_top_titulaciones(df: pd.DataFrame):
         </div>"""
 
         filas_html += f"""
-        <tr style="border-bottom: 1px solid #eee;">
+        <tr style="border-bottom: 1px solid {COLORES['borde']};">
             <td style="padding:8px 10px; font-size:0.82rem; line-height:1.3;
-                       min-width:180px; max-width:240px; word-wrap:break-word;
+                       min-width:180px; max-width:260px; word-wrap:break-word;
                        white-space:normal;">{tit}</td>
-            <td style="padding:8px 10px; font-size:0.8rem; color:#666;
-                       min-width:120px; max-width:160px; word-wrap:break-word;
-                       white-space:normal;">{rama_txt}</td>
             <td style="padding:8px 10px; font-size:0.82rem; text-align:right;">{int(row['Alumnos'])}</td>
             <td style="padding:8px 10px; font-size:0.82rem; text-align:right;">{int(row['Abandonos'])}</td>
             <td style="padding:8px 10px; min-width:160px;">{barra_ab}</td>
             <td style="padding:8px 10px; min-width:160px;">{barra_riesgo}</td>
         </tr>"""
 
+    # FASE E #23b: todos los colores hardcoded de la tabla sustituidos por COLORES
+    # FASE D+E #6: quitada la columna "Rama" — redundante porque el filtro
+    # "Filtrar por rama" arriba de la tabla ya da esa información. Libera
+    # ~140px de ancho para que "Abandono %" y "Riesgo %" respiren.
     tabla_html = f"""
-    <div style="overflow-x:auto; border:1px solid #e2e8f0; border-radius:8px;">
-    <table style="width:100%; border-collapse:collapse; background:white;">
+    <div style="overflow-x:auto; border:1px solid {COLORES['borde']}; border-radius:8px;">
+    <table style="width:100%; border-collapse:collapse; background:{COLORES['blanco']};">
         <thead>
-            <tr style="background:#f7fafc; border-bottom:2px solid #e2e8f0;">
+            <tr style="background:{COLORES['fondo']}; border-bottom:2px solid {COLORES['borde']};">
                 <th style="padding:10px; text-align:left; font-size:0.82rem;
-                           color:#4a5568; font-weight:600;">Titulación</th>
-                <th style="padding:10px; text-align:left; font-size:0.82rem;
-                           color:#4a5568; font-weight:600;">Rama</th>
+                           color:{COLORES['texto']}; font-weight:600;">Titulación</th>
                 <th style="padding:10px; text-align:right; font-size:0.82rem;
-                           color:#4a5568; font-weight:600;">Alumnos</th>
+                           color:{COLORES['texto']}; font-weight:600;">Alumnos</th>
                 <th style="padding:10px; text-align:right; font-size:0.82rem;
-                           color:#4a5568; font-weight:600;">Abandonos</th>
+                           color:{COLORES['texto']}; font-weight:600;">Abandonos</th>
                 <th style="padding:10px; text-align:left; font-size:0.82rem;
-                           color:#4a5568; font-weight:600;">Abandono (%)</th>
+                           color:{COLORES['texto']}; font-weight:600;">Abandono (%)</th>
                 <th style="padding:10px; text-align:left; font-size:0.82rem;
-                           color:#4a5568; font-weight:600;">Riesgo predicho (%)</th>
+                           color:{COLORES['texto']}; font-weight:600;">Riesgo predicho (%)</th>
             </tr>
         </thead>
         <tbody>{filas_html}</tbody>
@@ -638,111 +2105,518 @@ def _bloque_top_titulaciones(df: pd.DataFrame):
 # BLOQUE 5: Distribución del riesgo predicho
 # =============================================================================
 
-def _bloque_distribucion_riesgo(df: pd.DataFrame):
-    """Donut + histograma: distribución de probabilidades predichas."""
+def _bloque_barras_riesgo_por_rama(df: pd.DataFrame):
+    """
+    Barras apiladas 100% por nivel de riesgo, agrupadas por rama.
+    Muestra para cada rama qué % de alumnos está en riesgo bajo/medio/alto.
 
+    FASE E: antes formaba parte de _bloque_distribucion_riesgo (que mostraba
+    donut + barras lado a lado). Ahora se separa para permitir el layout
+    pedido (tabla izquierda | barras arriba + donut abajo a la derecha).
+
+    Bug FASE E #22 ARREGLADO: antes usaba 'rama' (códigos numéricos 1-5)
+    que se veían feos en el eje X. Ahora usa 'rama_meta' (nombres legibles)
+    con fallback a 'rama' si no existe. Patrón consistente con
+    _bloque_abandono_por_rama (línea 1472) y _bloque_top_titulaciones
+    (líneas 1636, 1658).
+    """
     st.markdown(f"""
     <h4 style="color: {COLORES['texto']}; margin-bottom: 0.8rem;">
-        🔮 Distribución del riesgo predicho
+        📊 Riesgo por rama
     </h4>
     """, unsafe_allow_html=True)
+
+    # FASE F B3-guardia: salir temprano si no hay datos.
+    if _guardia_df_vacio(df, "📊 Riesgo por rama"):
+        return
+
+    if 'nivel_riesgo' not in df.columns or df['nivel_riesgo'].isna().all():
+        st.info("No hay datos de nivel de riesgo disponibles.")
+        return
+
+    # FASE E #22: fallback defensivo (misma estrategia que otras funciones)
+    # Prefiere columna legible (rama_meta con nombres completos). Si no
+    # existe, cae a la numérica (rama con códigos 1-5). Si ninguna, None.
+    if 'rama_meta' in df.columns:
+        col_rama_hist = 'rama_meta'
+    elif 'rama' in df.columns:
+        col_rama_hist = 'rama'
+    else:
+        col_rama_hist = None
+
+    if col_rama_hist is None:
+        st.info("No hay datos de rama disponibles.")
+        return
+
+    # Calcular % por nivel de riesgo agrupado por rama
+    grupos = df.groupby([col_rama_hist, 'nivel_riesgo']).size().reset_index(name='n')
+    totales = grupos.groupby(col_rama_hist)['n'].transform('sum')
+    grupos['pct'] = grupos['n'] / totales * 100
+
+    # FASE D+E #7: abreviar nombres largos en eje X para que no se solapen.
+    # Creamos mapa inverso {nombre_completo → abreviatura} desde RAMAS_NOMBRES
+    # (que viene como {abrev → nombre_completo}). Guardamos el nombre completo
+    # en columna separada para usarlo en el tooltip (hovertemplate).
+    nombre_a_abrev = {v: k for k, v in RAMAS_NOMBRES.items()}
+    # Si el valor ya es abreviatura (no existe en el mapa inverso), se queda igual
+    grupos['rama_abrev'] = grupos[col_rama_hist].map(nombre_a_abrev).fillna(
+        grupos[col_rama_hist]
+    )
+    # Copiamos el nombre completo para usarlo en el tooltip
+    grupos['rama_nombre'] = grupos[col_rama_hist]
+
+    orden_riesgo = ['Bajo', 'Medio', 'Alto']
+    fig_hist = go.Figure()
+    for nivel in orden_riesgo:
+        g = grupos[grupos['nivel_riesgo'] == nivel]
+        fig_hist.add_trace(go.Bar(
+            name=nivel,
+            x=g['rama_abrev'],
+            y=g['pct'],
+            marker_color=COLORES_RIESGO[nivel.lower()],
+            # customdata con nombre completo para el tooltip
+            customdata=g['rama_nombre'],
+            hovertemplate=(
+                f"<b>%{{customdata}}</b><br>"
+                f"{nivel}: %{{y:.1f}}%<extra></extra>"
+            ),
+            text=g['pct'].apply(lambda v: f"{v:.0f}%" if v >= 5 else ""),
+            textposition="inside",
+        ))
+
+    # Caption con la leyenda de abreviaturas (debajo del gráfico)
+    leyenda_abrev_parts = []
+    for abrev in sorted(grupos['rama_abrev'].unique()):
+        nombre = RAMAS_NOMBRES.get(abrev, abrev)
+        leyenda_abrev_parts.append(f"{abrev}={nombre}")
+    leyenda_abrev_str = " · ".join(leyenda_abrev_parts)
+
+    fig_hist.update_layout(
+        barmode="stack",
+        yaxis=dict(range=[0, 100], title="% alumnos", ticksuffix="%"),
+        xaxis=dict(title=""),
+        legend=dict(orientation="h", yanchor="top", y=-0.20,
+                   title_text=""),
+        plot_bgcolor=COLORES['blanco'],
+        paper_bgcolor=COLORES['blanco'],
+        margin=dict(l=10, r=10, t=10, b=40),
+        height=240,
+    )
+    fig_hist.update_xaxes(showgrid=False)
+    fig_hist.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
+
+    st.plotly_chart(fig_hist, width='stretch')
+
+    # Leyenda de abreviaturas — pequeña, gris, debajo del gráfico
+    st.caption(f"Ramas: {leyenda_abrev_str}")
+
+
+def _bloque_donut_riesgo(df: pd.DataFrame):
+    """
+    Gráfico donut: proporción de alumnos por nivel de riesgo (bajo/medio/alto).
+    Muestra el total de alumnos en el centro del donut.
+
+    FASE E: antes formaba parte de _bloque_distribucion_riesgo (que mostraba
+    donut + barras lado a lado). Ahora se separa para permitir el layout
+    pedido (tabla izquierda | barras arriba + donut abajo a la derecha).
+    """
+    st.markdown(f"""
+    <h4 style="color: {COLORES['texto']}; margin-bottom: 0.8rem;">
+        🔮 Distribución del riesgo
+    </h4>
+    """, unsafe_allow_html=True)
+
+    # FASE F B3-guardia: salir temprano si no hay datos.
+    if _guardia_df_vacio(df, "🔮 Distribución del riesgo"):
+        return
 
     if 'prob_abandono' not in df.columns or df['prob_abandono'].isna().all():
         st.info("No hay probabilidades predichas disponibles.")
         return
 
+    # Gráfico donut: proporción bajo / medio / alto
+    conteo_riesgo = df['nivel_riesgo'].value_counts() if 'nivel_riesgo' in df.columns else {}
+    orden = ['Bajo', 'Medio', 'Alto']
+    valores = [conteo_riesgo.get(nivel, 0) for nivel in orden]
+    colores_donut = [COLORES_RIESGO['bajo'], COLORES_RIESGO['medio'], COLORES_RIESGO['alto']]
+
+    fig_donut = go.Figure(go.Pie(
+        labels=orden,
+        values=valores,
+        hole=0.55,
+        marker_colors=colores_donut,
+        textinfo='percent',
+        hovertemplate="<b>%{label}</b><br>%{value} alumnos (%{percent})<extra></extra>",
+    ))
+    fig_donut.update_layout(
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="top", y=-0.05),
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=240,
+        annotations=[dict(
+            text=f"<b>{len(df):,}</b><br>alumnos",
+            x=0.5, y=0.5,
+            font_size=13,
+            showarrow=False
+        )]
+    )
+    st.plotly_chart(fig_donut, width='stretch')
+
+    st.caption(
+        f"Umbrales: bajo < {UMBRALES['riesgo_bajo']:.0%} · "
+        f"medio < {UMBRALES['riesgo_medio']:.0%} · "
+        f"alto ≥ {UMBRALES['riesgo_medio']:.0%}"
+    )
+
+
+# --- Wrapper de compatibilidad (por si algo externo llama al nombre viejo) ---
+# Mantiene la función antigua _bloque_distribucion_riesgo como alias que
+# ejecuta las 2 funciones nuevas en el layout original (2 columnas lado a lado).
+# FASE E: ya no se usa desde show(), pero lo dejamos por si se referencia.
+def _bloque_distribucion_riesgo(df: pd.DataFrame):
+    """DEPRECATED (FASE E): usar _bloque_barras_riesgo_por_rama y
+    _bloque_donut_riesgo por separado. Se mantiene como wrapper."""
     col_donut, col_hist = st.columns([1, 2])
-
     with col_donut:
-        # --- Gráfico donut: proporción bajo / medio / alto ---
-        conteo_riesgo = df['nivel_riesgo'].value_counts()
-        orden = ['Bajo', 'Medio', 'Alto']
-        valores = [conteo_riesgo.get(nivel, 0) for nivel in orden]
-        colores_donut = [COLORES_RIESGO['bajo'], COLORES_RIESGO['medio'], COLORES_RIESGO['alto']]
-
-        fig_donut = go.Figure(go.Pie(
-            labels=orden,
-            values=valores,
-            hole=0.55,             # el hueco central que hace el donut
-            marker_colors=colores_donut,
-            textinfo='percent',
-            hovertemplate="<b>%{label}</b><br>%{value} alumnos (%{percent})<extra></extra>",
-        ))
-        fig_donut.update_layout(
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="top", y=-0.05),
-            margin=dict(l=10, r=10, t=30, b=10),
-            height=280,
-            annotations=[dict(
-                text=f"<b>{len(df):,}</b><br>alumnos",
-                x=0.5, y=0.5,
-                font_size=13,
-                showarrow=False
-            )]
-        )
-        st.plotly_chart(fig_donut, use_container_width=True)
-
+        _bloque_donut_riesgo(df)
     with col_hist:
-        # --- Histograma: distribución completa de probabilidades ---
-        fig_hist = px.histogram(
-            df,
-            x='prob_abandono',
-            nbins=40,
-            color_discrete_sequence=[COLORES['primario']],
-            labels={'prob_abandono': 'Probabilidad de abandono predicha'},
-            opacity=0.8,
-        )
+        _bloque_barras_riesgo_por_rama(df)
 
-        # Colorear barras por nivel de riesgo usando COLORES_RIESGO
-        import numpy as _np
-        probs = df['prob_abandono'].dropna()
-        bins  = _np.linspace(0, 1, 41)
-        _, edges = _np.histogram(probs, bins=bins)
-        nuevos_colores = []
-        for e in edges[:-1]:
-            mid = e + 0.0125
-            if mid < UMBRALES['riesgo_bajo']:
-                nuevos_colores.append(COLORES_RIESGO['bajo'])
-            elif mid < UMBRALES['riesgo_medio']:
-                nuevos_colores.append(COLORES_RIESGO['medio'])
+
+# =============================================================================
+# BLOQUE: Resumen de la selección actual (nota metodológica)
+# =============================================================================
+
+def _bloque_resumen_seleccion(df_completo: pd.DataFrame,
+                               df_filtrado: pd.DataFrame,
+                               tasa_ref: float) -> None:
+    """
+    Bloque "Tu selección actual" — fondo amarillo claro con comparativa vs UJI.
+
+    FASE D+E iter 6 #A: añadido a petición de mjmr. Muestra un resumen de
+    los KPIs del df filtrado junto con la comparativa vs el conjunto UJI sin
+    filtros. Dos columnas visuales:
+      - RESULTADOS: tasa abandono, riesgo alto/medio/bajo, diferencias vs UJI
+      - DEMOGRAFÍA: edad media, nota acceso, % mujeres, % becados
+
+    Además lista los filtros activos detectados en session_state.
+    """
+    # ----- CÁLCULOS -----
+    n_filtrado      = len(df_filtrado)
+    n_completo      = len(df_completo)
+    pct_del_total   = (n_filtrado / n_completo * 100) if n_completo > 0 else 0
+
+    # Resultados (df filtrado)
+    n_abandono      = df_filtrado['abandono'].sum() if 'abandono' in df_filtrado.columns else 0
+    tasa_abandono   = (n_abandono / n_filtrado * 100) if n_filtrado > 0 else 0
+
+    # Niveles de riesgo — % de cada categoría en la selección
+    if 'nivel_riesgo' in df_filtrado.columns and n_filtrado > 0:
+        conteo_riesgo = df_filtrado['nivel_riesgo'].value_counts(normalize=True) * 100
+        pct_alto  = conteo_riesgo.get('Alto', 0)
+        pct_medio = conteo_riesgo.get('Medio', 0)
+        pct_bajo  = conteo_riesgo.get('Bajo', 0)
+    else:
+        pct_alto = pct_medio = pct_bajo = 0
+
+    # % riesgo alto en el df completo (para la diferencia)
+    if 'nivel_riesgo' in df_completo.columns and n_completo > 0:
+        pct_alto_uji = (df_completo['nivel_riesgo'] == 'Alto').mean() * 100
+    else:
+        pct_alto_uji = 0
+
+    # Número de alumnos en riesgo alto (para el subtítulo)
+    n_riesgo_alto_sel = int((df_filtrado['nivel_riesgo'] == 'Alto').sum()) if 'nivel_riesgo' in df_filtrado.columns else 0
+
+    # Diferencias vs UJI
+    diff_abandono    = tasa_abandono - tasa_ref
+    diff_riesgo_alto = pct_alto      - pct_alto_uji
+
+    # ----- DEMOGRAFÍA (FASE F Bloque 3) -----
+    # Cálculo de las 4 métricas demográficas del df_filtrado.
+    #
+    # HALLAZGO IMPORTANTE (ver pendiente F3-AUDIT-CRITICAL y F3-MEM):
+    # La columna 'edad_entrada' de meta_test_app.parquet está almacenada
+    # como log(edad) — no como años reales. Esto se descubrió al investigar
+    # que la media "3.05" que salía no cuadraba con años. Verificación:
+    #     exp(2.9957) = 20.0  → la mediana del train cuadra con 20 años
+    #     exp(3.0537) = 21.2  → la media del test cuadra con ~21 años
+    #
+    # Aplicamos np.exp() SOLO PARA VISUALIZAR. El modelo sigue usando los
+    # valores log-transformados tal como fueron entrenados — no tocamos los
+    # datos, solo la presentación al usuario.
+    #
+    # n_anios_beca, nota_acceso: ya están en escala original, se usan tal cual.
+    # sexo_meta: puede ser texto ("Mujer"/"Hombre") o código numérico (0/1).
+
+    # Cálculos seguros con guardas para NaN y dataframes vacíos.
+    # Si una columna no existe o está toda NaN, devolvemos None y el
+    # formateador muestra "—".
+
+    # 1. Edad media — aplicar exp() para pasar de log(edad) a años
+    if 'edad_entrada' in df_filtrado.columns and df_filtrado['edad_entrada'].notna().any():
+        edad_log_series = df_filtrado['edad_entrada'].dropna()
+        edad_media = float(np.exp(edad_log_series).mean())
+    else:
+        edad_media = None
+
+    # 2. Nota acceso media — valores originales, sin transformación
+    if 'nota_acceso' in df_filtrado.columns and df_filtrado['nota_acceso'].notna().any():
+        nota_media = float(df_filtrado['nota_acceso'].dropna().mean())
+    else:
+        nota_media = None
+
+    # 3. Becas — mostramos DOS valores combinados (maqueta FULL, acordada):
+    #    (a) % de alumnos con beca alguna vez (n_anios_beca > 0)
+    #    (b) media de años con beca calculada SOLO sobre los becados
+    #
+    # Motivación: el % solo (72%) parece alto sin contexto; la media global
+    # (1,7) diluye a los que nunca tuvieron beca. Mostrando ambos el tribunal
+    # ve la foto completa: "72% tuvo beca en algún momento, y de media fueron
+    # 2,7 años de carrera con beca".
+    #
+    # Nota: qué cuenta exactamente n_anios_beca (becas MEC vs cualquier ayuda
+    # económica UJI) está PENDIENTE de verificación (ver F3-AUDIT-BECAS).
+    pct_becados       = None
+    media_anios_beca  = None   # media calculada solo entre los becados
+    if 'n_anios_beca' in df_filtrado.columns and df_filtrado['n_anios_beca'].notna().any():
+        serie_beca = df_filtrado['n_anios_beca'].dropna()
+        if len(serie_beca) > 0:
+            mascara_con_beca = serie_beca > 0
+            pct_becados = float(mascara_con_beca.mean() * 100)
+            # Media solo entre los que tuvieron beca — None si no hay becados
+            if mascara_con_beca.any():
+                media_anios_beca = float(serie_beca[mascara_con_beca].mean())
+
+    # 4. % mujeres — sexo_meta puede ser texto o código. Lo tratamos según el caso.
+    pct_mujeres = None
+    col_sexo_demo = None
+    if 'sexo_meta' in df_filtrado.columns and df_filtrado['sexo_meta'].notna().any():
+        col_sexo_demo = 'sexo_meta'
+    elif 'sexo' in df_filtrado.columns and df_filtrado['sexo'].notna().any():
+        col_sexo_demo = 'sexo'
+
+    if col_sexo_demo is not None:
+        serie_sexo_demo = df_filtrado[col_sexo_demo].dropna()
+        if len(serie_sexo_demo) > 0:
+            if _pd.api.types.is_numeric_dtype(serie_sexo_demo):
+                # Código numérico: traducir con SEXO_INV (0→Mujer, 1→Hombre)
+                serie_texto = serie_sexo_demo.map(SEXO_INV).fillna(serie_sexo_demo.astype(str))
             else:
-                nuevos_colores.append(COLORES_RIESGO['alto'])
-        fig_hist.update_traces(marker_color=nuevos_colores)
+                serie_texto = serie_sexo_demo.astype(str)
+            pct_mujeres = float((serie_texto == 'Mujer').mean() * 100)
 
-        # Líneas verticales para marcar los umbrales
-        for umbral, color, etiqueta in [
-            (UMBRALES['riesgo_bajo'],  COLORES_RIESGO['bajo'],  'Umbral bajo'),
-            (UMBRALES['riesgo_medio'], COLORES_RIESGO['medio'], 'Umbral medio'),
-        ]:
-            fig_hist.add_vline(
-                x=umbral,
-                line_dash="dash",
-                line_color=color,
-                line_width=2,
-                annotation_text=etiqueta,
-                annotation_position="top right",
-                annotation_font_size=11,
+    # ----- FILTROS ACTIVOS -----
+    # FASE F Bloque 2-bis: detección COMPLETA de los 11 filtros de p01.
+    # Antes: solo se detectaban 9 filtros (faltaban los sliders nota_acceso y
+    # años beca), y los multiselect se mostraban como "Vía (13)" sin detalle.
+    # Ahora: los 11 filtros se detectan; los multiselect muestran los valores
+    # (con truncado "..." si hay muchos); los sliders muestran el rango sólo
+    # cuando el usuario ha modificado los valores por defecto.
+
+    # Helper interno para formatear multiselect: lista los valores, recorta
+    # si hay más de MAX_VALORES_VISIBLES para no saturar el bloque amarillo.
+    MAX_VALORES_VISIBLES = 3
+    def _fmt_multi(valores, etiqueta):
+        """
+        Formatea una lista de valores seleccionados para mostrarla en el
+        bloque amarillo. Si la lista es muy larga, muestra los primeros
+        MAX_VALORES_VISIBLES y añade '...+N más' al final.
+        """
+        valores_str = [str(v) for v in valores]
+        n = len(valores_str)
+        if n <= MAX_VALORES_VISIBLES:
+            return f"{etiqueta} = {', '.join(valores_str)}"
+        visibles = ", ".join(valores_str[:MAX_VALORES_VISIBLES])
+        return f"{etiqueta} = {visibles} (+{n - MAX_VALORES_VISIBLES} más)"
+
+    filtros_activos = []
+    v = st.session_state.get("_p01_filtros_version", 0)
+
+    # --- 1. Sexo (selectbox, default "Todos") ---
+    if st.session_state.get("filtro_sexo_p01", "Todos") != "Todos":
+        filtros_activos.append(f"Sexo = {st.session_state['filtro_sexo_p01']}")
+
+    # --- 2. Rama (multiselect) ---
+    rama_sel = st.session_state.get("filtro_rama_p01", [])
+    if rama_sel:
+        filtros_activos.append(_fmt_multi(rama_sel, "Rama"))
+
+    # --- 3. Cohorte (slider versionado) — activo si no cubre el rango completo ---
+    anios_val = st.session_state.get(f"filtro_anios_p01_v{v}")
+    if anios_val and 'curso_aca_ini' in df_completo.columns:
+        a_total_min = int(df_completo.loc[df_completo['curso_aca_ini'] >= 2010, 'curso_aca_ini'].min())
+        a_total_max = int(df_completo.loc[df_completo['curso_aca_ini'] >= 2010, 'curso_aca_ini'].max())
+        if tuple(anios_val) != (a_total_min, a_total_max):
+            filtros_activos.append(f"Cohorte = {anios_val[0]}–{anios_val[1]}")
+
+    # --- 4. Situación laboral (selectbox, default "Todas") ---
+    if st.session_state.get("filtro_sit_lab_p01", "Todas") != "Todas":
+        filtros_activos.append(f"Sit. laboral = {st.session_state['filtro_sit_lab_p01']}")
+
+    # --- 5. Nota acceso (slider versionado) — activo si el rango no cubre todo ---
+    nota_val = st.session_state.get(f"filtro_nota_acc_p01_v{v}")
+    if nota_val and 'nota_acceso' in df_completo.columns and df_completo['nota_acceso'].notna().any():
+        nota_total_min = round(float(df_completo['nota_acceso'].min()), 1)
+        nota_total_max = round(float(df_completo['nota_acceso'].max()), 1)
+        nota_sel_min = round(float(nota_val[0]), 1)
+        nota_sel_max = round(float(nota_val[1]), 1)
+        if (nota_sel_min, nota_sel_max) != (nota_total_min, nota_total_max):
+            # Formato español con coma decimal
+            n_min_str = f"{nota_sel_min:.1f}".replace(".", ",")
+            n_max_str = f"{nota_sel_max:.1f}".replace(".", ",")
+            filtros_activos.append(f"Nota acceso = {n_min_str}–{n_max_str}")
+
+    # --- 6-10. Multiselect de filtros avanzados ---
+    # Iteramos con (clave, etiqueta UI) y mostramos los valores reales,
+    # no solo el conteo como hacía la versión anterior.
+    for k, etiq in [
+        ("filtro_riesgo_p01",      "Riesgo"),
+        ("filtro_titulacion_p01",  "Titulación"),
+        ("filtro_via_p01",         "Vía"),
+        ("filtro_universidad_p01", "Universidad"),
+        ("filtro_cupo_p01",        "Cupo"),
+    ]:
+        v_sel = st.session_state.get(k, [])
+        if v_sel:
+            filtros_activos.append(_fmt_multi(v_sel, etiq))
+
+    # --- 11. Años beca (slider versionado) — activo si el rango no cubre todo ---
+    beca_val = st.session_state.get(f"filtro_beca_p01_v{v}")
+    if beca_val and 'n_anios_beca' in df_completo.columns and df_completo['n_anios_beca'].notna().any():
+        beca_total_min = int(df_completo['n_anios_beca'].min())
+        beca_total_max = int(df_completo['n_anios_beca'].max())
+        if tuple(beca_val) != (beca_total_min, beca_total_max):
+            filtros_activos.append(f"Años beca = {int(beca_val[0])}–{int(beca_val[1])}")
+
+    n_filtros = len(filtros_activos)
+    texto_filtros = " · ".join(filtros_activos) if filtros_activos else "— Sin filtros activos —"
+
+    # ----- FORMATEADORES -----
+    def _fmt(v, sufijo="", decimales=1):
+        """Formatea valor con coma decimal española. Devuelve '—' si es None."""
+        if v is None:
+            return "—"
+        fmt = f"{{:.{decimales}f}}".format(v).replace(".", ",")
+        return f"{fmt}{sufijo}"
+
+    def _fmt_diff(d, sufijo=" pp"):
+        """Formatea diferencia con signo y color rojo/verde.
+
+        FASE F Bloque 2: si el sufijo contiene "pp", añade tooltip explicativo
+        sobre la unidad "puntos porcentuales" con subrayado punteado.
+        """
+        if d > 0.1:
+            color = "#B91C1C"  # rojo (peor)
+            flecha = "▲"
+        elif d < -0.1:
+            color = "#166534"  # verde (mejor)
+            flecha = "▼"
+        else:
+            color = "#78350F"
+            flecha = "≈"
+        signo = "+" if d > 0 else ""
+        valor_str = f"{d:.1f}".replace(".", ",")
+
+        # Envolver "pp" (si está en el sufijo) en span con tooltip
+        if "pp" in sufijo:
+            # Separamos la parte sin "pp" (espacios al inicio) del literal "pp"
+            # para poder decorar solo la unidad. sufijo por defecto = " pp".
+            prefijo_sufijo = sufijo.replace("pp", "").rstrip()
+            sufijo_html = (
+                f'{prefijo_sufijo} '
+                f'<span title="pp = puntos porcentuales. '
+                f'Diferencia absoluta entre dos tasas expresadas en porcentaje." '
+                f'style="cursor:help; border-bottom:1px dotted currentColor;">'
+                f'pp'
+                f'</span>'
             )
+        else:
+            sufijo_html = sufijo
 
-        fig_hist.update_layout(
-            xaxis=dict(range=[0, 1], tickformat='.0%'),
-            yaxis_title="Nº alumnos",
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            margin=dict(l=40, r=20, t=20, b=40),
-            height=280,
-            bargap=0.05,
-        )
-        fig_hist.update_xaxes(showgrid=True, gridcolor=COLORES['borde'])
-        fig_hist.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
+        return (f'<span style="color:{color};">'
+                f'{flecha} {signo}{valor_str}{sufijo_html}'
+                f'</span>')
 
-        st.plotly_chart(fig_hist, use_container_width=True)
-        st.caption(
-            f"Las líneas de corte marcan los umbrales de riesgo: "
-            f"bajo < {UMBRALES['riesgo_bajo']:.0%} · "
-            f"medio < {UMBRALES['riesgo_medio']:.0%} · "
-            f"alto ≥ {UMBRALES['riesgo_medio']:.0%}"
-        )
+    # ----- HTML -----
+    # Fondo amarillo claro (#FEF3C7) + borde izquierdo naranja (#F59E0B).
+    # Texto en tono cálido (#78350F) para legibilidad sobre amarillo.
+    n_filtrado_str      = f"{n_filtrado:,}".replace(",", ".")
+    n_completo_str      = f"{n_completo:,}".replace(",", ".")
+    n_abandono_str      = f"{int(n_abandono):,}".replace(",", ".")
+    n_riesgo_alto_str   = f"{n_riesgo_alto_sel:,}".replace(",", ".")
+    pct_del_total_str   = f"{pct_del_total:.1f}".replace(".", ",")
+
+    # ----- HTML (una sola línea, sin saltos — Streamlit los escapa) -----
+    # FASE D+E iter 7: el HTML anterior salía literal en pantalla porque
+    # Streamlit interpreta líneas en blanco dentro de st.markdown como fin
+    # de párrafo y escapa el resto. Solución: todo en una sola línea.
+    #
+    # FASE F Bloque 3: RESTAURADA la sección 👥 DEMOGRAFÍA con datos reales.
+    # La edad se reconstruye con np.exp() porque edad_entrada está en log(edad)
+    # en meta_test_app.parquet — ver cálculos arriba para la explicación completa.
+    html = (
+        f'<div style="background:#FEF3C7;border-left:4px solid #F59E0B;'
+        f'border-radius:8px;padding:16px;margin-top:16px;'
+        f'color:#78350F;font-size:13px;">'
+        f'<div style="font-weight:600;font-size:15px;margin-bottom:12px;">'
+        f'🟡 Tu selección actual'
+        f'</div>'
+        f'<div style="margin-bottom:12px;">'
+        f'<b>Muestra:</b> {n_filtrado_str} alumnos '
+        f'({pct_del_total_str}% del test de {n_completo_str} observaciones) · '
+        f'{n_abandono_str} abandonos reales · '
+        f'{n_riesgo_alto_str} en riesgo alto predicho'
+        f'</div>'
+        # --- Columna RESULTADOS (izquierda) + DEMOGRAFÍA (derecha) ---
+        # Usamos CSS grid con 2 columnas iguales para que queden alineadas.
+        f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'
+        # Sub-bloque RESULTADOS
+        f'<div>'
+        f'<div style="font-weight:500;color:#92400E;margin-bottom:4px;'
+        f'font-size:12px;">⚠️ RESULTADOS</div>'
+        f'<div style="line-height:1.7;font-size:12px;">'
+        f'· Abandono: <b>{_fmt(tasa_abandono, "%")}</b> '
+        f'{_fmt_diff(diff_abandono)}<br>'
+        f'· Riesgo alto: <b>{_fmt(pct_alto, "%")}</b> '
+        f'{_fmt_diff(diff_riesgo_alto)}<br>'
+        f'· Riesgo medio: <b>{_fmt(pct_medio, "%")}</b><br>'
+        f'· Riesgo bajo: <b>{_fmt(pct_bajo, "%")}</b>'
+        f'</div>'
+        f'</div>'
+        # Sub-bloque DEMOGRAFÍA (FASE F Bloque 3)
+        # La edad media tiene un tooltip que documenta la transformación.
+        # Los becados muestran DOS datos: % con beca alguna vez + media de años
+        # entre los becados. Ver cálculos arriba para la justificación.
+        f'<div>'
+        f'<div style="font-weight:500;color:#92400E;margin-bottom:4px;'
+        f'font-size:12px;">👥 DEMOGRAFÍA</div>'
+        f'<div style="line-height:1.7;font-size:12px;">'
+        f'· <span title="Edad media reconstruida desde log(edad) con exp(). '
+        f'La columna edad_entrada se almacena en escala logarítmica en el '
+        f'dataset." style="cursor:help; border-bottom:1px dotted currentColor;">'
+        f'Edad media</span>: <b>{_fmt(edad_media, " años")}</b><br>'
+        f'· Nota acceso: <b>{_fmt(nota_media, "")}</b><br>'
+        f'· % Mujeres: <b>{_fmt(pct_mujeres, "%")}</b><br>'
+        f'· <span title="El % indica cuántos alumnos recibieron beca al menos '
+        f'un año durante su carrera. La media en paréntesis se calcula SOLO '
+        f'sobre los alumnos becados, para que el dato no se diluya con los '
+        f'que nunca tuvieron beca." '
+        f'style="cursor:help; border-bottom:1px dotted currentColor;">'
+        f'Becados</span>: '
+        f'<b>{_fmt(pct_becados, "%")}</b>'
+        f'{" (media " + _fmt(media_anios_beca, " años") + ")" if media_anios_beca is not None else ""}'
+        f'</div>'
+        f'</div>'
+        f'</div>'  # cierre del grid
+        f'<div style="margin-top:12px;padding-top:10px;'
+        f'border-top:1px solid #FCD34D;font-size:12px;">'
+        f'<b>Filtros ({n_filtros}):</b> {texto_filtros}'
+        f'</div>'
+        f'</div>'
+    )
+
+    st.markdown(html, unsafe_allow_html=True)
 
 
 # =============================================================================

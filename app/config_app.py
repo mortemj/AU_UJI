@@ -11,9 +11,24 @@
 # ¿POR QUÉ ES LO PRIMERO QUE SE ESCRIBE?
 #   Porque todos los demás ficheros dependen de él. Sin esta base,
 #   cada fichero haría sus propias suposiciones y la app sería frágil.
+#
+# ORDEN DE SECCIONES:
+#   1.  ROOT                — Localizar la carpeta raíz del proyecto
+#   2.  APP_CONFIG          — Metadatos generales de la aplicación
+#   3.  RUTAS               — Rutas a datos y modelos
+#   4.  COLORES             — Paleta visual principal
+#   5.  COLORES_RAMAS       — Paleta por rama de conocimiento
+#   6.  COLORES_RIESGO      — Alias semántico para riesgo (no duplica hex)
+#   7.  PESTAÑAS            — Definición de las páginas de la app
+#   8.  UMBRALES            — Criterios para clasificar riesgo + muestra
+#   9.  PARÁMETROS_ECONÓMICOS — Precio crédito UJI (editable en la app)
+#   10. NOMBRES_VARIABLES   — Nombres legibles de features
+#   11. VERIFICACIÓN        — Chequear ficheros críticos al arrancar
+#   12. MAPAS_CODIFICACIÓN  — Texto legible ↔ código numérico del modelo
 # =============================================================================
 
 from pathlib import Path
+
 
 # =============================================================================
 # 1. ROOT — Localizar la carpeta raíz del proyecto
@@ -44,14 +59,79 @@ def _detectar_root() -> Path:
         candidato = candidato.parent
     raise FileNotFoundError(
         "No se encontró la carpeta src/. "
-        "Asegúrate de ejecutar la app desde dentro del proyecto AU_UJI/."
+        "Asegúrate de ejecutar la app desde dentro del proyecto."
     )
 
 ROOT = _detectar_root()
 
 
 # =============================================================================
-# 2. RUTAS — Dónde están los datos y modelos que necesita la app
+# 1.bis — IMPORTAR DE src/ (refactor SRC↔APP)
+# =============================================================================
+# Hacemos que ROOT sea importable como paquete Python para poder hacer
+# 'from src.config import ...' sin depender de la carpeta de trabajo.
+#
+# Alternativa rechazada: duplicar todos los mapas en este fichero (la versión
+# vieja). Causaba bugs como SITUACION_LABORAL_MAP=11 que no existe en datos.
+#
+# A partir de aquí, los mapas de codificación, los nombres de ramas y las
+# etiquetas legibles vienen de UNA SOLA FUENTE: src/config_datos.py y
+# src/config_entorno.py (reexportados por src/config.py).
+
+import sys
+sys.path.insert(0, str(ROOT))
+
+from src.config import (
+    # Mapas de codificación — texto del formulario → código del modelo
+    SITUACION_LABORAL_MAP,
+    VIA_ACCESO_MAP,
+    SEXO_MAP,
+    PROVINCIA_MAP,
+    PAIS_NOMBRE_MAP,
+    UNIVERSIDAD_ORIGEN_MAP,
+    RAMA_MAP,
+    # Diccionarios y nombres
+    DICCIONARIO_RAMAS,             # {abreviatura: nombre completo}
+    UNIVERSIDAD_ORIGEN_NOMBRES,    # {sigla: nombre completo} para etiquetas UI
+    ETIQUETAS_VARIABLES,           # nombres legibles de variables (estilo abreviado)
+    RAMAS_NOMBRES,                 # {abreviatura: nombre completo} (alias de DICCIONARIO_RAMAS)
+    COLORES_RAMAS,                 # {nombre rama: color hex}
+    NOMBRES_LEGIBLES_FEATURES,     # {feature técnico: nombre legible largo}
+)
+
+
+# =============================================================================
+# 2. APP_CONFIG — Metadatos generales de la aplicación
+# =============================================================================
+# Información que aparece en el título del navegador, la barra lateral, etc.
+# APP_CONFIG debe definirse ANTES que RUTAS porque algunas rutas usan
+# nombre_modelo_pkl para construir la ruta del modelo.
+
+APP_CONFIG = {
+    "titulo":                 "Predicción de Abandono — UJI",
+    "subtitulo":              "TFM · Universitat Oberta de Catalunya · María José Morte",
+    "icono":                  "🎓",
+    "layout":                 "wide",
+    "sidebar_state":          "expanded",
+    "universidad_datos":      "Universitat Jaume I",
+    "universidad_master":     "UOC",
+    "tipo_trabajo":           "Trabajo Final de Máster",
+    "autora":                 "María José Morte Ruiz",
+    "email_master":           "mjmorteruiz@uoc.edu",
+    "email_datos":            "morte@uji.es",
+    "ciudad":                 "Castellón de la Plana",
+    "año":                    "2026",
+    "nombre_modelo_pkl":      "Stacking__balanced.pkl",
+    "logo_universidad_datos": "logo_uji.jpg",
+    "logo_universidad_master":"logo_uoc.jpg",
+    "tab_inicio":             "Inicio",
+    "n_ramas":                5,
+    "n_variables":            19,
+}
+
+
+# =============================================================================
+# 3. RUTAS — Dónde están los datos y modelos que necesita la app
 # =============================================================================
 # Usamos pathlib (Path) en lugar de strings de texto porque:
 #   - Funciona igual en Windows, Mac y Linux (maneja / y \ automáticamente)
@@ -61,7 +141,7 @@ ROOT = _detectar_root()
 RUTAS = {
     # --- Modelo y pipeline ---
     # El modelo ganador de Fase 5 (Stacking con balanceo, AUC=0.9308, F1=0.7882)
-    "modelo": ROOT / "data" / "05_modelado" / "models" / "Stacking__balanced.pkl",
+    "modelo": ROOT / "data" / "05_modelado" / "models" / APP_CONFIG["nombre_modelo_pkl"],
 
     # El pipeline de preprocesamiento (imputer + encoder + scaler)
     # Se aplica ANTES de pasar datos al modelo
@@ -69,7 +149,7 @@ RUTAS = {
 
     # --- Resultados de Fase 6 (interpretabilidad) ---
     # Valores SHAP globales calculados sobre el conjunto de test (estimador final del Stacking)
-    "shap_global": ROOT / "results" / "fase6" / "shap_global_stacking.pkl",
+    "shap_global": ROOT / "results" / "fase6" / "shap_global_catboost.pkl",
 
     # Métricas de equidad (fairness) por subgrupos
     "fairness": ROOT / "results" / "fase6" / "fairness_metricas.parquet",
@@ -84,94 +164,91 @@ RUTAS = {
     "X_test_prep": ROOT / "data" / "05_modelado" / "X_test_prep.parquet",
 
     # Fichero puente: índice posicional + per_id_ficticio (Fase 6 celda 8b)
-    # Permite join robusto en loaders.py — estable con nuevos datos Excel
-    "X_test_ids": ROOT / "data" / "05_modelado" / "X_test_prep_ids.parquet",
+    "X_test_ids": ROOT / "data" / "06_evaluacion" / "X_test_prep_ids.parquet",
+
+    # Features del test sin preprocesar (valores originales legibles)
+    "X_test": ROOT / "data" / "05_modelado" / "X_test.parquet",
+
+    # Fichero unificado para la app — generado por f6_m00b_preparacion_app.ipynb
+    # Contiene: metadatos + features originales + flags _missing (6.725 × 34 cols)
+    "meta_test_app": ROOT / "data" / "06_evaluacion" / "meta_test_app.parquet",
+
+    # Métricas del modelo — generado por f6_m00_preparacion.ipynb (celda 9b)
+    # AUC, F1, n_alumnos, tasa_abandono... leídos dinámicamente por la app
+    "metricas_modelo": ROOT / "data" / "06_evaluacion" / "metricas_modelo.json",
 
     # --- Dataset completo (para joins con titulación) ---
-    "df_alumno": ROOT / "data" / "00_raw" / "df_alumno.parquet",
+    # df_alumno.parquet se genera en Fase 2 (EDA) y se guarda en 02_processed.
+    # 00_raw contiene los Excels originales; los parquets procesados van a 02_processed.
+    "df_alumno": ROOT / "data" / "02_processed" / "df_alumno.parquet",
 }
 
 
 # =============================================================================
-# 3. COLORES — Paleta visual de la app
+# 4. COLORES — Paleta visual de la app
 # =============================================================================
 # Centralizamos los colores para que toda la app tenga coherencia visual.
 # Si mañana quieres cambiar el azul por otro tono, lo cambias aquí una vez.
+#
+# PALETA MEJORADA (abril 2026): manteniendo la identidad institucional UJI
+# pero con más contraste para que los dashboards luzcan profesionales.
+# Los nombres de clave se mantienen iguales que antes (primario, abandono,
+# exito, advertencia, fondo, texto, texto_suave, borde, blanco) para no
+# romper código existente — solo cambian algunos valores hex.
 
 COLORES = {
-    "primario":      "#3182ce",   # azul institucional (botones, títulos)
-    "abandono":      "#e53e3e",   # rojo para riesgo de abandono
-    "exito":         "#38a169",   # verde para éxito / bajo riesgo
-    "advertencia":   "#d69e2e",   # amarillo para riesgo medio
-    "fondo":         "#f7fafc",   # gris muy claro para fondos de tarjetas
-    "texto":         "#2d3748",   # gris oscuro para texto principal
-    "texto_suave":   "#718096",   # gris medio para texto secundario
-    "borde":         "#e2e8f0",   # gris claro para bordes y separadores
+    # --- Colores principales (cambios de hex para más contraste) ---
+    "primario":         "#1e4d8c",   # azul institucional profundo (antes #3182ce)
+    "primario_claro":   "#4a9fd8",   # azul claro accent (NUEVO - para hover/accents)
+    "abandono":         "#dc2626",   # rojo más fuerte (antes #e53e3e)
+    "exito":            "#10b981",   # verde más vivo (antes #38a169)
+    "advertencia":      "#f59e0b",   # amarillo ámbar (antes #d69e2e)
+
+    # --- Neutros (sin cambios — compatibles con p00) ---
+    "fondo":            "#f7fafc",   # gris muy claro para fondos de tarjetas
+    "fondo_pagina":     "#f8fafc",   # gris casi blanco para fondo de página (NUEVO)
+    "texto":            "#2d3748",   # gris oscuro para texto principal
+    "texto_suave":      "#718096",   # gris medio para texto secundario
+    "texto_muy_suave":  "#94a3b8",   # gris claro para texto terciario (NUEVO)
+    "borde":            "#e2e8f0",   # gris claro para bordes y separadores
+    "blanco":           "#ffffff",   # blanco puro para fondos de tarjetas y tooltips
 }
 
 
 # =============================================================================
-# 3b. COLORES_RAMAS — Paleta fija por rama de conocimiento (Opción C)
+# 5. RAMAS_NOMBRES + COLORES_RAMAS — Importados desde src/config_entorno.py
 # =============================================================================
-# Cada rama tiene un color distinto y reconocible en todos los gráficos.
-# Si el nombre exacto de la rama cambia en los datos, actualízalo aquí.
-# Estos colores se usan en p01, p02 y p05 para barras, radar y filtros.
-
-# Mapeo de abreviaturas a nombres completos — igual que en Fase 4 (f4_m04)
-RAMAS_NOMBRES = {
-    "SO": "Ciencias Sociales y Jurídicas",
-    "TE": "Ingeniería y Arquitectura",
-    "SA": "Ciencias de la Salud",
-    "HU": "Artes y Humanidades",
-    "EX": "Ciencias Experimentales",
-}
-
-# Colores por nombre completo de rama (Opción C — colores vivos)
-# Paleta Dark24 (px.colors.qualitative.Dark24) — elegante y sofisticado
-# Para cambiar: sustituir los hex aquí, efecto en toda la app
-COLORES_RAMAS = {
-    "Ingeniería y Arquitectura":     "#2E91E5",  # Dark24 azul
-    "Ciencias Sociales y Jurídicas": "#1CA71C",  # Dark24 verde
-    "Ciencias de la Salud":          "#E15F99",  # Dark24 rosa
-    "Ciencias Experimentales":       "#FB0D0D",  # Dark24 rojo
-    "Artes y Humanidades":           "#DA16FF",  # Dark24 violeta
-}
+# Antes este bloque definía RAMAS_NOMBRES y COLORES_RAMAS aquí (duplicados).
+# Refactor SRC↔APP: ahora vienen de src.config (importados arriba en 1.bis).
+# Se mantiene la sección como referencia. Para cambiar nombres o colores de
+# rama, editar en src/config_entorno.py — afecta a notebooks Y app a la vez.
 
 
 # =============================================================================
-# 3c. COLORES_RIESGO — Colores por nivel de riesgo (bajo / medio / alto)
+# 6. COLORES_RIESGO — Alias semántico por nivel de riesgo
 # =============================================================================
-# Definidos aquí una vez — usados en toda la app (donut, histograma,
-# indicador de riesgo p03/p04, tabla titulaciones, p05 equidad...).
-# Para cambiar un color: modifícalo aquí y se actualiza en toda la app.
+# Antes duplicaba hex fijos (#38a169, #ECC94B, #e53e3e). Ahora es un ALIAS:
+# apunta a las mismas claves de COLORES para evitar duplicación.
+# Si mañana cambias COLORES["exito"], COLORES_RIESGO["bajo"] cambia solo.
+#
+# Uso habitual:
+#   from config_app import COLORES_RIESGO
+#   color = COLORES_RIESGO["bajo"]    # verde éxito
+#   color = COLORES_RIESGO["medio"]   # amarillo advertencia
+#   color = COLORES_RIESGO["alto"]    # rojo abandono
 
 COLORES_RIESGO = {
-    "bajo":  "#38a169",   # verde
-    "medio": "#ECC94B",   # amarillo limón
-    "alto":  "#e53e3e",   # rojo
+    "bajo":  COLORES["exito"],         # verde → riesgo bajo
+    "medio": COLORES["advertencia"],   # amarillo → riesgo medio
+    "alto":  COLORES["abandono"],      # rojo → riesgo alto
 }
 
 
 # =============================================================================
-# 4. APP_CONFIG — Metadatos generales de la aplicación
-# =============================================================================
-# Información que aparece en el título del navegador, la barra lateral, etc.
-
-APP_CONFIG = {
-    "titulo":        "Predicción de Abandono — UJI",
-    "subtitulo":     "TFM · Universitat Jaume I · María José Morte",
-    "icono":         "🎓",         # aparece en la pestaña del navegador
-    "layout":        "wide",       # "wide" = aprovecha todo el ancho de pantalla
-                                   # alternativa: "centered" (columna central)
-    "sidebar_state": "expanded",   # la barra lateral empieza abierta
-}
-
-
-# =============================================================================
-# 5. PESTAÑAS — Definición de las páginas de la app
+# 7. PESTAÑAS — Definición de las páginas de la app
 # =============================================================================
 # Cada pestaña tiene un nombre, un icono y una descripción corta.
-# Esta lista la usará main.py para construir la navegación lateral.
+# Esta lista la usará main.py para construir la navegación horizontal.
 # Añadir una pestaña nueva = añadir un diccionario a esta lista.
 
 PESTANAS = [
@@ -179,7 +256,8 @@ PESTANAS = [
         "id":          "institucional",
         "titulo":      "Visión institucional",
         "icono":       "🏛️",
-        "descripcion": "KPIs globales y tendencias de abandono en la UJI",
+        "descripcion": f"KPIs globales y tendencias de abandono en {APP_CONFIG['universidad_datos']}",
+        "detalle":     "Evolución temporal · Por rama · Por titulación",
         "perfil":      "Gestores y dirección académica",
     },
     {
@@ -187,6 +265,7 @@ PESTANAS = [
         "titulo":      "Por titulación",
         "icono":       "📚",
         "descripcion": "Análisis detallado por grado universitario",
+        "detalle":     "SHAP · Factores de riesgo · Comparativa ramas",
         "perfil":      "Profesores y coordinadores de titulación",
     },
     {
@@ -194,6 +273,7 @@ PESTANAS = [
         "titulo":      "Futuro estudiante",
         "icono":       "🔍",
         "descripcion": "Pronóstico para alumnos antes de matricularse",
+        "detalle":     "Simulador · Perfil de riesgo · Recomendaciones",
         "perfil":      "Futuros estudiantes y orientadores",
     },
     {
@@ -201,6 +281,7 @@ PESTANAS = [
         "titulo":      "Alumno en curso",
         "icono":       "📊",
         "descripcion": "Pronóstico para alumnos ya matriculados",
+        "detalle":     "Predicción · SHAP individual · Evolución",
         "perfil":      "Estudiantes matriculados y tutores académicos",
     },
     {
@@ -208,15 +289,16 @@ PESTANAS = [
         "titulo":      "Equidad y diversidad",
         "icono":       "⚖️",
         "descripcion": "Análisis de fairness por género y rama de conocimiento",
+        "detalle":     "Fairness · Por género · Por rama",
         "perfil":      "Todos los perfiles",
     },
 ]
 
 
 # =============================================================================
-# 6. UMBRALES — Criterios para clasificar el nivel de riesgo
+# 8. UMBRALES — Criterios para clasificar riesgo + tamaño de muestra
 # =============================================================================
-# El modelo devuelve una probabilidad entre 0 y 1.
+# UMBRALES: el modelo devuelve una probabilidad entre 0 y 1.
 # Estos umbrales definen cuándo consideramos que el riesgo es bajo/medio/alto.
 # Son ajustables: si el tribunal o los gestores prefieren otros valores,
 # solo hay que cambiarlos aquí.
@@ -227,46 +309,114 @@ UMBRALES = {
                              # prob ≥ 0.60 → riesgo alto (rojo)
 }
 
+# UMBRALES_MUESTRA: cuando el usuario aplica muchos filtros, la muestra puede
+# quedarse demasiado pequeña para que los porcentajes sean fiables.
+# Estos umbrales los usa p01 (y cualquier página que filtre datos) para
+# mostrar avisos de interpretación al usuario.
+#
+# Criterio estadístico profesional (basado en teorema del límite central):
+#   ≥ 100 → muestra sólida, sin aviso
+#   30-99 → aviso amarillo: "muestra pequeña, interpretar con cautela"
+#   10-29 → aviso naranja: "muestra muy pequeña, poco representativa"
+#   <  10 → error rojo: "muestra insuficiente, no calcular porcentajes"
 
-# =============================================================================
-# 7. VARIABLES — Nombres legibles de las features del modelo
-# =============================================================================
-# El modelo trabaja con nombres técnicos (nota_1er_anio, n_anios_beca...).
-# En la interfaz mostramos nombres comprensibles para cualquier usuario.
-
-NOMBRES_VARIABLES = {
-    # --- Académicas ---
-    "nota_acceso":              "Nota de acceso a la universidad",
-    "nota_selectividad":        "Nota de selectividad",
-    "nota_1er_anio":            "Nota media del primer año",
-    "cred_superados_anio_1er":  "Créditos superados en 1.º",
-    "creditos_superados":       "Créditos superados",
-    "creditos_matriculados":    "Créditos matriculados",
-    "tasa_rendimiento":         "Tasa de rendimiento académico",
-    "max_pagos":                "Máximo de pagos de matrícula",
-    "universidad_origen":       "Universidad de procedencia",
-    "orden_preferencia":        "Orden de preferencia de la titulación",
-    # --- Beca ---
-    "n_anios_beca":             "Años con beca",
-    "anios_sin_beca":           "Años sin beca",
-    "tuvo_beca":                "Tuvo beca algún año",
-    # --- Perfil personal ---
-    "situacion_laboral":        "Situación laboral",
-    "edad_acceso":              "Edad al acceder a la universidad",
-    "edad_entrada":             "Edad de entrada a la universidad",
-    "sexo":                     "Sexo",
-    # --- Trayectoria ---
-    "anios_gap":                "Años de pausa antes de matricularse",
-    "indicador_interrupcion":   "Interrumpió los estudios previamente",
-    "rama":                     "Rama de conocimiento",
-    "via_acceso":               "Vía de acceso a la universidad",
-    # --- Probabilidad (para tablas) ---
-    "prob_abandono":            "Probabilidad de abandono",
+UMBRALES_MUESTRA = {
+    "fiable":    100,   # ≥ este → sin aviso
+    "aceptable":  30,   # ≥ este → aviso amarillo
+    "minima":     10,   # ≥ este → aviso naranja; por debajo, error rojo
 }
 
 
 # =============================================================================
-# 8. VERIFICACIÓN — Comprobar que los ficheros clave existen al arrancar
+# 9. PARÁMETROS_ECONÓMICOS — Precio del crédito + créditos medios por abandono
+# =============================================================================
+# Valores por defecto usados en p01 ("Coste estimado del abandono").
+# Ambos son EDITABLES por el usuario en la app mediante widgets numéricos,
+# así que NO ES HARDCODE: son valores por defecto configurables.
+#
+# Referencias:
+#   - PRECIO_CREDITO_UJI_DEFAULT = 18 €/crédito:
+#     Grado primera matrícula (DOGV 2024-2025, pendiente confirmar con Susana).
+#
+#   - CREDITOS_MEDIOS_ABANDONO_DEFAULT = 60 créditos:
+#     Supuesto basado en 1 año académico completo según EEES (60 ECTS = 1 curso).
+#     Valor orientativo. En una futura mejora (ver pendiente F7-APP-B4-V2) se
+#     sustituirá por la media real de `cred_superados` de los alumnos con
+#     abandono=1 en df_alumno.parquet.
+
+PRECIO_CREDITO_UJI_DEFAULT      = 18.0   # € por crédito — grado, primera matrícula
+CREDITOS_MEDIOS_ABANDONO_DEFAULT = 60     # créditos cursados de media antes de abandonar
+
+
+# =============================================================================
+# =============================================================================
+# 10. NOMBRES_VARIABLES — ALIAS hacia ETIQUETAS_VARIABLES + extras UI
+# =============================================================================
+# Antes este bloque tenía un diccionario propio con nombres legibles.
+# Refactor SRC↔APP: ahora ETIQUETAS_VARIABLES (SRC) es la fuente única
+# para las 27 variables del modelo. Aquí solo añadimos extras que existen
+# únicamente en la app (no son features del modelo, son etiquetas UI).
+#
+# Patrón: alias + extras = no duplicación + cobertura UI completa.
+# Si necesitas cambiar etiqueta de feature: edita src/config_datos.py.
+# Si necesitas añadir etiqueta UI no-feature: añádela aquí en _EXTRAS_UI.
+
+_EXTRAS_UI = {
+    "prob_abandono": "Probabilidad de abandono",
+}
+
+NOMBRES_VARIABLES = {**ETIQUETAS_VARIABLES, **_EXTRAS_UI}
+
+
+# =============================================================================
+# 10.bis — nombre_legible() — Función auxiliar segura
+# =============================================================================
+# Devuelve la etiqueta legible de una columna técnica.
+# A diferencia de NOMBRES_VARIABLES["x"] (que da KeyError si "x" no existe),
+# esta función NUNCA peta: si la clave no está en el diccionario, devuelve
+# el nombre técnico tal cual, transformado para ser más leíble.
+#
+# Refactor SRC↔APP: centraliza la lógica que antes estaba duplicada en p02
+# (función _nombre_legible). Ahora todas las páginas pueden importarla:
+#   from config_app import nombre_legible
+#   ax.set_ylabel(nombre_legible(col))
+
+def nombre_legible(col: str) -> str:
+    """
+    Convierte un nombre técnico de columna a etiqueta legible.
+
+    Si la columna está en NOMBRES_VARIABLES, devuelve su etiqueta oficial.
+    Si no, devuelve el nombre técnico transformado (sin guiones bajos,
+    capitalizado) para que al menos sea legible aunque no oficial.
+
+    Nunca lanza KeyError, evitando crashes de la app por etiquetas faltantes.
+
+    Parameters
+    ----------
+    col : str
+        Nombre técnico de la columna (ej: 'tasa_abandono_titulacion').
+
+    Returns
+    -------
+    str
+        Etiqueta legible (ej: 'Tasa aband. titulación') o fallback
+        (ej: 'tasa_abandono_titulacion' → 'Tasa abandono titulacion').
+
+    Examples
+    --------
+    >>> nombre_legible('cred_repetidos')
+    'Créd. repetidos'
+    >>> nombre_legible('columna_inventada')   # no existe en NOMBRES_VARIABLES
+    'Columna inventada'
+    """
+    if col in NOMBRES_VARIABLES:
+        return NOMBRES_VARIABLES[col]
+    # Fallback: quitar guiones bajos y capitalizar primera letra
+    return col.replace("_", " ").capitalize()
+
+
+# =============================================================================
+# 11. VERIFICACIÓN — Comprobar que los ficheros clave existen al arrancar
 # =============================================================================
 # Esta función se llama desde main.py al iniciar la app.
 # Si falta algún fichero crítico, avisa claramente en lugar de fallar
@@ -286,98 +436,130 @@ def verificar_ficheros_criticos() -> list[str]:
     return errores
 
 
-
 # =============================================================================
-# 9. MAPAS DE CODIFICACIÓN NUMÉRICA — FEATURES DEL MODELO
+# 12. MAPAS DE CODIFICACIÓN — OPCIONES UI Y DERIVADOS
 # =============================================================================
 # El modelo fue entrenado con variables categóricas codificadas como enteros
-# (Fase 3, f3_m04a_automl_target.ipynb). Estos mapas convierten las opciones
-# legibles del formulario al código numérico que espera el pipeline.
+# (Fase 3, f3_m04a_automl_target.ipynb). Los mapas FUENTE están ahora en
+# src/config_datos.py (importados en sección 1.bis arriba).
 #
-# Fuente de verdad para la app — NO importar de src/ para evitar dependencias
-# frágiles entre app/ y los notebooks del proyecto científico.
+# Aquí solo definimos lo que es ESPECÍFICO de la app:
+#   - OPCIONES_*_UI: subconjuntos limpios para selectbox (sin variantes
+#     históricas duplicadas que tienen los mapas SRC).
+#   - RAMA_NOMBRE_A_CODIGO: derivado nombre completo → código (la app usa
+#     nombres completos en formulario, RAMA_MAP de SRC usa siglas).
+#   - *_INV: diccionarios inversos para mostrar etiquetas en gráficos.
 #
 # texto legible (lo que ve el usuario) → código numérico (lo que ve el modelo)
 
-# Situación laboral
-# Código 11 = inactivo/desempleado (categoría más frecuente, ~38% del dataset)
-SITUACION_LABORAL_MAP: dict = {
-    "No trabaja (inactivo/desempleado)": 11,
-    "Trabaja a tiempo parcial":             2,
-    "Trabaja a tiempo completo":            8,
+SITUACION_LABORAL_MAP_DOCSTRING = """
+NOTA — Refactor SRC↔APP:
+Los 7 mapas que antes estaban definidos aquí (SITUACION_LABORAL_MAP,
+VIA_ACCESO_MAP, UNIVERSIDAD_ORIGEN_MAP, SEXO_MAP, PROVINCIA_MAP,
+PAIS_NOMBRE_MAP, RAMA_MAP) ahora vienen de src/config_datos.py
+(importados arriba en sección 1.bis).
+
+Los mapas de SRC contienen TODAS las variantes históricas de cada texto
+(ej: "Pruebas acceso Bachiller Logse" + "Bachillerato / PAU" → ambos = 10).
+La app no debe enseñar esa lista cruda al usuario en un selectbox.
+
+Por eso aquí definimos los OPCIONES_*_UI: subconjuntos LIMPIOS de cada
+mapa, con UNA sola etiqueta por categoría, listos para selectbox.
+
+ANTES había bug crítico: SITUACION_LABORAL_MAP={..."No trabaja":11,
+"parcial":2, "completo":8} con códigos 11/8 que NO EXISTEN en datos
+(reales son 0/1/2/3). Ese bug ha quedado eliminado al borrar los mapas
+duplicados.
+"""
+
+
+# --- OPCIONES_LABORAL_UI ---
+# 3 etiquetas para selectbox (las 3 categorías reales del modelo + texto UI).
+# Las 3 etiquetas existen en SITUACION_LABORAL_MAP de SRC con los códigos
+# correctos (1, 2, 3). Antes la app usaba 11/8/2 (incorrectos).
+OPCIONES_LABORAL_UI: dict = {
+    "No trabaja (inactivo/desempleado)": SITUACION_LABORAL_MAP["No trabaja (inactivo/desempleado)"],
+    "Trabaja a tiempo parcial":          SITUACION_LABORAL_MAP["Trabaja a tiempo parcial"],
+    "Trabaja a tiempo completo":         SITUACION_LABORAL_MAP["Trabaja a tiempo completo"],
 }
 
-# Vía de acceso a la universidad
-VIA_ACCESO_MAP: dict = {
-    "Bachillerato / PAU":           10,
-    "FP Grado Superior":             5,
-    "Titulados universitarios":      4,
-    "Mayores de 25 años":            7,
-    "Mayores de 40 años":           13,
-    "Mayores de 45 años":           12,
-    "Extranjeros (UE)":             11,
-    "Extranjeros (fuera UE)":        6,
-    "Sin datos / otro":              0,
+# --- OPCIONES_VIA_UI ---
+# 9 etiquetas modernas (sin variantes históricas tipo "Logse" o duplicados).
+# Cubren todas las vías de acceso del dataset agrupadas por categoría.
+OPCIONES_VIA_UI: dict = {
+    "Bachillerato / PAU":      VIA_ACCESO_MAP["Bachillerato / PAU"],
+    "FP Grado Superior":       VIA_ACCESO_MAP["FP Grado Superior"],
+    "Titulados universitarios": VIA_ACCESO_MAP["Titulados universitarios"],
+    "Mayores de 25 años":      VIA_ACCESO_MAP["Mayores de 25 años"],
+    "Mayores de 40 años":      VIA_ACCESO_MAP["Mayores de 40 años"],
+    "Mayores de 45 años":      VIA_ACCESO_MAP["Mayores de 45 años"],
+    "Extranjeros (UE)":        VIA_ACCESO_MAP["Extranjeros (UE)"],
+    "Extranjeros (fuera UE)":  VIA_ACCESO_MAP["Extranjeros (fuera UE)"],
+    "Sin datos / otro":        VIA_ACCESO_MAP.get("Sin datos / otro", 0),
 }
 
-# Universidad de procedencia
-UNIVERSIDAD_ORIGEN_MAP: dict = {
-    "UJI — Universitat Jaume I":   40,
-    "UPV — Politècnica de València": 27,
-    "UV — Universitat de València":  18,
-    "UA — Universitat d'Alacant":     1,
-    "UMH — Miguel Hernández":        55,
-    "Otra universidad / sin datos":   0,
+# --- OPCIONES_SEXO_UI ---
+# 2 etiquetas (Mujer, Hombre) — coherente con el modelo binario.
+# La opción "Otro / no indicar" antigua se eliminó: agrupaba a 0 (Mujer)
+# de forma engañosa. Ahora si el usuario no quiere indicar, no rellena.
+OPCIONES_SEXO_UI: dict = {
+    "Mujer":  SEXO_MAP["Mujer"],
+    "Hombre": SEXO_MAP["Hombre"],
 }
 
-# Sexo
-SEXO_MAP: dict = {
-    "Mujer":                   0,
-    "Hombre":                  1,
-    "Otro / no indicar":       0,  # fallback a Mujer (código 0)
+# --- OPCIONES_UNIVERSIDAD_UI ---
+# 6 etiquetas: las 5 universidades del SRC + "Otra / sin datos" (UI extra).
+# La 6ª opción NO está en SRC pero el modelo asigna 0 a cualquier no-mapeado
+# (decisión D9 del refactor — UX justifica mantenerla).
+# Texto formato "SIGLA — Nombre completo" para claridad.
+OPCIONES_UNIVERSIDAD_UI: dict = {
+    f"UJI — {UNIVERSIDAD_ORIGEN_NOMBRES['UJI']}":  UNIVERSIDAD_ORIGEN_MAP["UJI"],
+    f"UPV — {UNIVERSIDAD_ORIGEN_NOMBRES['UPV']}":  UNIVERSIDAD_ORIGEN_MAP["UPV"],
+    f"UV — {UNIVERSIDAD_ORIGEN_NOMBRES['UV']}":    UNIVERSIDAD_ORIGEN_MAP["UV"],
+    f"UA — {UNIVERSIDAD_ORIGEN_NOMBRES['UA']}":    UNIVERSIDAD_ORIGEN_MAP["UA"],
+    f"UMH — {UNIVERSIDAD_ORIGEN_NOMBRES['UMH']}":  UNIVERSIDAD_ORIGEN_MAP["UMH"],
+    "Otra universidad / sin datos":                 0,
 }
 
-# Provincia de residencia
-PROVINCIA_MAP: dict = {
-    "Castelló":         1,
-    "Alacant":          2,
-    "Tarragona":        3,
-    "Terol":            4,
-    "València":         5,
-    "Otra / sin datos": 0,
-}
-
-# País de nacionalidad (agrupado por región)
-PAIS_NOMBRE_MAP: dict = {
-    "España":                           1,
-    "Europa (UE)":                      2,
-    "América Latina":                   3,
-    "Asia":                             4,
-    "África / Oriente Medio":           5,
-    "Sin datos / otro":                 0,
-}
-
-# Rama de conocimiento (código numérico del dataset)
-RAMA_MAP: dict = {
-    "Ingeniería y Arquitectura":     1,
-    "Artes y Humanidades":           2,
-    "Ciencias Sociales y Jurídicas": 3,
-    "Ciencias de la Salud":          4,
-    "Ciencias Experimentales":       5,
+# --- RAMA_NOMBRE_A_CODIGO ---
+# El RAMA_MAP de SRC usa siglas como claves ('TE': 1, 'HU': 2, ...).
+# La app necesita mapear NOMBRE COMPLETO → código (porque el formulario
+# muestra el nombre completo, no la sigla).
+# Construido derivando: nombre_completo = DICCIONARIO_RAMAS[sigla]
+RAMA_NOMBRE_A_CODIGO: dict = {
+    nombre: RAMA_MAP[sigla]
+    for sigla, nombre in DICCIONARIO_RAMAS.items()
 }
 
 # Diccionarios inversos — código → etiqueta (para mostrar en gráficos)
+# Generados a partir de los mapas importados de SRC (no duplicados).
+# Como los mapas SRC tienen múltiples textos por código (variantes
+# históricas), el "último gana": queda la etiqueta UI (la más limpia).
 SITUACION_LABORAL_INV: dict = {v: k for k, v in SITUACION_LABORAL_MAP.items()}
 VIA_ACCESO_INV:        dict = {v: k for k, v in VIA_ACCESO_MAP.items()}
 UNIVERSIDAD_ORIGEN_INV:dict = {v: k for k, v in UNIVERSIDAD_ORIGEN_MAP.items()}
 SEXO_INV:              dict = {v: k for k, v in SEXO_MAP.items()}
 PROVINCIA_INV:         dict = {v: k for k, v in PROVINCIA_MAP.items()}
 PAIS_NOMBRE_INV:       dict = {v: k for k, v in PAIS_NOMBRE_MAP.items()}
-RAMA_MAP_INV:          dict = {v: k for k, v in RAMA_MAP.items()}
+# RAMA_MAP_INV eliminado en refactor SRC↔APP — código muerto, nadie lo usaba
+
+# --- PARCHES UI para códigos "fillna(0)" ---
+# Los mapas SRC no definen el código 0 porque nacen de la regla de limpieza:
+#   "Si el valor no está mapeado → fillna(0)"
+# El 0 representa "sin datos / ausente". En la app lo mostramos al usuario
+# como "Sin datos" para que los filtros sean legibles. Añadimos aquí el
+# fallback SIN tocar SRC (es UX, no datos).
+# Bug FASE C #13: filtro situacion_laboral mostraba "Código 0" sin etiqueta.
+SITUACION_LABORAL_INV[0]  = "Sin datos"
+VIA_ACCESO_INV[0]         = "Sin datos"
+UNIVERSIDAD_ORIGEN_INV[0] = "Otra / sin datos"
+PROVINCIA_INV[0]          = "Otra / sin datos"
+PAIS_NOMBRE_INV[0]        = "Sin datos"
 
 
 # =============================================================================
 # FIN DE config_app.py
 # Para importar en otro fichero:
 #   from config_app import RUTAS, COLORES, APP_CONFIG, PESTANAS, UMBRALES
+#   from config_app import UMBRALES_MUESTRA, PRECIO_CREDITO_UJI_DEFAULT
 # =============================================================================

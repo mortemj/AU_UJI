@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-03-23T01:07:19.178298",
+  "fecha": "2026-04-13T18:33:37.511380",
   "familia": "otros",
   "modelos": [
     "KNN",
@@ -17,8 +17,8 @@
   "random_state": 42,
   "mejor_modelo": "KNN",
   "mejor_estrategia": "none",
-  "mejor_auc_cv": 0.8827,
-  "mejor_f1_cv": 0.6997,
+  "mejor_auc_cv": 0.9206,
+  "mejor_f1_cv": 0.7756,
   "mejores_params": {
     "KNN": {
       "n_neighbors": 11,
@@ -39,5 +39,5 @@
     "GaussianNB": null,
     "BernoulliNB": null
   },
-  "emisiones_co2_kg": null
+  "emisiones_co2_kg": 8.101499884847563e-05
 }

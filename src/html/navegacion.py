@@ -42,13 +42,14 @@ FASES: Dict[str, Dict[str, Any]] = {
         ]
     },
     'fase2': {
-        'nombre': 'EDA Raw',
+        'nombre': 'EDA Datos Originales',
         'emoji': '📊',
         'archivo': 'fase2_index.html',
         'carpeta': 'fase2',
         'estado': 'activo',
         'modulos': [
             {'id': 'indice', 'nombre': 'Índice',           'archivo': 'fase2_index.html',          'emoji': '📋'},
+            {'id': 'm00_ejec', 'nombre': 'Ejecución',    'archivo': 'm00_ejecucion.html',        'emoji': '▶️'},
             {'id': 'm01',    'nombre': 'Inspección',       'archivo': 'm01_inspeccion.html',       'emoji': '🔍'},
             {'id': 'm02',    'nombre': 'Calidad',          'archivo': 'm02_calidad.html',          'emoji': '✅'},
             {'id': 'm03',    'nombre': 'Nulos',            'archivo': 'm03_nulos.html',            'emoji': '❓'},
@@ -180,7 +181,8 @@ FASES: Dict[str, Dict[str, Any]] = {
             {'id': 'm03',    'nombre': 'PyCaret',     'archivo': 'm03_pycaret.html',       'emoji': '🤖'},
             {'id': 'm04',    'nombre': 'H2O',         'archivo': 'm04_h2o.html',           'emoji': '💧'},
             {'id': 'm05',    'nombre': 'AutoGluon',   'archivo': 'm05_autogluon.html',     'emoji': '🚀'},
-            {'id': 'm06',    'nombre': 'Comparativa', 'archivo': 'm06_comparativa.html',   'emoji': '🏆'},
+            {'id': 'm06',    'nombre': 'TabPFN',      'archivo': 'm06_tabpfn.html',        'emoji': '🧠'},
+            {'id': 'm07',    'nombre': 'Comparativa', 'archivo': 'm07_comparativa.html',   'emoji': '🏆'},
         ]
     },
 }

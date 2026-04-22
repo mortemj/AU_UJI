@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>M05: Target y Export - TFM Abandono Universitario</title>
+    <title>Target Export - TFM Abandono Universitario</title>
     <link rel="stylesheet" href="../style.css">
     <style>
     /* ================================================================
@@ -174,8 +174,8 @@
             <img src="../../assets/logo_uoc.png" alt="UOC" class="header-logo"
                  onerror="this.style.display='none'">
             <div class="header-title">
-                <h1>🎯 M05: Target y Export</h1>
-                <p>Fase 3: Feature Engineering</p>
+                <h1>Target Export</h1>
+                <p>Fase 3: Features | TFM Abandono Universitario</p>
             </div>
             <img src="../../assets/logo_uji.jpg" alt="UJI" class="header-logo"
                  onerror="this.style.display='none'">
@@ -186,7 +186,7 @@
         <nav class="nav-fases">
   <a href="../index.html" class="">🏠 Inicio</a>
   <a href="../fase1/fase1_index.html" class="">📥 Transformación</a>
-  <a href="../fase2/fase2_index.html" class="">📊 EDA Raw</a>
+  <a href="../fase2/fase2_index.html" class="">📊 EDA Datos Originales</a>
   <a href="../fase3/fase3_index.html" class="active">🔧 Features</a>
   <a href="../fase4/fase4_index.html" class="">🔬 EDA Final</a>
   <a href="../fase5/fase5_index.html" class="">🤖 Modelado</a>
@@ -220,46 +220,89 @@
     
     <div class="kpi">
         <div class="value" style="color:#38a169">29.2%</div>
-        <div class="label">Abandono</div>
+        <div class="label">Tasa abandono</div>
     </div>
     
     <div class="kpi">
-        <div class="value" style="color:#ed8936">8</div>
-        <div class="label">Cols Leakage</div>
+        <div class="value" style="color:#ed8936">10</div>
+        <div class="label">Cols leakage eliminadas</div>
     </div>
     
     <div class="kpi">
-        <div class="value" style="color:#e53e3e">3</div>
-        <div class="label">Casos (A/B/C)</div>
+        <div class="value" style="color:#e53e3e">2</div>
+        <div class="label">Datasets (D + D_strict)</div>
     </div>
     </div>
     <section class="seccion">
         <h2>🎯 Cálculo del Target</h2>
         
 <div style="background:#f7fafc;padding:20px;border-radius:10px;font-family:monospace;font-size:14px;">
-  <strong>abandono</strong> = (egresado = "N") AND (egresado_de_hecho = 0) AND (2021 - curso_ultimo &gt;= 2)
+  <strong>abandono</strong> = (egresado = N) AND (egresado_de_hecho = 0) AND (2021 - curso_ultimo &ge; 2)
+</div>
+<div style="margin-top:15px;display:grid;grid-template-columns:repeat(3,1fr);gap:15px;">
+  <div style="background:#f0fff4;padding:12px;border-radius:8px;text-align:center;">
+    <div style="font-size:20px;font-weight:bold;color:#38a169;">23,788</div>
+    <div style="font-size:12px;">No abandona</div>
+  </div>
+  <div style="background:#fff5f5;padding:12px;border-radius:8px;text-align:center;">
+    <div style="font-size:20px;font-weight:bold;color:#e53e3e;">9,833</div>
+    <div style="font-size:12px;">Abandona (29.2%)</div>
+  </div>
+  <div style="background:#ebf8ff;padding:12px;border-radius:8px;text-align:center;">
+    <div style="font-size:20px;font-weight:bold;color:#3182ce;">33,621</div>
+    <div style="font-size:12px;">Total expedientes</div>
+  </div>
 </div>
     </section>
     
     <section class="seccion">
-        <h2>⚠️ Data Leakage</h2>
+        <h2>📊 Target Encoding — titulacion</h2>
         
-<div style="background:#fff5f5;padding:15px;border-radius:10px;border-left:4px solid #e53e3e;margin-bottom:15px;">
-  <strong>Antes:</strong> Todos los modelos AUC=1.0000. DecisionTree depth=3: Si curso_ultimo≤2019 → abandono=1</div>
-<div style="background:#f0fff4;padding:15px;border-radius:10px;border-left:4px solid #38a169;">
-  <strong>Después:</strong> Resultados reales en Fase AutoML.</div>
+<div style="background:#f7fafc;padding:15px;border-radius:10px;margin-bottom:15px;">
+  <p><strong>Tecnica:</strong> Target encoding — cada titulacion se sustituye por su tasa historica de abandono.</p>
+  <p><strong>Por que:</strong> El numero tiene significado causal real. Titulaciones con alta tasa predicen mayor riesgo.</p>
+  <p><strong>Planes nuevos:</strong> Usan la tasa del plan equivalente anterior. Sin equivalente: media de rama.</p>
+</div>
+<table style="width:100%;border-collapse:collapse;font-size:13px;">
+<tr style="background:#3182ce;color:white;">
+  <th style="padding:8px;">Titulacion</th>
+  <th style="text-align:center;">Tasa abandono</th>
+</tr>
+<tr><td style="padding:6px;">Grado en Ingeniería Eléctrica</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.598</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Ingeniería Agroalimentaria y del Medio Rural</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.512</td></tr><tr><td style="padding:6px;">Grado en Ingeniería Agroalimentaria y del Medio Rural (Plan 2018)</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.512</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Finanzas y Contabilidad</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.510</td></tr><tr><td style="padding:6px;">Grado en Humanidades: Estudios Interculturales</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.500</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Administración de Empresas</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.478</td></tr><tr><td style="padding:6px;">Grado en Historia y Patrimonio</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.469</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Historia y Patrimonio (Plan 2015)</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.469</td></tr><tr><td style="padding:6px;">Grado en Gestión y Administración Pública</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.431</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Ingeniería Mecanica</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.430</td></tr><tr><td style="padding:6px;">Grado en Ingeniería Química</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.411</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Economía</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.409</td></tr><tr><td style="padding:6px;">Grado en Matematica Computacional</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.407</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Ingeniería Informática</td><td style="text-align:center;font-weight:bold;color:#e53e3e;">0.403</td></tr><tr><td style="padding:6px;">Grado en Arquitectura Técnica (Plan 2020)</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.382</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Arquitectura Técnica</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.382</td></tr><tr><td style="padding:6px;">Grado en Derecho</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.379</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Turismo</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.354</td></tr><tr><td style="padding:6px;">Grado en Química</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.334</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Ingeniería en Diseño Industrial y Desarrollo de Productos</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.328</td></tr><tr><td style="padding:6px;">Doble Grado en Administración y Dirección de Empresas y Derecho, </td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.289</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Ingeniería en Tecnologías Industriales</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.284</td></tr><tr><td style="padding:6px;">Grado en Diseño y Desarrollo de Videojuegos</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.278</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Relaciones Laborales y Recursos Humanos</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.246</td></tr><tr><td style="padding:6px;">Grado en Criminologia y Seguridad  (Plan 2020)</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.241</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Criminologia y Seguridad</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.241</td></tr><tr><td style="padding:6px;">Grado en Estudios Ingleses</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.230</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Maestro en Educación Primaria</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.212</td></tr><tr><td style="padding:6px;">Grado en Maestro en Educación Primaria (Plan 2018)</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.212</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Psicología</td><td style="text-align:center;font-weight:bold;color:#ed8936;">0.206</td></tr><tr><td style="padding:6px;">Grado en Comunicación Audiovisual</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.165</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Periodismo</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.148</td></tr><tr><td style="padding:6px;">Grado en Maestro en Educación Infantil (Plan 2018)</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.147</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Maestro en Educación Infantil</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.147</td></tr><tr><td style="padding:6px;">Grado en Traducción e Interpretación</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.145</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Publicidad y Relaciones Públicas</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.136</td></tr><tr><td style="padding:6px;">Grado en Medicina</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.120</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Medicina (Plan 2017)</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.120</td></tr><tr><td style="padding:6px;">Grado en Enfermería</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.113</td></tr><tr style="background:#f7fafc;"><td style="padding:6px;">Grado en Ingeniería de la Edificación</td><td style="text-align:center;font-weight:bold;color:#38a169;">0.000</td></tr>
+</table>
     </section>
     
     <section class="seccion">
-        <h2>📦 Tres Casos de Estudio</h2>
+        <h2>⚠️ Data Leakage Eliminado</h2>
+        
+<div style="background:#fff5f5;padding:15px;border-radius:10px;border-left:4px solid #e53e3e;margin-bottom:15px;">
+  <strong>Antes de eliminar:</strong> Todos los modelos AUC=1.0000.<br>
+  Un DecisionTree depth=3: Si curso_ultimo &le; 2019 abandono=1.<br>
+  El modelo no aprendia — leia la respuesta directamente.
+</div>
+<div style="background:#f0fff4;padding:15px;border-radius:10px;border-left:4px solid #38a169;">
+  <strong>Despues:</strong> AUC=0.93 — resultado real y honesto.
+  El modelo aprende patrones genuinos de abandono.
+</div>
+    </section>
+    
+    <section class="seccion">
+        <h2>📦 D vs D_strict — Decision de Diseno</h2>
         
 <table style="width:100%;border-collapse:collapse;">
-<tr style="background:#3182ce;color:white;"><th style="padding:10px;">Caso</th><th>Descripción</th><th>Elimina</th><th>Cols AutoML</th><th>Objetivo</th></tr>
-<tr><td style="padding:8px;font-weight:bold;">A</td><td>Completo</td><td>Solo leakage directo</td><td>39</td><td>Máximo poder predictivo</td></tr>
-<tr style="background:#f7fafc;"><td style="padding:8px;font-weight:bold;">B</td><td>Sin casi_termino</td><td>+ indicador_casi_termino</td><td>38</td><td>¿Importa esta feature?</td></tr>
-<tr><td style="padding:8px;font-weight:bold;">C</td><td>Sin temporales</td><td>+ curso_inicio, duracion_real, n_cursos</td><td>35</td><td>Alerta temprana (sin info temporal)</td></tr>
+<tr style="background:#3182ce;color:white;">
+  <th style="padding:10px;">Aspecto</th>
+  <th style="text-align:center;">D</th>
+  <th style="text-align:center;">D_strict</th>
+</tr>
+<tr><td style="padding:8px;">Features</td><td style="text-align:center;">Mas variables</td><td style="text-align:center;">Solo variables auditadas</td></tr>
+<tr style="background:#f7fafc;"><td style="padding:8px;">Criterio</td><td style="text-align:center;">Sin leakage directo</td><td style="text-align:center;">Sin leakage + sin cuestionables</td></tr>
+<tr><td style="padding:8px;">F1</td><td style="text-align:center;">Marginalmente superior</td><td style="text-align:center;">-1.7pp vs D</td></tr>
+<tr style="background:#f7fafc;"><td style="padding:8px;">Produccion</td><td style="text-align:center;">—</td><td style="text-align:center;">Dataset elegido</td></tr>
+<tr><td style="padding:8px;">Por que D_strict</td>
+  <td colspan="2" style="text-align:center;">Defensa mas solida ante el tribunal. La diferencia de F1 no justifica el riesgo de variables cuestionables.</td>
+</tr>
 </table>
-<p style="margin-top:15px;"><strong>Caso C</strong> simula un sistema de alerta temprana: ¿podemos predecir abandono <em>sin saber cuánto tiempo lleva matriculado</em>?</p>
     </section>
     
     </div>
@@ -272,7 +315,7 @@
         &nbsp;·&nbsp;
         <a href="https://github.com/mortemj/AU_UJI/blob/main/notebooks/fase3_features/f3_m05_target_export.ipynb" target="_blank">📓 Ver Notebook</a>
         
-        &nbsp;·&nbsp; Generado: 23/03/2026
+        &nbsp;·&nbsp; Generado: 13/04/2026
     </footer>
 
     

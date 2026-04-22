@@ -291,10 +291,20 @@ DICCIONARIO_COLUMNAS: Dict[str, Dict[str, Any]] = {
 DICCIONARIO_RAMAS: Dict[str, str] = {
     'SO': 'Ciencias Sociales y Jurídicas',
     'HU': 'Artes y Humanidades',
-    'EX': 'Ciencias',
+    'EX': 'Ciencias Experimentales',
     'TE': 'Ingeniería y Arquitectura',
     'SA': 'Ciencias de la Salud'
 }
+# Nombres completos de universidades de origen (códigos → nombres)
+UNIVERSIDAD_ORIGEN_NOMBRES: Dict[str, str] = {
+    'UJI': 'Universitat Jaume I',
+    'UV':  'Universitat de València',
+    'UPV': 'Universitat Politècnica de València',
+    'UMH': 'Universidad Miguel Hernández de Elche',
+    'UA':  'Universidad de Alicante',
+}
+
+
 
 DICCIONARIO_FORMA_PAGO: Dict[str, str] = {
     'D': 'Domiciliación bancaria',
@@ -378,3 +388,190 @@ ETIQUETAS_VARIABLES: Dict[str, str] = {
     'anios_sin_beca': 'Años sin beca',
     'abandono': 'Abandono',
 }
+
+
+# ============================================================================
+# 7. MAPAS DE ENCODING — Variables categóricas a numéricas
+# ============================================================================
+# FUENTE ÚNICA DE VERDAD para todos los encodings del proyecto.
+# Usado en:
+#   - notebooks/fase3/f3_m04a_automl_target.ipynb
+#   - app/config_app.py (importa desde aquí)
+#
+# Regla: si un valor cambia de nombre entre años (ej: 'Pruebas acceso
+# Bachiller Logse' → 'Bachillerato / PAU'), se añade AMBAS entradas
+# apuntando al mismo código. Así el mapa es robusto a cambios históricos.
+#
+# Valores no mapeados → fillna(0) → código 0 = 'Sin datos / otro'
+# ============================================================================
+
+# --- Vía de acceso ---
+# Fuente: df_expediente_base.parquet, campo via_acceso
+# Incluye variantes históricas de nombre (mismo concepto, distinto texto)
+VIA_ACCESO_MAP: dict = {
+    # Bachillerato / PAU (nombre antiguo y nuevo)
+    'Pruebas acceso Bachiller Logse':              10,
+    'Bachillerato / PAU':                          10,
+    # FP Grado Superior
+    'Ciclo Formativo de Grado sup. o equivalente':  5,
+    'FP Grado Superior':                            5,
+    # Titulados universitarios
+    'Titulados Universitarios':                     4,
+    'Titulados universitarios':                     4,
+    # Mayores de 25
+    'Pruebas acceso mayores 25 años':               7,
+    'Pruebas acceso mayores 25años':                7,
+    'Mayores de 25 años':                           7,
+    # Mayores de 40
+    'Pruebas acceso mayores 40 años':              13,
+    'Pruebas acceso mayores 40años':               13,
+    'Mayores de 40 años':                          13,
+    # Mayores de 45
+    'Pruebas acceso mayores 45 años':              12,
+    'Pruebas acceso mayores 45años':               12,
+    'Mayores de 45 años':                          12,
+    # Extranjeros
+    'Extranjeros CEE':                             11,
+    'Extranjeros (UE)':                            11,
+    'Extranjeros no CEE':                           6,
+    'Extranjeros (fuera UE)':                       6,
+    # Otras vías (traslados, adaptaciones, cambios de plan, cupos especiales)
+    'Adaptación a Grado':                           3,
+    'Traslado':                                     2,
+    'Cambio de plan':                               2,
+    'Minusválidos':                                 1,
+    'Deportistas de élite':                         1,
+    # Sin datos
+    'Sin datos':                                    0,
+    'Sin datos / otro':                             0,
+}
+
+# --- Rama de conocimiento ---
+# Fuente: rama (abreviatura de 2 letras)
+RAMA_MAP: dict = {
+    'TE': 1,  # Ingeniería y Arquitectura
+    'HU': 2,  # Artes y Humanidades
+    'SO': 3,  # Ciencias Sociales y Jurídicas
+    'SA': 4,  # Ciencias de la Salud
+    'EX': 5,  # Ciencias Experimentales
+}
+
+# --- Sexo ---
+SEXO_MAP: dict = {
+    'Mujer':  0,
+    'Hombre': 1,
+}
+
+# --- Provincia ---
+# Solo las más frecuentes tienen código propio; resto → 0
+PROVINCIA_MAP: dict = {
+    'Castelló':    1,
+    'València':    2,
+    'Alacant':     3,
+    'Tarragona':   4,
+    'Terol':       5,
+    # Todo lo demás → 0 (fillna)
+}
+
+# --- País de nacionalidad (agrupado por región geográfica) ---
+# Fuente: pais_nombre — valores reales del dataset
+PAIS_NOMBRE_MAP: dict = {
+    # España
+    'España': 1,
+    # Europa (UE + asociados)
+    'Rumania': 2, 'Italia': 2, 'Bulgaria': 2, 'Francia': 2,
+    'Alemania': 2, 'Polonia': 2, 'Portugal': 2, 'Reino Unido': 2,
+    'Países Bajos': 2, 'Bélgica': 2, 'Hungría': 2, 'Lituania': 2,
+    'Finlandia': 2, 'Suecia': 2, 'Irlanda': 2, 'Noruega': 2,
+    'Grecia': 2, 'Suiza': 2, 'Estonia': 2, 'Letonia': 2,
+    'Eslovaquia': 2, 'Checa, República': 2, 'Andorra': 2,
+    'Albania': 2, 'Serbia': 2, 'Bosnia y Herzegovina': 2,
+    # Europa no UE / Este
+    'Ucrania': 2, 'Moldavia': 2, 'Rusia': 2, 'Georgia': 2, 'Armenia': 2,
+    # América Latina
+    'Colombia': 3, 'Venezuela': 3, 'Perú': 3, 'Brasil': 3,
+    'Ecuador': 3, 'Argentina': 3, 'Bolivia': 3, 'Uruguay': 3,
+    'Chile': 3, 'México': 3, 'Paraguay': 3, 'Honduras': 3,
+    'Cuba': 3, 'Haití': 3, 'Salvador, El': 3, 'Panamá': 3,
+    'Dominicana, República': 3, 'Costa Rica': 3,
+    # América del Norte
+    'Estados Unidos de Norteamérica': 3,
+    # Asia
+    'China': 4, 'Pakistán': 4, 'India': 4, 'Vietnam': 4,
+    'Bangladesh': 4, 'Turquía': 4, 'Japón': 4, 'Filipinas': 4,
+    'Irán': 4, 'Jordania': 4, 'Líbano': 4, 'Siria': 4,
+    # África / Oriente Medio
+    'Marruecos': 5, 'Argelia': 5, 'Guinea Ecuatorial': 5,
+    'Nigeria': 5, 'Guinea': 5, 'Níger': 5, 'Gambia': 5,
+    'Rwanda': 5, 'Ruanda': 5, 'Sáhara Occidental': 5,
+    'Senegal': 5, 'São Tomé y Príncipe': 5, 'Sudáfrica': 5,
+    'Cisjordania': 5, 'Túnez': 5,
+    # Sin datos → 0 (fillna)
+}
+
+# --- Universidad de origen ---
+# Solo universidades con volumen significativo tienen código propio
+# NaN y resto → 0 (sin traslado o universidad desconocida)
+UNIVERSIDAD_ORIGEN_MAP: dict = {
+    'UJI':  40,
+    'UV':   18,
+    'UPV':  27,
+    'UA':    1,
+    'UMH':  55,
+    # NaN y resto → 0 (fillna)
+}
+
+# --- Situación laboral ---
+# Fuente: situacion_laboral — valores reales del dataset
+# Agrupados en 4 categorías: 0=sin datos, 1=inactivo, 2=parcial, 3=completo/cualif
+SITUACION_LABORAL_MAP: dict = {
+    'Inactivo o desempleado':                                                    1,
+    'No trabaja (inactivo/desempleado)':                                         1,
+    'Trabajadores no calificados':                                               2,
+    'Trabajadores de los servicios de restauración, personales, protección y vendedores de los comercios': 2,
+    'Empleados de tipo administrativo':                                          2,
+    'Operadores de instalaciones y maquinaria y montadores':                     2,
+    'Artesanos y trabajadores calificados de las industrias manufactureras, la construcción y la minería, excepto los operadores de instalaciones y maquinaria.': 2,
+    'Trabajadores calificados en la agricultura y la pesca':                     2,
+    'Trabaja a tiempo parcial':                                                  2,
+    'Técnicos y Profesionales de apoyo':                                         3,
+    'Técnicos y Profesionales científicos e intelectuales':                      3,
+    'Dirección de Empresas y de las Administraciones Públicas':                  3,
+    'Fuerzas Armadas':                                                           3,
+    'Trabaja a tiempo completo':                                                 3,
+    # NaN y resto → 0 (fillna)
+}
+
+# --- Cupo de acceso ---
+# General es la mayoría (27.844). Cupos especiales agrupados en 1.
+# NaN → 0 (alumnos sin preinscripción, ya tratados en M01)
+CUPO_MAP: dict = {
+    'General':               1,
+    'Mayor 25 Años':         2,
+    'Titulados':             3,
+    'Mayor 40años':          4,
+    'Mayor 40 Años':         4,
+    'Mayor 45años':          5,
+    'Mayor 45 Años':         5,
+    'Minusvalidos':          6,
+    'Diversidad funcional':  6,
+    'Deportistas Alto Nivel': 7,
+    # NaN → 0 (fillna)
+}
+
+# --- Egresado (solo para M04a — leakage, M05 elimina) ---
+EGRESADO_MAP: dict = {
+    'S': 1,
+    'N': 0,
+}
+
+# --- Diccionarios inversos (código → etiqueta, para gráficos y app) ---
+VIA_ACCESO_INV:         dict = {10: 'Bachillerato/PAU', 5: 'FP Superior',
+                                 4: 'Titulado Univ.', 7: 'Mayor 25', 13: 'Mayor 40',
+                                 12: 'Mayor 45', 11: 'Extranjero UE', 6: 'Extranjero no UE',
+                                 3: 'Adaptación/Traslado', 2: 'Traslado/Cambio plan',
+                                 1: 'Cupo especial', 0: 'Sin datos'}
+RAMA_INV:               dict = {v: k for k, v in RAMA_MAP.items()}
+SEXO_INV:               dict = {v: k for k, v in SEXO_MAP.items()}
+SITUACION_LABORAL_INV:  dict = {0: 'Sin datos', 1: 'Inactivo', 2: 'Trabaja parcial', 3: 'Trabaja completo/cualif'}
+UNIVERSIDAD_ORIGEN_INV: dict = {v: k for k, v in UNIVERSIDAD_ORIGEN_MAP.items()}

@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-03-23T01:13:12.389970",
+  "fecha": "2026-04-13T21:21:01.908645",
   "familia": "mlp_ebm",
   "modelos": [
     "MLP",
@@ -15,10 +15,10 @@
   "n_trials_ebm": 20,
   "cv_folds": 5,
   "random_state": 42,
-  "mejor_modelo": "EBM",
+  "mejor_modelo": "MLP",
   "mejor_estrategia": "none",
-  "mejor_auc_cv": 0.9202,
-  "mejor_f1_cv": 0.7672,
+  "mejor_auc_cv": 0.9465,
+  "mejor_f1_cv": 0.8132,
   "mejores_params": {
     "MLP": {
       "hidden_layer_sizes": [
@@ -46,5 +46,5 @@
     "MLP": null,
     "EBM": null
   },
-  "emisiones_co2_kg": null
+  "emisiones_co2_kg": 0.004398723404675936
 }

@@ -1,5 +1,5 @@
 {
-  "fecha": "2026-03-23T01:05:42.542567",
+  "fecha": "2026-04-13T18:30:49.782655",
   "familia": "boosting",
   "modelos": [
     "GradientBoosting",
@@ -18,8 +18,8 @@
   "random_state": 42,
   "mejor_modelo": "XGBoost",
   "mejor_estrategia": "none",
-  "mejor_auc_cv": 0.9318,
-  "mejor_f1_cv": 0.7862,
+  "mejor_auc_cv": 0.9537,
+  "mejor_f1_cv": 0.8317,
   "mejores_params": {
     "GradientBoosting": {
       "n_estimators": 200,
@@ -61,5 +61,5 @@
     "LightGBM": null,
     "CatBoost": null
   },
-  "emisiones_co2_kg": null
+  "emisiones_co2_kg": 0.0006465475022849078
 }

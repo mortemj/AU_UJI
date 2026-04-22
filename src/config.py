@@ -27,8 +27,16 @@ from .config_entorno import (
     RUTA_NOTEBOOKS, RUTA_TESTS,
     EXCEL_PRINCIPAL, EXCEL_PREINSCRIPCION,
     DATASET_FINAL_PARQUET, DATASET_FINAL_CSV,
+    DATASET_MODELADO,           # Dataset de producción Fase 5 — data/03_features/
+    DATASET_MODELADO_LEGACY,    # Alias temporal — data/automl/ — eliminar tras Chat 3/4/8
     ARCHIVO_LOG,
-    MAPEO_HOJAS, HOJAS_EXCEL_PRINCIPAL, NOMBRES_PARQUET
+    MAPEO_HOJAS, HOJAS_EXCEL_PRINCIPAL, NOMBRES_PARQUET,
+    # Ramas de conocimiento y features (refactor SRC↔APP)
+    # Antes solo accesibles vía 'from .config_entorno import ...' en notebooks
+    # Ahora reexportados aquí para uso unificado: 'from src.config import ...'
+    RAMAS_NOMBRES,
+    COLORES_RAMAS,
+    NOMBRES_LEGIBLES_FEATURES,
 )
 
 # --- Identidad del proyecto ---
@@ -51,7 +59,23 @@ from .config_datos import (
     FECHA_REFERENCIA,
     VALORES_VACIOS,
     DICCIONARIO_CP_PROVINCIA,
-    ETIQUETAS_VARIABLES
+    ETIQUETAS_VARIABLES,
+    # Mapas de encoding — fuente única de verdad para M04a y config_app.py
+    VIA_ACCESO_MAP,
+    RAMA_MAP,
+    SEXO_MAP,
+    PROVINCIA_MAP,
+    PAIS_NOMBRE_MAP,
+    UNIVERSIDAD_ORIGEN_MAP,
+    SITUACION_LABORAL_MAP,
+    CUPO_MAP,
+    EGRESADO_MAP,
+    VIA_ACCESO_INV,
+    RAMA_INV,
+    SEXO_INV,
+    SITUACION_LABORAL_INV,
+    UNIVERSIDAD_ORIGEN_INV,
+    UNIVERSIDAD_ORIGEN_NOMBRES,
 )
 
 # --- Funciones de diagnóstico ---

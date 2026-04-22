@@ -1,0 +1,101 @@
+# ============================================================
+# requirements.txt — Entorno principal: tfm_abandono
+# TFM: Pronóstico del Éxito y del Abandono — UJI
+# Autora: María José Morte Ruiz
+# ============================================================
+# Instalación: pip install -r requirements.txt
+#
+# NOTA: Los frameworks AutoML M02-M05 se ejecutan en entornos
+# conda separados. Ver entornos_automl.md para instrucciones.
+# ============================================================
+
+# --- Core científico ---
+joblib==1.5.3
+numpy==2.3.5
+pandas==2.3.3
+patsy==1.0.2
+scikit-learn==1.6.1
+scipy==1.15.3
+statsmodels==0.14.6
+
+# --- Machine Learning ---
+aplr==10.22.0
+catboost==1.2.10
+imbalanced-learn==0.14.1
+lightgbm==4.6.0
+optuna==4.7.0
+xgboost==3.1.2
+
+# --- AutoML (entorno tfm_abandono) ---
+tabpfn==7.1.1
+tabpfn-client==0.2.8
+tabpfn-common-utils==0.2.19
+
+# --- Interpretabilidad ---
+codecarbon==3.2.3
+dice_ml==0.12
+fairlearn==0.13.0
+interpret==0.7.6
+lime==0.2.0.1
+raiutils==0.4.2
+shap==0.51.0
+
+# --- Visualización ---
+altair==6.0.0
+dash==2.18.2
+dash_cytoscape==1.0.2
+folium==0.20.0
+matplotlib==3.10.7
+missingno==0.5.2
+plotly==6.5.0
+plotnine==0.15.3
+pyvis==0.3.2
+pywaffle==1.1.1
+seaborn==0.13.2
+sweetviz==2.3.1
+
+# --- App y despliegue ---
+Flask==3.0.3
+pydantic==2.12.5
+streamlit==1.55.0
+
+# --- Deep Learning ---
+einops==0.8.2
+numba==0.64.0
+torch==2.11.0
+
+# --- Datos y formatos ---
+omegaconf==2.3.0
+openpyxl==3.1.5
+pyarrow==22.0.0
+xarray==2026.2.0
+xxhash==3.6.0
+
+# --- Utilidades ---
+antlr4-python3-runtime==4.9.3
+gitpython==3.1.46
+graphviz==0.21
+huggingface_hub==1.10.1
+jinja2==3.1.6
+networkx==3.6.1
+packaging==25.0
+pillow==11.1.0
+pyyaml==6.0.3
+requests==2.32.5
+rich==14.0.0
+ruff==0.15.10
+scikit-image==0.26.0
+six==1.17.0
+sqlalchemy==2.0.48
+tqdm==4.67.1
+
+# --- Jupyter ---
+ipykernel==7.1.0
+ipython==9.8.0
+ipywidgets==8.1.8
+jupyter==1.1.1
+jupyterlab==4.5.1
+nbclient==0.10.2
+nbconvert==7.16.6
+nbformat==5.10.4
+notebook==7.5.1

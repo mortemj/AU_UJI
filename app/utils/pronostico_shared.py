@@ -63,9 +63,14 @@ import _path_setup  # noqa: F401
 from config_app import (
     COLORES, COLORES_RAMAS, COLORES_RIESGO, NOMBRES_VARIABLES,
     RAMAS_NOMBRES, UMBRALES,
-    # Mapas de codificación numérica (texto del formulario → código del modelo)
-    VIA_ACCESO_MAP, UNIVERSIDAD_ORIGEN_MAP, RAMA_MAP,
-    SEXO_MAP, PROVINCIA_MAP, PAIS_NOMBRE_MAP, SITUACION_LABORAL_MAP,
+    # Refactor SRC↔APP: ya no importamos los 7 MAPS (con bugs en
+    # SITUACION_LABORAL=11/8). En su lugar, usamos OPCIONES_*_UI:
+    # subconjuntos limpios filtrados desde los mapas oficiales de SRC.
+    OPCIONES_LABORAL_UI, OPCIONES_VIA_UI, OPCIONES_SEXO_UI,
+    OPCIONES_UNIVERSIDAD_UI, RAMA_NOMBRE_A_CODIGO,
+    # Mapas SRC: solo los necesarios para defaults defensivos en provincia/país
+    # (formularios no muestran selectbox para estos, son código defensivo).
+    PROVINCIA_MAP, PAIS_NOMBRE_MAP,
 )
 from utils.loaders import cargar_meta_test_app, cargar_modelo, cargar_pipeline
 
@@ -110,11 +115,14 @@ _FEATURES_EN_CURSO = [
     'tasa_rendimiento',        # numérica (calculada)
 ]
 
-# Opciones para variables categóricas — extraídas del dataset real
-_OPCIONES_VIA_ACCESO = list(VIA_ACCESO_MAP.keys())
-_OPCIONES_LABORAL = list(SITUACION_LABORAL_MAP.keys())
-_OPCIONES_SEXO = list(SEXO_MAP.keys())
-_OPCIONES_UNIVERSIDAD = list(UNIVERSIDAD_ORIGEN_MAP.keys())
+# Opciones para variables categóricas — filtradas para selectbox (sin
+# variantes históricas duplicadas que tienen los mapas SRC).
+# Refactor SRC↔APP: vienen de OPCIONES_*_UI (config_app), que son
+# subconjuntos limpios de los mapas oficiales de SRC.
+_OPCIONES_VIA_ACCESO = list(OPCIONES_VIA_UI.keys())
+_OPCIONES_LABORAL    = list(OPCIONES_LABORAL_UI.keys())
+_OPCIONES_SEXO       = list(OPCIONES_SEXO_UI.keys())
+_OPCIONES_UNIVERSIDAD = list(OPCIONES_UNIVERSIDAD_UI.keys())
 
 
 # =============================================================================
@@ -976,7 +984,7 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
         calcular = st.button(
             label="🔮 Calcular mi pronóstico",
             type="primary",
-            use_container_width=True,
+            width='stretch',
             key=f"btn_calcular_{modo}",
         )
 
@@ -1002,37 +1010,43 @@ def _traducir_perfil_a_codigos(perfil: dict) -> dict:
     p = dict(perfil)  # copia para no mutar el original
 
     # Categóricas → código numérico
+    # Refactor SRC↔APP: usamos OPCIONES_*_UI (etiquetas limpias filtradas
+    # de los mapas SRC) en lugar de los MAPS antiguos con bugs.
     if 'situacion_laboral' in p and isinstance(p['situacion_laboral'], str):
-        p['situacion_laboral'] = SITUACION_LABORAL_MAP.get(
+        p['situacion_laboral'] = OPCIONES_LABORAL_UI.get(
             p['situacion_laboral'],
-            11  # default: No trabaja — código más frecuente
+            1  # default: No trabaja (código 1 en SRC, antes era 11 incorrecto)
         )
 
     if 'via_acceso' in p and isinstance(p['via_acceso'], str):
-        p['via_acceso'] = VIA_ACCESO_MAP.get(
+        p['via_acceso'] = OPCIONES_VIA_UI.get(
             p['via_acceso'],
             10  # default: Bachillerato/PAU — código más frecuente
         )
 
     if 'sexo' in p and isinstance(p['sexo'], str):
-        p['sexo'] = SEXO_MAP.get(p['sexo'], 0)
+        p['sexo'] = OPCIONES_SEXO_UI.get(p['sexo'], 0)
 
     if 'universidad_origen' in p and isinstance(p['universidad_origen'], str):
-        p['universidad_origen'] = UNIVERSIDAD_ORIGEN_MAP.get(
+        p['universidad_origen'] = OPCIONES_UNIVERSIDAD_UI.get(
             p['universidad_origen'],
             0  # default: Otra / sin datos
         )
 
     if 'rama' in p and isinstance(p['rama'], str):
-        p['rama'] = RAMA_MAP.get(p['rama'], 3)  # default SO
+        # Defensivo: el formulario no expone rama directamente, pero por si
+        # algún flujo la incluye, mapeamos nombre completo → código.
+        p['rama'] = RAMA_NOMBRE_A_CODIGO.get(p['rama'], 3)  # default SO=3
 
     if 'provincia' in p and isinstance(p['provincia'], str):
+        # Defensivo: formulario no expone provincia. PROVINCIA_MAP de SRC.
         p['provincia'] = PROVINCIA_MAP.get(
             p['provincia'],
             0  # default: Otra / sin datos
         )
 
     if 'pais_nombre' in p and isinstance(p['pais_nombre'], str):
+        # Defensivo: formulario no expone país. PAIS_NOMBRE_MAP de SRC.
         p['pais_nombre'] = PAIS_NOMBRE_MAP.get(
             p['pais_nombre'],
             1  # default: España
@@ -1111,6 +1125,23 @@ def _calcular_probabilidad(perfil: dict, modelo, pipeline,
 
         X_usuario = pd.DataFrame([fila], columns=cols_pipeline)
         X_prep    = pipeline.transform(X_usuario)
+
+        # Mejora D (iter 6): convertir X_prep a DataFrame con nombres de
+        # columnas para evitar el warning de sklearn:
+        #   "X does not have valid feature names, but ... was fitted with
+        #   feature names"
+        # El warning sale porque pipeline.transform() devuelve numpy array.
+        # Usamos get_feature_names_out() si está disponible (sklearn >=1.0).
+        try:
+            nombres_salida = pipeline.get_feature_names_out()
+            X_prep = pd.DataFrame(X_prep, columns=nombres_salida)
+        except (AttributeError, ValueError):
+            # Pipelines antiguos o sin get_feature_names_out — asumimos
+            # que las columnas de salida son las mismas que las de entrada
+            # (caso sin OneHotEncoder). Es una aproximación mejor que nada.
+            if X_prep.shape[1] == len(cols_pipeline):
+                X_prep = pd.DataFrame(X_prep, columns=cols_pipeline)
+
         prob      = modelo.predict_proba(X_prep)[0, 1]
 
         return float(prob), None
@@ -1261,7 +1292,7 @@ def _grafico_velocimetro_comparativa(resultados: list):
         showlegend=False,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.markdown(
         f"<p style='font-size:0.78rem; color:{COLORES['texto_suave']}; "
         f"text-align:center; margin-top:-0.5rem;'>{leyenda_html}</p>",
@@ -1337,7 +1368,7 @@ def _grafico_indicador_riesgo(prob: float):
         height=300,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
 
 
 # =============================================================================
@@ -1364,11 +1395,15 @@ def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
     df_ctx = contexto['df_contexto']
 
     # Variables a mostrar — ajustadas según modo (prospecto sin nota_1er_anio)
-    vars_radar = ['nota_acceso', 'n_anios_beca', 'edad_acceso',
+    # Refactor SRC↔APP: corregido bug histórico — antes se usaba 'edad_acceso'
+    # que no existe como columna del modelo. El nombre correcto es 'edad_entrada'
+    # (ver FEATURES_NUM_MODELO en src/config_entorno.py). Eran el mismo concepto
+    # con dos nombres; se ha unificado a 'edad_entrada'.
+    vars_radar = ['nota_acceso', 'n_anios_beca', 'edad_entrada',
                   'nota_selectividad', 'tasa_rendimiento']
     if 'nota_1er_anio' in perfil and perfil.get('nota_1er_anio', None) is not None:
         vars_radar = ['nota_acceso', 'nota_1er_anio', 'n_anios_beca',
-                      'tasa_rendimiento', 'edad_acceso']
+                      'tasa_rendimiento', 'edad_entrada']
 
     vars_ok = [v for v in vars_radar if v in df_ctx.columns]
 
@@ -1457,7 +1492,7 @@ def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
         height=360,
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption(
         f"💡 Comparativa sobre alumnos de {nombre_ctx}. "
         "Cuanto más cerca del borde exterior, mejor en esa variable."
@@ -1710,7 +1745,7 @@ def _renderizar_waterfall(contribuciones: list[dict], prob: float,
     )
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption(
         "🔴 Rojo = ese factor aumenta tu riesgo respecto a la media.  "
         "🟢 Verde = ese factor lo reduce."
@@ -1780,6 +1815,13 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
             cols_pipeline = list(pipeline.feature_names_in_)                 if hasattr(pipeline, 'feature_names_in_') else                 [c for c in df_grupo.columns if c not in _COLS_META]
             cols_ok = [c for c in cols_pipeline if c in df_grupo.columns]
             X_prep  = pipeline.transform(df_grupo[cols_ok])
+            # Mejora D: convertir a DataFrame con nombres (evita warning sklearn)
+            try:
+                nombres_salida = pipeline.get_feature_names_out()
+                X_prep = pd.DataFrame(X_prep, columns=nombres_salida)
+            except (AttributeError, ValueError):
+                if X_prep.shape[1] == len(cols_ok):
+                    X_prep = pd.DataFrame(X_prep, columns=cols_ok)
             probs_grupo   = modelo.predict_proba(X_prep)[:, 1]
         except Exception:
             probs_grupo = np.array([0.292])
@@ -1892,7 +1934,7 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
     fig.update_xaxes(showgrid=True, gridcolor=COLORES['borde'])
     fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption(
         f"📊 Distribución de probabilidades predichas para {nombre_grupo} "
         f"({len(probs_grupo):,} alumnos). La línea de color marca tu posición."
@@ -2137,7 +2179,7 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         showlegend=True,
     )
     fig.update_xaxes(showgrid=True, gridcolor=COLORES["borde"])
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width='stretch')
     st.caption(
         "📊 Barras = tasa de abandono histórica real (2010–2020). "
         "╌╌╌ Línea gris discontinua = media UJI. "

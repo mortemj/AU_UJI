@@ -3,21 +3,21 @@
     "familia": "Gradient Boosting",
     "modelo": "XGBoost",
     "estrategia": "none",
-    "auc_mean": 0.9318107808306586,
-    "f1_mean": 0.7861853076417151
+    "auc_mean": 0.9537035966611166,
+    "f1_mean": 0.8317326001672022
   },
   {
     "familia": "Ensambles",
     "modelo": "Stacking",
     "estrategia": "balanced",
-    "auc_mean": 0.9307603492573528,
-    "f1_mean": 0.7881854927351709
+    "auc_mean": 0.9509454529582371,
+    "f1_mean": 0.8251813955488357
   },
   {
     "familia": "Árboles",
     "modelo": "RandomForest",
-    "estrategia": "none",
-    "auc_mean": 0.9255995216415347,
-    "f1_mean": 0.7580137134565823
+    "estrategia": "smote",
+    "auc_mean": 0.9472837262589477,
+    "f1_mean": 0.8169909203107798
   }
 ]
