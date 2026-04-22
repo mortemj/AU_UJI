@@ -1,0 +1,10 @@
+auto_mix_prep==0.2.0
+joblib==1.5.3
+numpy==2.3.5
+pandas==2.3.3
+plotly==6.5.0
+scikit-learn==1.6.1
+scipy==1.15.3
+shap==0.51.0
+streamlit==1.56.0
+
