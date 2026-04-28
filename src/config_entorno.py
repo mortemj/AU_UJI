@@ -166,19 +166,37 @@ RAMAS_NOMBRES = {
     "EX": "Ciencias Experimentales",
 }
 
-# Colores fijos por rama — paleta Dark24, consistente en todos los gráficos
+# Colores por rama — paleta inspirada en colores de togas doctorales españolas,
+# adaptados para legibilidad en pantalla. Ningún color coincide con los de
+# riesgo (verde/amarillo/rojo) para evitar confusión semántica.
+#
+# Correspondencia toga → pantalla:
+#   Ciencias Sociales y Jurídicas : toga amarillo/oro   → ámbar dorado   #d97706
+#   Ingeniería y Arquitectura     : toga marrón         → naranja tostado #c2410c
+#   Ciencias de la Salud          : toga amarillo limón → azul cyan       #0891b2
+#   Artes y Humanidades           : toga morado         → violeta medio   #7c3aed
+#   Ciencias Experimentales       : toga azul marino    → azul profundo   #1d4ed8
 COLORES_RAMAS = {
-    "Ciencias Sociales y Jurídicas": "#1CA71C",  # verde
-    "Ingeniería y Arquitectura":     "#2E91E5",  # azul
-    "Ciencias de la Salud":          "#E15F99",  # rosa
-    "Artes y Humanidades":           "#DA16FF",  # violeta
-    "Ciencias Experimentales":       "#FB0D0D",  # rojo
+    "Ciencias Sociales y Jurídicas": "#d97706",  # ámbar dorado   (toga: amarillo/oro)
+    "Ingeniería y Arquitectura":     "#c2410c",  # naranja tostado (toga: marrón)
+    "Ciencias de la Salud":          "#0891b2",  # azul cyan      (toga: amarillo limón)
+    "Artes y Humanidades":           "#7c3aed",  # violeta medio  (toga: morado)
+    "Ciencias Experimentales":       "#1d4ed8",  # azul profundo  (toga: azul marino)
 }
 
 # Colores directamente por abreviatura (para gráficos matplotlib)
 COLORES_RAMAS_ABR = {
     abr: COLORES_RAMAS[nombre]
     for abr, nombre in RAMAS_NOMBRES.items()
+}
+
+# Colores por sexo — convención visual estándar alineada con ODS 5.
+# Independientes de COLORES_RAMAS para que un cambio en la paleta de ramas
+# no altere los colores de sexo involuntariamente.
+COLORES_SEXO = {
+    "Mujer":  "#db2777",  # rosa medio  — convención universal, ODS 5
+    "Hombre": "#2563eb",  # azul medio  — convención universal
+    "Total":  "#475569",  # gris pizarra — neutro para línea agregada
 }
 
 

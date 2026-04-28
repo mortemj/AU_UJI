@@ -54,6 +54,7 @@ from config_app import (
     COLORES,
     COLORES_RAMAS,
     COLORES_RIESGO,
+    COLORES_SEXO,
     NOMBRES_VARIABLES,
     RAMAS_NOMBRES,
     SEXO_INV,
@@ -64,6 +65,13 @@ from config_app import (
 )
 from config_app import RUTAS as _RUTAS
 from utils.loaders import cargar_meta_test_app, cargar_modelo, cargar_pipeline
+# REFACTOR p03 (Chat p03, 27/04/2026): _nombre_titulacion_corto y
+# _clasificar_riesgo importados desde ui_helpers (antes había _partir_label
+# local + regex inline + _color_tasa local).
+from utils.ui_helpers import (
+    _nombre_titulacion_corto, _clasificar_riesgo, _pie_pagina,
+    _leer_metricas_modelo, _guardia_df_vacio,
+)
 import pandas as _pd
 
 
@@ -82,9 +90,11 @@ import pandas as _pd
 # sparkline cambiará también — es consciente, documentado, y se puede
 # desacoplar aquí (basta editar la línea correspondiente).
 
-_COLOR_SPARKLINE_MUJER  = COLORES_RAMAS['Ciencias de la Salud']  # #E15F99 rosa Dark24
-_COLOR_SPARKLINE_HOMBRE = COLORES['primario']                    # #1e4d8c azul UJI
-_COLOR_SPARKLINE_TOTAL  = COLORES['texto']                       # #2d3748 gris oscuro
+# Colores de sexo — vienen de COLORES_SEXO (src/config_entorno.py)
+# Independientes de COLORES_RAMAS para evitar acoplamiento involuntario
+_COLOR_SPARKLINE_MUJER  = COLORES_SEXO["Mujer"]   # #db2777 rosa ODS5
+_COLOR_SPARKLINE_HOMBRE = COLORES_SEXO["Hombre"]  # #2563eb azul
+_COLOR_SPARKLINE_TOTAL  = COLORES_SEXO["Total"]   # #475569 gris pizarra
 
 
 # =============================================================================
@@ -116,7 +126,7 @@ def show():
         </h2>
         <p style="color: {COLORES['texto_suave']}; margin-top: 0; font-size: 0.95rem;">
             Panorama global de abandono universitario ·
-            {APP_CONFIG['universidad_datos']} · Datos de test (2010–2020)
+            {APP_CONFIG['universidad_datos']} · Datos de test ({_leer_metricas_modelo().get('periodo_inicio',2010)}–{_leer_metricas_modelo().get('periodo_fin',2020)})
         </p>
         """, unsafe_allow_html=True)
     with col_badge:
@@ -192,16 +202,31 @@ def show():
     # -------------------------------------------------------------------
     n_muestra = len(df_filtrado)
     if n_muestra < UMBRALES_MUESTRA['minima']:
-        st.error(
-            f"❌ Muestra insuficiente ({n_muestra} alumnos). "
-            f"Los porcentajes no son fiables estadísticamente. "
-            f"Interpreta los resultados con cautela."
-        )
+        col_av, col_btn = st.columns([4, 1])
+        with col_av:
+            st.error(
+                f"❌ Muestra insuficiente ({n_muestra} alumnos). "
+                f"Los porcentajes no son fiables estadísticamente. "
+                f"Te recomendamos ampliar o borrar los filtros para obtener resultados representativos."
+            )
+        with col_btn:
+            if st.button("🗑️ Borrar filtros", key="btn_borrar_muestra_min"):
+                for _k in [k for k in st.session_state if k.startswith("filtro_")]:
+                    del st.session_state[_k]
+                st.rerun()
     elif n_muestra < UMBRALES_MUESTRA['aceptable']:
-        st.warning(
-            f"⚠️ Muestra muy pequeña ({n_muestra} alumnos). "
-            f"Los resultados son orientativos — poco representativos."
-        )
+        col_av, col_btn = st.columns([4, 1])
+        with col_av:
+            st.warning(
+                f"⚠️ Muestra muy pequeña ({n_muestra} alumnos). "
+                f"Los resultados son orientativos. "
+                f"Amplía los filtros para mayor representatividad."
+            )
+        with col_btn:
+            if st.button("🗑️ Borrar filtros", key="btn_borrar_muestra_peq"):
+                for _k in [k for k in st.session_state if k.startswith("filtro_")]:
+                    del st.session_state[_k]
+                st.rerun()
     elif n_muestra < UMBRALES_MUESTRA['fiable']:
         st.info(
             f"ℹ️ Muestra pequeña ({n_muestra} alumnos). "
@@ -238,7 +263,7 @@ def show():
     # -------------------------------------------------------------------
     # 6. FILA KPIs (4 tarjetas a full width)
     # -------------------------------------------------------------------
-    _bloque_kpis(df_filtrado, tasa_ref=_tasa_ref, riesgo_ref=_riesgo_ref)
+    _bloque_kpis_global(df_filtrado, tasa_ref=_tasa_ref, riesgo_ref=_riesgo_ref)
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -250,7 +275,7 @@ def show():
     # 50/50 da más aire a ambos gráficos.
     col_evo, col_rama = st.columns([1, 1])
     with col_evo:
-        _bloque_evolucion_temporal(df_filtrado)
+        _bloque_evolucion_temporal_global(df_filtrado)
     with col_rama:
         _bloque_abandono_por_rama(df_filtrado)
 
@@ -297,15 +322,23 @@ def show():
     #   - Segundo: resumen de la selección actual con fondo amarillo claro,
     #     2 bloques (resultados vs UJI y demografía), comparativa vs global.
     with st.expander("📋 Nota metodológica — haz clic para ampliar", expanded=False):
-        st.markdown("""
-        **Dataset:** 33.621 registros de modelado · 30.872 alumnos únicos · Universitat Jaume I · Cursos 2010–2020.
+        # Métricas leídas dinámicamente desde metricas_modelo.json
+        _m = _leer_metricas_modelo()
+        _n_reg    = f"{_m.get('n_registros', 33621):,}".replace(",", ".")
+        _n_alu    = f"{_m.get('n_alumnos_unicos', 30872):,}".replace(",", ".")
+        _n_test   = f"{_m.get('n_test', 6596):,}".replace(",", ".")
+        _tasa_pct = f"{_m.get('tasa_abandono', 0.292)*100:.1f}".replace(".", ",")
+        _auc      = f"{_m.get('auc', 0.954):.3f}"
+        _f1       = f"{_m.get('f1', 0.827):.3f}"
+        st.markdown(f"""
+        **Dataset:** {_n_reg} registros de modelado · {_n_alu} alumnos únicos · {APP_CONFIG['universidad_datos']} · Cursos {_m.get('periodo_inicio',2010)}–{_m.get('periodo_fin',2020)}.
 
-        **Variable objetivo:** abandono definitivo del grado (definición estricta). Tasa de abandono en test: **29,2 %**.
+        **Variable objetivo:** abandono definitivo del grado (definición estricta). Tasa de abandono en test: **{_tasa_pct} %**.
 
-        **Modelo final:** Stacking con CatBoost y Random Forest como modelos base, y regresión logística como meta-learner. AUC = 0.931 · F1 = 0.799.
+        **Modelo final:** Stacking con CatBoost y Random Forest como modelos base, y regresión logística como meta-learner. AUC = {_auc} · F1 = {_f1}.
 
         **Sobre los gráficos:** los porcentajes de riesgo son predicciones del modelo, no valores reales observados.
-        La tasa de abandono real corresponde a los datos históricos del conjunto de test (6.725 observaciones).
+        La tasa de abandono real corresponde a los datos históricos del conjunto de test ({_n_test} observaciones).
 
         **Limitaciones:** el modelo está entrenado con datos hasta 2020. Las predicciones para cohortes
         posteriores deben interpretarse con cautela.
@@ -313,6 +346,11 @@ def show():
 
         # Bloque "Tu selección actual" — fondo amarillo claro con resultados + demografía
         _bloque_resumen_seleccion(df, df_filtrado, _tasa_ref)
+
+    # Pie de página
+    # REFACTOR p03 (Chat p03, 27/04/2026): pie de página inline sustituido
+    # por _pie_pagina() de utils/ui_helpers.py (centralizado).
+    _pie_pagina()
 
 
 # =============================================================================
@@ -339,6 +377,10 @@ def _añadir_probabilidades(df_raw: pd.DataFrame, modelo, pipeline) -> pd.DataFr
         prob = modelo.predict_proba(X_prep)[:, 1]
 
         # Unir por índice — ambos tienen el mismo índice posicional
+        # Si meta_test_app ya trae prob_abandono guardada, la eliminamos antes
+        # del join para evitar conflicto de columnas duplicadas
+        if "prob_abandono" in df.columns:
+            df = df.drop(columns=["prob_abandono"])
         prob_series = _pd.Series(prob, index=X_prep.index, name="prob_abandono")
         df = df.join(prob_series, how="left")
 
@@ -356,6 +398,11 @@ def _añadir_nivel_riesgo(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
 
+    # NOTA REFACTOR p03 (Chat p03, 27/04/2026): esta lógica interna NO se
+    # sustituye por _clasificar_riesgo de ui_helpers porque aquí se necesita
+    # devolver SOLO el string del nivel + manejar NaN (devuelve 'Desconocido').
+    # _clasificar_riesgo devuelve tupla (nivel, color, emoji, mensaje) y no
+    # maneja NaN. Los umbrales sí se leen de UMBRALES centralizado.
     def _clasificar(prob):
         if pd.isna(prob):
             return 'Desconocido'
@@ -371,44 +418,11 @@ def _añadir_nivel_riesgo(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # =============================================================================
-# HELPER — Leer métricas del modelo desde metricas_modelo.json
 # =============================================================================
-
-@st.cache_data(show_spinner=False)
-def _leer_metricas_modelo() -> dict:
-    """
-    Lee el fichero metricas_modelo.json generado por la Fase 6 (evaluación).
-
-    FASE F (iter 8): centraliza la lectura del JSON para evitar que varias
-    funciones repitan la misma lógica con fallbacks hardcodeados diferentes.
-
-    Returns
-    -------
-    dict
-        Diccionario con las métricas del modelo. Claves típicas:
-          - 'tasa_abandono' (float entre 0 y 1)
-          - 'f1', 'auc', 'accuracy', 'precision', 'recall' (floats)
-          - 'fecha_entrenamiento' (str, opcional)
-          - 'modelo' (str, opcional — p.ej. "Stacking__balanced")
-        Si el fichero no existe o falla la lectura, devuelve {} (dict vacío).
-
-    Notas
-    -----
-    - Usa @st.cache_data para no leer el fichero en cada rerun.
-    - NUNCA lanza excepción: si algo falla, devuelve {} silenciosamente.
-      Esto permite que las funciones que lo usen traten la ausencia de
-      datos con su propia lógica (ej. mostrar "N/D").
-    """
-    try:
-        import json as _json
-        from config_app import RUTAS as _RUTAS
-        ruta_m = _RUTAS.get("metricas_modelo")
-        if ruta_m and ruta_m.exists():
-            with open(ruta_m, encoding="utf-8") as _f:
-                return _json.load(_f)
-    except Exception:
-        pass
-    return {}
+# REFACTOR p03 (Chat p03, 27/04/2026): _leer_metricas_modelo ELIMINADA.
+# Sustituida por _leer_metricas_modelo de utils/ui_helpers.py.
+# Antes había 2 copias idénticas en p01 y p02.
+# =============================================================================
 
 
 def _aplicar_filtros_grid(df: pd.DataFrame) -> pd.DataFrame:
@@ -953,9 +967,9 @@ def _generar_sparkline_multi_svg(
           {"Etiqueta": (valores, color_hex), ...}
         Ejemplo:
           {
-            "Total":  ([100, 150, 200], "#2d3748"),
-            "Hombre": ([45, 70, 95],    "#1e4d8c"),
-            "Mujer":  ([55, 80, 105],   "#E15F99"),
+            "Total":  ([100, 150, 200], COLORES_SEXO["Total"]),
+            "Hombre": ([45, 70, 95],    COLORES_SEXO["Hombre"]),
+            "Mujer":  ([55, 80, 105],   COLORES_SEXO["Mujer"]),
           }
         Las etiquetas solo se usan internamente; no se dibujan en el SVG
         (eso va en la leyenda externa, en la tarjeta KPI).
@@ -1031,7 +1045,15 @@ def _tarjeta_kpi_html(
     tooltip: str = "",
 ) -> str:
     """
-    Genera HTML de una tarjeta KPI al estilo mockup.
+    Genera HTML de una tarjeta KPI grande al estilo dashboard institucional.
+
+    REFACTOR p03 (Chat p03, 27/04/2026): esta función NO se centraliza en
+    utils/ui_helpers.py por ahora. Razones:
+      1. Solo la usa p01_institucional (vista institucional con sparkline).
+      2. Es bastante larga (~85 líneas) y muy específica del dashboard.
+      3. Las otras páginas usan _tarjeta_kpi (compacta, en ui_helpers).
+    Si en el futuro otra página la necesita, se mueve entonces a ui_helpers
+    para que sea reutilizable. Coherente con _tarjeta_kpi (border-left 4px).
 
     Estructura:
       - Barra vertical de color a la izquierda (4px)
@@ -1197,45 +1219,28 @@ def _formato_delta_html(
 # sin intentar calcular nada. Así la app degrada con elegancia cuando el
 # usuario provoca una muestra vacía (filtros muy restrictivos).
 
-def _guardia_df_vacio(df: pd.DataFrame, titulo_bloque: str) -> bool:
-    """
-    Comprueba si un DataFrame está vacío y, si lo está, renderiza un aviso
-    visual coherente con el estilo de la app.
-
-    Devuelve:
-      - True  → df está vacío, el bloque que lo llame debe hacer `return`
-      - False → df tiene datos, el bloque puede continuar normalmente
-
-    Parámetros:
-      df            → DataFrame a comprobar (típicamente df_filtrado)
-      titulo_bloque → Nombre del bloque para el aviso (ej: "Evolución temporal")
-    """
-    if df is None or len(df) == 0:
-        st.markdown(f"""
-        <div style="background:{COLORES['fondo']};
-            border:1px dashed {COLORES['texto_muy_suave']};
-            border-radius:8px;
-            padding:1.5rem 1rem;
-            text-align:center;
-            color:{COLORES['texto_suave']};
-            font-size:0.85rem;
-            margin:0.5rem 0;">
-            <div style="font-weight:600; margin-bottom:0.3rem;
-                color:{COLORES['texto']};">
-                {titulo_bloque}
-            </div>
-            📭 No hay datos para mostrar con los filtros actuales.
-            <br>
-            <span style="font-size:0.78rem;">
-                Prueba a relajar los filtros para ver este bloque.
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-        return True
-    return False
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): _guardia_df_vacio ELIMINADA.
+# Sustituida por _guardia_df_vacio de utils/ui_helpers.py.
+# =============================================================================
 
 
-def _bloque_kpis(df: pd.DataFrame, tasa_ref: float = 29.25,
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): bloques de p01 RENOMBRADOS con sufijo
+# "_global" para diferenciarlos de los bloques de p02 que tenían el mismo
+# nombre pero firma y contenido distintos:
+#   - _bloque_kpis        → _bloque_kpis_global       (p01: df global UJI)
+#                           _bloque_kpis_titulacion   (p02: df de UNA titulación)
+#   - _bloque_evolucion_temporal → _bloque_evolucion_temporal_global
+#                                  _bloque_evolucion_temporal_titulacion
+#   - _bloque_distribucion_riesgo → _bloque_distribucion_riesgo_global
+#                                   _bloque_distribucion_riesgo_titulacion
+# NO se centralizan en ui_helpers porque la lógica es radicalmente distinta
+# (cobertura global vs cobertura por una titulación, KPIs distintos).
+# =============================================================================
+
+
+def _bloque_kpis_global(df: pd.DataFrame, tasa_ref: float = 29.25,
                  riesgo_ref: float = 0.0):
     """
     Fila de 4 tarjetas KPI grandes estilo dashboard.
@@ -1691,7 +1696,7 @@ def _expander_coste_abandono(df: pd.DataFrame):
 # BLOQUE 2: Evolución temporal
 # =============================================================================
 
-def _bloque_evolucion_temporal(df: pd.DataFrame):
+def _bloque_evolucion_temporal_global(df: pd.DataFrame):
     """Gráfico de línea: tasa de abandono real por año de cohorte."""
 
     st.markdown(f"""
@@ -1738,7 +1743,7 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
         marker=dict(size=8),
         hovertemplate=(
             "<b>Cohorte %{x}</b><br>"
-            "Abandono real: %{y:.1f}%<br>"
+            "Abandono real: %{y:,.1f}%<br>"
             "N alumnos: %{customdata}<extra></extra>"
         ),
         customdata=evolucion['n_total']
@@ -1754,7 +1759,7 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
         marker=dict(size=6),
         hovertemplate=(
             "<b>Cohorte %{x}</b><br>"
-            "Riesgo predicho medio: %{y:.1f}%<extra></extra>"
+            "Riesgo predicho medio: %{y:,.1f}%<extra></extra>"
         )
     ))
 
@@ -1776,6 +1781,7 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
     )
 
     fig.update_layout(
+        separators=",.",   # Auditoría formato ES (Chat p02)
         xaxis_title="Año de cohorte",
         yaxis_title="Porcentaje (%)",
         yaxis=dict(range=[0, 100]),
@@ -1810,13 +1816,35 @@ def _bloque_evolucion_temporal(df: pd.DataFrame):
 # =============================================================================
 
 def _bloque_abandono_por_rama(df: pd.DataFrame):
-    """Barras horizontales: tasa de abandono real por rama de conocimiento."""
+    """Barras horizontales: tasa de abandono real por rama de conocimiento.
+    Si hay filtro de rama o titulación activo, desglosa por titulación
+    y muestra nombre completo de rama en el título.
+    """
 
-    st.markdown(f"""
-    <h4 style="color: {COLORES['texto']}; margin-bottom: 0.8rem;">
-        📚 Abandono por rama de conocimiento
-    </h4>
-    """, unsafe_allow_html=True)
+    # Detectar filtros activos
+    _ramas_sel    = st.session_state.get("filtro_rama_p01", [])
+    _tits_sel     = st.session_state.get("filtro_titulacion_p01", [])
+    # Desglose por titulación SOLO cuando hay titulaciones específicas elegidas
+    # Si solo hay filtro de rama → sigue mostrando una barra por rama
+    _hay_filtro_tit = bool(_tits_sel)
+    _hay_filtro     = bool(_ramas_sel or _tits_sel)
+
+    # Título dinámico
+    if _hay_filtro_tit and _ramas_sel and len(_ramas_sel) == 1:
+        _nombre_rama = _ramas_sel[0]
+        _titulo_grafico = f"📚 Abandono por titulación — {_nombre_rama}"
+    elif _hay_filtro_tit:
+        _titulo_grafico = "📚 Abandono por titulación seleccionada"
+    elif _hay_filtro and _ramas_sel and len(_ramas_sel) == 1:
+        _titulo_grafico = f"📚 Abandono por rama — {_ramas_sel[0]}"
+    else:
+        _titulo_grafico = "📚 Abandono por rama de conocimiento"
+
+    st.markdown(
+        f'<h4 style="color:{COLORES["texto"]};margin-bottom:0.8rem;">'
+        f'{_titulo_grafico}</h4>',
+        unsafe_allow_html=True
+    )
 
     # FASE F B3-guardia: salir temprano si no hay datos.
     if _guardia_df_vacio(df, "📚 Abandono por rama"):
@@ -1827,16 +1855,43 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
         st.info("No hay datos de rama disponibles con los filtros actuales.")
         return
 
-    por_rama = (
-        df.groupby(col_rama)
-        .agg(
-            n_total=('abandono', 'count'),
-            n_abandono=('abandono', 'sum'),
-            prob_media=('prob_abandono', 'mean')
+    # Si hay titulaciones específicas elegidas → desglosar por titulación
+    # Solo filtro de rama → sigue mostrando una barra por rama
+    if _hay_filtro_tit and 'titulacion' in df.columns:
+        _grp_cols = ['titulacion', col_rama]
+        por_rama = (
+            df.groupby(_grp_cols)
+            .agg(
+                n_total=('abandono', 'count'),
+                n_abandono=('abandono', 'sum'),
+                prob_media=('prob_abandono', 'mean')
+            )
+            .reset_index()
         )
-        .reset_index()
-    )
-    por_rama = por_rama.rename(columns={col_rama: 'rama'})
+        # Etiqueta del eje Y: titulación en 2 líneas si es larga.
+        # REFACTOR p03 (Chat p03, 27/04/2026): _partir_label ELIMINADA.
+        # Sustituida por _nombre_titulacion_corto(partir_lineas=True) del
+        # helper centralizado en utils/ui_helpers.py.
+        por_rama['eje_y'] = por_rama['titulacion'].apply(
+            lambda n: _nombre_titulacion_corto(n, partir_lineas=True, max_chars=28)
+        )
+        # Color por rama
+        por_rama['rama'] = por_rama[col_rama]
+        _col_color = 'rama'
+    else:
+        por_rama = (
+            df.groupby(col_rama)
+            .agg(
+                n_total=('abandono', 'count'),
+                n_abandono=('abandono', 'sum'),
+                prob_media=('prob_abandono', 'mean')
+            )
+            .reset_index()
+        )
+        por_rama = por_rama.rename(columns={col_rama: 'rama'})
+        por_rama['eje_y'] = por_rama['rama']
+        _col_color = 'rama'
+
     por_rama['tasa_pct'] = (
         por_rama['n_abandono'] / por_rama['n_total'] * 100
     ).round(1)
@@ -1870,21 +1925,21 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
     fig = px.bar(
         por_rama,
         x='tasa_pct',
-        y='rama',
+        y='eje_y',
         orientation='h',
         color='rama',
         color_discrete_map=COLORES_RAMAS,
         text='tasa_pct',
         custom_data=['n_total', 'n_abandono'],
-        labels={'tasa_pct': 'Tasa abandono (%)', 'rama': ''},
+        labels={'tasa_pct': 'Tasa abandono (%)', 'eje_y': ''},
     )
     fig.update_traces(
-        texttemplate='%{text:.1f}%',
+        texttemplate='%{text:,.1f}%',
         textposition='outside',
         showlegend=False,   # FASE D #20: leyenda redundante — rama ya está en eje Y
         hovertemplate=(
             "<b>%{y}</b><br>"
-            "Tasa abandono: %{x:.1f}%<br>"
+            "Tasa abandono: %{x:,.1f}%<br>"
             "Alumnos totales: %{customdata[0]}<br>"
             "Abandonos: %{customdata[1]}<extra></extra>"
         )
@@ -1932,12 +1987,13 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
         )
 
     fig.update_layout(
+        separators=",.",   # Auditoría formato ES (Chat p02)
         coloraxis_showscale=False,
         plot_bgcolor=COLORES['blanco'],    # FASE D #23a
         paper_bgcolor=COLORES['blanco'],   # FASE D #23a
         # FASE D+E iter 7: sin anotaciones arriba/abajo, reducimos margen t/b
-        margin=dict(l=20, r=100, t=20, b=40),
-        height=max(260, len(por_rama) * 55),
+        margin=dict(l=160, r=100, t=20, b=40),
+        height=max(300, len(por_rama) * 65),
         xaxis=dict(
             range=[0, eje_max],
             showgrid=True,
@@ -1949,10 +2005,11 @@ def _bloque_abandono_por_rama(df: pd.DataFrame):
     )
 
     st.plotly_chart(fig, width='stretch')   # FASE D #28: deprecación
+    # Auditoría formato ES (Chat p02): replace para coma decimal en caption.
     st.caption(
-        f"🔵 Selección: {tasa_filtrada_pct:.1f}% · "
-        f"🟠 Media UJI: {tasa_global_pct:.1f}%. "
-        "Zona sombreada = por debajo de la media UJI."
+        f"🔵 Selección: {tasa_filtrada_pct:.1f}% · ".replace(".", ",")
+        + f"🟠 Media UJI: {tasa_global_pct:.1f}%. ".replace(".", ",")
+        + "Zona sombreada = por debajo de la media UJI."
     )
 
 
@@ -2018,24 +2075,28 @@ def _bloque_top_titulaciones(df: pd.DataFrame):
     por_titulacion = por_titulacion.sort_values('tasa_pct', ascending=False).head(n_mostrar)
 
     # Acortar nombres de titulación
+    # REFACTOR p03 (Chat p03, 27/04/2026): regex inline sustituida por
+    # _nombre_titulacion_corto de utils/ui_helpers (helper centralizado que
+    # maneja correctamente "Grado en Ingeniería en X", "Doble Grado en X",
+    # "Doble Grado de X", etc.).
     por_titulacion['titulacion_corta'] = (
-        por_titulacion['titulacion']
-        .str.replace(r'^Grado en ', '', regex=True)
-        .str.replace(r'^Doble Grado en ', 'Doble: ', regex=True)
+        por_titulacion['titulacion'].apply(_nombre_titulacion_corto)
     )
 
-    # Función semáforo
-    def _color_tasa(v):
-        if v < UMBRALES["riesgo_bajo"] * 100:
-            return COLORES_RIESGO["bajo"], "🟢"
-        elif v < UMBRALES["riesgo_medio"] * 100:
-            return COLORES_RIESGO["medio"], "🟡"
-        return COLORES_RIESGO["alto"], "🔴"
+    # REFACTOR p03 (Chat p03, 27/04/2026): _color_tasa ELIMINADA.
+    # Sustituida por _clasificar_riesgo de utils/ui_helpers.py.
+    # NOTA 1: _color_tasa recibía PORCENTAJE (0-100) y _clasificar_riesgo
+    # recibe PROBABILIDAD (0-1) — al usarlo dividimos /100.
+    # NOTA 2: la tabla original mostraba círculos 🟢🟡🔴, _clasificar_riesgo
+    # devuelve ✅⚠️🔴. Mantenemos los círculos con un mapeo nivel→emoji
+    # local para no alterar la estética de esta tabla específica.
+    _CIRCULOS_RIESGO = {'Bajo': '🟢', 'Medio': '🟡', 'Alto': '🔴'}
 
     # Construir tabla HTML propia
     filas_html = ""
     for _, row in por_titulacion.iterrows():
-        color, emoji = _color_tasa(row['tasa_pct'])
+        nivel, color, _, _ = _clasificar_riesgo(row['tasa_pct'] / 100)
+        emoji = _CIRCULOS_RIESGO[nivel]
         rama_txt = str(row.get(col_rama_t2, ""))
         tit = str(row['titulacion_corta'])
 
@@ -2165,42 +2226,56 @@ def _bloque_barras_riesgo_por_rama(df: pd.DataFrame):
     # Copiamos el nombre completo para usarlo en el tooltip
     grupos['rama_nombre'] = grupos[col_rama_hist]
 
+    # Etiquetas eje X: nombre completo abreviado en 2 palabras para legibilidad
+    # Usamos rama_nombre (nombre completo) directamente — más claro que abreviaturas
     orden_riesgo = ['Bajo', 'Medio', 'Alto']
     fig_hist = go.Figure()
     for nivel in orden_riesgo:
         g = grupos[grupos['nivel_riesgo'] == nivel]
+        # Acortar nombres largos para eje X: primeras 2 palabras
+        _etiquetas_x = g['rama_nombre'].apply(
+            lambda n: '<br>'.join(n.split()[:3]) if len(n.split()) > 2 else n
+        )
         fig_hist.add_trace(go.Bar(
             name=nivel,
-            x=g['rama_abrev'],
+            x=_etiquetas_x,
             y=g['pct'],
             marker_color=COLORES_RIESGO[nivel.lower()],
-            # customdata con nombre completo para el tooltip
             customdata=g['rama_nombre'],
             hovertemplate=(
                 f"<b>%{{customdata}}</b><br>"
-                f"{nivel}: %{{y:.1f}}%<extra></extra>"
+                f"{nivel}: %{{y:,.1f}}%<extra></extra>"
             ),
             text=g['pct'].apply(lambda v: f"{v:.0f}%" if v >= 5 else ""),
+            # Nota: aquí v:.0f no genera punto decimal porque es entero.
+            # Plotly aplicará separators=",." para miles si los hubiera.
             textposition="inside",
         ))
 
-    # Caption con la leyenda de abreviaturas (debajo del gráfico)
-    leyenda_abrev_parts = []
-    for abrev in sorted(grupos['rama_abrev'].unique()):
-        nombre = RAMAS_NOMBRES.get(abrev, abrev)
-        leyenda_abrev_parts.append(f"{abrev}={nombre}")
-    leyenda_abrev_str = " · ".join(leyenda_abrev_parts)
+    # Sin leyenda de abreviaturas — ahora usamos nombre completo directamente
+    leyenda_abrev_str = ""
 
     fig_hist.update_layout(
+        separators=",.",   # Auditoría formato ES (Chat p02)
         barmode="stack",
         yaxis=dict(range=[0, 100], title="% alumnos", ticksuffix="%"),
-        xaxis=dict(title=""),
-        legend=dict(orientation="h", yanchor="top", y=-0.20,
-                   title_text=""),
+        # Auditoría layout (Chat p02): etiquetas X en 2 líneas (con <br>) NO
+        # giradas + leyenda ARRIBA del gráfico (no abajo) para evitar el
+        # solapamiento que se veía cuando la leyenda iba a y=-0.20 y las
+        # etiquetas con <br> ocupaban más espacio vertical.
+        xaxis=dict(title="", tickangle=0),
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,            # encima del área del gráfico
+            x=0.5,
+            xanchor="center",
+            title_text="",
+        ),
         plot_bgcolor=COLORES['blanco'],
         paper_bgcolor=COLORES['blanco'],
-        margin=dict(l=10, r=10, t=10, b=40),
-        height=240,
+        margin=dict(l=10, r=10, t=40, b=80),  # +b para etiquetas en 2 líneas
+        height=290,                           # +50 para que entre todo
     )
     fig_hist.update_xaxes(showgrid=False)
     fig_hist.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
@@ -2245,16 +2320,26 @@ def _bloque_donut_riesgo(df: pd.DataFrame):
         values=valores,
         hole=0.55,
         marker_colors=colores_donut,
-        textinfo='percent',
+        # Auditoría formato ES (Chat p02): textinfo='percent' usa punto.
+        # texttemplate explícito con :,.1f y replace forzaría coma decimal,
+        # pero Plotly Pie permite text con replace previo. Solución: pasar
+        # 'text' precalculado en español y usar textinfo='text'.
+        text=[
+            f"{v / sum(valores) * 100:.1f}%".replace(".", ",") if sum(valores) > 0 else ""
+            for v in valores
+        ],
+        textinfo='text',
         hovertemplate="<b>%{label}</b><br>%{value} alumnos (%{percent})<extra></extra>",
     ))
     fig_donut.update_layout(
+        separators=",.",   # Auditoría formato ES (Chat p02)
         showlegend=True,
         legend=dict(orientation="h", yanchor="top", y=-0.05),
         margin=dict(l=10, r=10, t=10, b=10),
         height=240,
         annotations=[dict(
-            text=f"<b>{len(df):,}</b><br>alumnos",
+            # Auditoría formato ES (Chat p02): replace para separador miles ES.
+            text=f"<b>{len(df):,}</b><br>alumnos".replace(",", "."),
             x=0.5, y=0.5,
             font_size=13,
             showarrow=False
@@ -2263,6 +2348,9 @@ def _bloque_donut_riesgo(df: pd.DataFrame):
     st.plotly_chart(fig_donut, width='stretch')
 
     st.caption(
+        # Auditoría formato ES (Chat p02): :.0% genera enteros, no hay
+        # decimal. Pero si en el futuro UMBRALES no fuera redondo añadir
+        # replace(".", ",").
         f"Umbrales: bajo < {UMBRALES['riesgo_bajo']:.0%} · "
         f"medio < {UMBRALES['riesgo_medio']:.0%} · "
         f"alto ≥ {UMBRALES['riesgo_medio']:.0%}"
@@ -2273,7 +2361,7 @@ def _bloque_donut_riesgo(df: pd.DataFrame):
 # Mantiene la función antigua _bloque_distribucion_riesgo como alias que
 # ejecuta las 2 funciones nuevas en el layout original (2 columnas lado a lado).
 # FASE E: ya no se usa desde show(), pero lo dejamos por si se referencia.
-def _bloque_distribucion_riesgo(df: pd.DataFrame):
+def _bloque_distribucion_riesgo_global(df: pd.DataFrame):
     """DEPRECATED (FASE E): usar _bloque_barras_riesgo_por_rama y
     _bloque_donut_riesgo por separado. Se mantiene como wrapper."""
     col_donut, col_hist = st.columns([1, 2])
@@ -2507,13 +2595,14 @@ def _bloque_resumen_seleccion(df_completo: pd.DataFrame,
         sobre la unidad "puntos porcentuales" con subrayado punteado.
         """
         if d > 0.1:
-            color = "#B91C1C"  # rojo (peor)
+            color = COLORES["abandono"]  # rojo — peor rendimiento
             flecha = "▲"
         elif d < -0.1:
-            color = "#166534"  # verde (mejor)
+            color = COLORES["exito"]  # verde — mejor rendimiento
             flecha = "▼"
         else:
-            color = "#78350F"
+            # Auditoría p03 (Chat p03, 27/04/2026): hex #78350F → COLORES['texto_suave'].
+            color = COLORES["texto_suave"]
             flecha = "≈"
         signo = "+" if d > 0 else ""
         valor_str = f"{d:.1f}".replace(".", ",")
@@ -2555,6 +2644,15 @@ def _bloque_resumen_seleccion(df_completo: pd.DataFrame,
     # FASE F Bloque 3: RESTAURADA la sección 👥 DEMOGRAFÍA con datos reales.
     # La edad se reconstruye con np.exp() porque edad_entrada está en log(edad)
     # en meta_test_app.parquet — ver cálculos arriba para la explicación completa.
+    #
+    # Auditoría p03 (Chat p03, 27/04/2026): los 5 hex de este callout
+    # (#FEF3C7 bg, #F59E0B borde, #78350F texto principal, #92400E sub-
+    # títulos, #FCD34D separador) son una paleta amber Tailwind cohesiva
+    # para el callout "Tu selección actual". NO se migran a COLORES porque:
+    #   - No son colores semánticos de la paleta principal de la app
+    #   - Son una familia visual intencionada (50/500/700/900 + 300)
+    #   - Crear 5 entradas en COLORES solo para este callout sería
+    #     sobreingeniería. Documentado y aislado en un único bloque.
     html = (
         f'<div style="background:#FEF3C7;border-left:4px solid #F59E0B;'
         f'border-radius:8px;padding:16px;margin-top:16px;'

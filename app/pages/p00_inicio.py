@@ -40,6 +40,8 @@ import streamlit as st
 import _path_setup  # noqa: F401
 
 from config_app import APP_CONFIG, COLORES, PESTANAS, RUTAS
+# REFACTOR p03 (Chat p03, 27/04/2026): _pie_pagina centralizada en ui_helpers.
+from utils.ui_helpers import _pie_pagina, _tarjeta_kpi, _hex_a_rgba
 import json as _json
 
 def _cargar_metricas() -> dict:
@@ -50,9 +52,11 @@ def _cargar_metricas() -> dict:
             return _json.load(f)
     # Fallback si el fichero no existe todavía
     return {
-        "auc": 0.9308, "f1": 0.7988, "baseline_auc": 0.9270, "baseline_f1": 0.7970,
+        "auc": 0.954,  "f1": 0.827,  "baseline_auc": 0.927,  "baseline_f1": 0.797,
         "n_alumnos_unicos": 30872, "n_registros": 33621,
-        "tasa_abandono": 0.292, "periodo_inicio": 2010, "periodo_fin": 2021,
+        "tasa_abandono": 0.292, "periodo_inicio": 2010, "periodo_fin": 2020,
+        # n_test canónico tribunal/memoria (filtrado 2010-2020)
+        "n_test": 6596, "n_test_total": 6725,
         "modelo_nombre": "Stacking (CatBoost + RF + LogReg)",
         "baseline_nombre": "CatBoost AutoML",
     }
@@ -94,9 +98,14 @@ def _banner_principal():
 
     with col_texto:
         st.markdown(f"""
-        <h1 style="color: {COLORES["primario"]}; margin-bottom: 0.2rem;">
-            {APP_CONFIG["icono"]} {APP_CONFIG["titulo"].split("—")[0].strip()}
-        </h1>
+        <p style="font-size:0.82rem; color:{COLORES['texto_suave']};
+                  margin-bottom:0.3rem; font-weight:500; letter-spacing:0.03em;
+                  text-transform:uppercase;">
+            {APP_CONFIG['tipo_trabajo']} · {APP_CONFIG['universidad_master']} · {APP_CONFIG['año']}
+        </p>
+        <h2 style="color:{COLORES['primario']}; margin-bottom:0.2rem; font-size:1.8rem;">
+            {APP_CONFIG['icono']} {APP_CONFIG['titulo'].split('—')[0].strip()}
+        </h2>
         """, unsafe_allow_html=True)
 
         st.markdown(f"""
@@ -112,13 +121,18 @@ def _banner_principal():
         """, unsafe_allow_html=True)
 
     with col_logo:
+        # Hex 8-char "{primario}15"/"{primario}30" → rgba dinámico vía
+        # _hex_a_rgba (Chat p00, 28/04/2026). Compatible con cualquier
+        # navegador y se actualiza solo si cambia COLORES["primario"].
+        _bg_logo     = _hex_a_rgba(COLORES["primario"], 0.08)
+        _border_logo = _hex_a_rgba(COLORES["primario"], 0.18)
         st.markdown(f"""
         <div style="
             text-align: center;
             padding: 2rem 1rem;
-            background-color: {COLORES["primario"]}15;
+            background-color: {_bg_logo};
             border-radius: 12px;
-            border: 1px solid {COLORES["primario"]}30;
+            border: 1px solid {_border_logo};
             margin-top: 0.5rem;
         ">
             <div style="font-size: 4rem;">🎓</div>
@@ -156,13 +170,22 @@ def _semaforo_estado():
         ts = ruta_metricas.stat().st_mtime
         ultima_eje = _dt.datetime.fromtimestamp(ts).strftime("%d/%m/%Y %H:%M")
 
-    # Contar registros si los datos existen
+    # Contar registros desde metricas_modelo.json (cifra canónica tribunal)
+    # Antes (bug 28/04/2026): leía el parquet con len() y mostraba 6.725
+    # (sin filtrar). Ahora usa n_test=6.596 del JSON, que es la cifra
+    # canónica de la memoria/defensa (cohortes 2010-2020).
+    # Fallback: si el JSON no tiene n_test, calcula filtrando el parquet.
     n_registros = ""
-    if ok_datos:
+    m_local = _cargar_metricas()
+    if "n_test" in m_local:
+        n_registros = f" · {m_local['n_test']:,} registros".replace(",", ".")
+    elif ok_datos:
         try:
             import pandas as _pd_sem
-            n = len(_pd_sem.read_parquet(ruta_datos))
-            n_registros = f" · {n:,} registros".replace(",", ".")
+            _df = _pd_sem.read_parquet(ruta_datos)
+            if "curso_aca_ini" in _df.columns:
+                _df = _df[_df["curso_aca_ini"].between(2010, 2020)]
+            n_registros = f" · {len(_df):,} registros".replace(",", ".")
         except Exception:
             pass
 
@@ -177,7 +200,7 @@ def _semaforo_estado():
     <div style="
         background: {COLORES['fondo']};
         border: 1px solid {COLORES['borde']};
-        border-left: 4px solid {COLORES['primario']};
+        border-left: 4px solid {COLORES['exito']};
         border-radius: 6px;
         padding: 0.5rem 1rem;
         margin-top: 0.8rem;
@@ -282,44 +305,61 @@ def _metricas_modelo():
     </h3>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    # Tarjetas KPI unificadas (Chat p00, 28/04/2026):
+    # _kpi_card local ELIMINADA — ahora usa _tarjeta_kpi de utils/ui_helpers.py
+    # con parámetro sparkline=(base, modelo) opcional. AUC y F1 muestran
+    # sparkline porque hay comparación con baseline AutoML; las otras 3 no
+    # tienen comparación numérica equivalente.
 
+    _modelo_corto = m['modelo_nombre'].split('(')[0].strip()
+    _n_reg = f"{m.get('n_registros', 33621):,}".replace(",", ".")
+    _periodo = f"{m.get('periodo_inicio', 2010)}–{m.get('periodo_fin', 2020)}"
+
+    c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        st.metric(
-            label="🎯 AUC-ROC",
-            value=_fmt(m['auc']),
-            delta=f"{delta_auc:+.3f} vs {m['baseline_nombre']}".replace(".", ","),
-            delta_color="normal",
-            help=f"Área bajo la curva ROC. {m['baseline_nombre']}: {_fmt(m['baseline_auc'])}"
-        )
-        _sparkline(m['baseline_auc'], m['auc'], m['baseline_nombre'], m['modelo_nombre'].split('(')[0].strip())
+        st.markdown(_tarjeta_kpi(
+            icono="🎯", etiqueta="AUC-ROC", valor=_fmt(m['auc']),
+            delta=f"+{delta_auc:.3f} vs AutoML".replace(".", ","),
+            delta_color="green",
+            color_barra=COLORES['primario'],
+            sparkline=(m['baseline_auc'], m['auc']),
+            sparkline_labels=("CatBoost", "Stacking"),
+        ), unsafe_allow_html=True)
     with c2:
-        st.metric(
-            label="⚖️ F1-Score test",
-            value=_fmt(m['f1']),
-            delta=f"{delta_f1:+.3f} vs {m['baseline_nombre']}".replace(".", ","),
-            delta_color="normal",
-            help=f"Media armónica de precisión y recall. {m['baseline_nombre']}: {_fmt(m['baseline_f1'])}"
-        )
-        _sparkline(m['baseline_f1'], m['f1'], m['baseline_nombre'], m['modelo_nombre'].split('(')[0].strip())
+        st.markdown(_tarjeta_kpi(
+            icono="⚖️", etiqueta="F1-Score test", valor=_fmt(m['f1']),
+            delta=f"+{delta_f1:.3f} vs AutoML".replace(".", ","),
+            delta_color="green",
+            color_barra=COLORES['primario'],
+            sparkline=(m['baseline_f1'], m['f1']),
+            sparkline_labels=("CatBoost", "Stacking"),
+        ), unsafe_allow_html=True)
     with c3:
-        st.metric(
-            label="👥 Alumnos únicos",
-            value=_fmt_n(m['n_alumnos_unicos']),
-            help=f"Alumnos únicos en el dataset original. Dataset de modelado: {_fmt_n(m['n_registros'])} registros."
-        )
+        st.markdown(_tarjeta_kpi(
+            icono="👥", etiqueta="Alumnos únicos",
+            valor=_fmt_n(m['n_alumnos_unicos']),
+            delta=f"{_n_reg} registros · {_periodo}",
+            delta_color="gray",
+            color_barra=COLORES['primario'],
+        ), unsafe_allow_html=True)
     with c4:
-        st.metric(
-            label="📉 Tasa abandono",
-            value=_fmt_pct(m['tasa_abandono']),
-            help=f"Porcentaje de abandono en el dataset de modelado ({RUTAS.get('metricas_modelo').name})"
-        )
+        st.markdown(_tarjeta_kpi(
+            icono="📉", etiqueta="Tasa abandono",
+            valor=_fmt_pct(m['tasa_abandono']),
+            delta=f"Dataset de modelado · {_periodo}",
+            delta_color="gray",
+            color_barra=COLORES['abandono'],
+        ), unsafe_allow_html=True)
     with c5:
-        st.metric(
-            label="🏆 Mejor modelo",
-            value=m['modelo_nombre'].split('(')[0].strip(),
-            help=f"{m['modelo_nombre']}"
-        )
+        _detalle_modelo = m['modelo_nombre'].replace(_modelo_corto, "").strip("() ")
+        _subtexto_modelo = (f"{_detalle_modelo} · Ensamble"
+                            if _detalle_modelo else "Ensamble de modelos")
+        st.markdown(_tarjeta_kpi(
+            icono="🏆", etiqueta="Mejor modelo", valor=_modelo_corto,
+            delta=_subtexto_modelo,
+            delta_color="gray",
+            color_barra=COLORES['exito'],
+        ), unsafe_allow_html=True)
 
 
 # =============================================================================
@@ -466,27 +506,12 @@ def _nota_metodologica():
 # SECCIÓN 5: Pie de página
 # =============================================================================
 
-def _pie_pagina():
-    """Información de autoría y créditos."""
-
-    st.markdown("<br>", unsafe_allow_html=True)  # espaciado
-
-    st.markdown(f"""
-    <div style="
-        text-align: center;
-        font-size: 0.78rem;
-        color: {COLORES["texto_suave"]};
-        padding: 1rem;
-        border-top: 1px solid {COLORES["borde"]};
-    ">
-        {APP_CONFIG['autora']} &nbsp;·&nbsp;
-        {APP_CONFIG['tipo_trabajo']} &nbsp;·&nbsp;
-        {APP_CONFIG['universidad_master']} + {APP_CONFIG['universidad_datos']} &nbsp;·&nbsp; {APP_CONFIG['año']}<br>
-        <span style="font-size: 0.72rem;">
-            {APP_CONFIG['email_master']} &nbsp;·&nbsp; {APP_CONFIG['email_datos']}
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): _pie_pagina ELIMINADA.
+# Sustituida por _pie_pagina de utils/ui_helpers.py.
+# Antes había 4 versiones idénticas/similares en p00, p01 (inline), p02 y
+# pronostico_shared. Ahora todas usan la misma desde ui_helpers.
+# =============================================================================
 
 
 # =============================================================================

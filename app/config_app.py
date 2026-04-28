@@ -90,12 +90,15 @@ from src.config import (
     PAIS_NOMBRE_MAP,
     UNIVERSIDAD_ORIGEN_MAP,
     RAMA_MAP,
+    CUPO_MAP,
     # Diccionarios y nombres
     DICCIONARIO_RAMAS,             # {abreviatura: nombre completo}
     UNIVERSIDAD_ORIGEN_NOMBRES,    # {sigla: nombre completo} para etiquetas UI
     ETIQUETAS_VARIABLES,           # nombres legibles de variables (estilo abreviado)
     RAMAS_NOMBRES,                 # {abreviatura: nombre completo} (alias de DICCIONARIO_RAMAS)
     COLORES_RAMAS,                 # {nombre rama: color hex}
+    COLORES_RAMAS_ABR,             # {abreviatura: color hex}
+    COLORES_SEXO,                  # {Mujer/Hombre/Total: color hex}
     NOMBRES_LEGIBLES_FEATURES,     # {feature técnico: nombre legible largo}
 )
 
@@ -293,6 +296,14 @@ PESTANAS = [
         "detalle":     "Fairness · Por género · Por rama",
         "perfil":      "Todos los perfiles",
     },
+    {
+        "id":          "leyenda",
+        "titulo":      "Guía semántica",
+        "icono":       "📖",
+        "descripcion": "Colores, métricas, glosario y marco ético",
+        "detalle":     "Paleta · Transparencia · RGPD · AI Act · Glosario",
+        "perfil":      "Tribunal · Gestores · Todos los perfiles",
+    },
 ]
 
 
@@ -364,6 +375,23 @@ CREDITOS_MEDIOS_ABANDONO_DEFAULT = 60     # créditos cursados de media antes de
 
 _EXTRAS_UI = {
     "prob_abandono": "Probabilidad de abandono",
+    # ---------------------------------------------------------------------
+    # Comentario para futuras fases (Chat p02 - auditoría nombres técnicos):
+    # "per_id_ficticio" es el ID anonimizado de alumno usado internamente
+    # en el modelado. NO es una feature del modelo (no afecta a métricas
+    # ni a SHAP). Solo se muestra en la app, en la tabla de "alumnos en
+    # riesgo alto" de p02_titulacion como identificador para que la usuaria
+    # pueda referirse a un alumno concreto.
+    #
+    # Por qué está aquí y no en src/config_datos.py (ETIQUETAS_VARIABLES):
+    # ETIQUETAS_VARIABLES es la fuente de verdad para variables del modelo.
+    # per_id_ficticio NO es variable de modelo, solo identificador UI. Por
+    # tanto va en _EXTRAS_UI (etiquetas exclusivas de la app).
+    #
+    # Si añades esta etiqueta también en src/config_datos.py, asegúrate de
+    # quitarla aquí para no tener doble fuente de verdad. Si modificas el
+    # texto, recuerda que se usa en p02_titulacion (tabla riesgo alto).
+    "per_id_ficticio": "ID alumno",
 }
 
 NOMBRES_VARIABLES = {**ETIQUETAS_VARIABLES, **_EXTRAS_UI}
@@ -482,6 +510,7 @@ OPCIONES_LABORAL_UI: dict = {
     "No trabaja (inactivo/desempleado)": SITUACION_LABORAL_MAP["No trabaja (inactivo/desempleado)"],
     "Trabaja a tiempo parcial":          SITUACION_LABORAL_MAP["Trabaja a tiempo parcial"],
     "Trabaja a tiempo completo":         SITUACION_LABORAL_MAP["Trabaja a tiempo completo"],
+    "Prefiero no indicarlo / sin datos": 0,
 }
 
 # --- OPCIONES_VIA_UI ---
@@ -530,6 +559,123 @@ OPCIONES_UNIVERSIDAD_UI: dict = {
 RAMA_NOMBRE_A_CODIGO: dict = {
     nombre: RAMA_MAP[sigla]
     for sigla, nombre in DICCIONARIO_RAMAS.items()
+}
+
+# --- CATALOGO_TITULACIONES_UJI ---
+# Catálogo OFICIAL completo de titulaciones de grado ofertadas por la UJI
+# (37 grados, incluye dobles grados y titulaciones recientes que pueden
+# no tener datos suficientes en el dataset de modelado).
+#
+# Uso en la app: permite mostrar al usuario TODAS las opciones reales de la
+# UJI en los selectores de p03 (prospecto). Si una titulación no aparece en
+# el dataset o tiene muy pocos alumnos, se marca visualmente como
+# "sin datos" y se avisa al usuario al seleccionarla (transparencia).
+#
+# Formato: {nombre_oficial: codigo_rama_sigla}
+#   sigla → usa DICCIONARIO_RAMAS para nombre completo de la rama
+#   codigo_numerico → via RAMA_MAP[sigla]
+CATALOGO_TITULACIONES_UJI: dict = {
+    # Ciencias Sociales y Jurídicas (SO) — 18
+    "Doble Grado en Administración y Dirección de Empresas y Derecho": "SO",
+    "Grado en Administración y Dirección de Empresas": "SO",
+    "Grado en Ciencias de la Actividad Física y del Deporte": "SO",
+    "Grado en Criminología y Seguridad": "SO",
+    "Grado en Comunicación Audiovisual": "SO",
+    "Grado en Derecho": "SO",
+    "Grado en Economía": "SO",
+    "Grado en Finanzas y Contabilidad": "SO",
+    "Grado en Gestión y Administración Pública": "SO",
+    "Grado en International Business Economics": "SO",
+    "Grado en Maestro o Maestra en Educación Infantil": "SO",
+    "Grado en Maestro o Maestra en Educación Primaria": "SO",
+    "Doble Grado en Maestro o Maestra en Educación Infantil y Primaria": "SO",
+    "Grado en Marketing": "SO",
+    "Grado en Periodismo": "SO",
+    "Grado en Publicidad y Comunicación Corporativa": "SO",
+    "Grado en Relaciones Laborales y Recursos Humanos": "SO",
+    "Grado en Turismo": "SO",
+    # Artes y Humanidades (HU) — 4
+    "Grado en Estudios Ingleses": "HU",
+    "Grado en Historia y Patrimonio": "HU",
+    "Grado en Humanidades": "HU",
+    "Grado en Traducción e Interpretación": "HU",
+    # Ingeniería y Arquitectura (TE) — 10
+    "Grado en Diseño y Desarrollo de Videojuegos": "TE",
+    "Grado en Ingeniería en Diseño Industrial y Desarrollo de Productos": "TE",
+    "Grado en Ingeniería Eléctrica": "TE",
+    "Grado en Arquitectura Técnica": "TE",
+    "Grado en Ingeniería en Tecnologías Industriales": "TE",
+    "Grado en Ingeniería Informática": "TE",
+    "Grado en Ingeniería Mecánica": "TE",
+    "Grado en Ingeniería Química": "TE",
+    "Grado en Inteligencia Robótica": "TE",
+    "Grado en Matemática Computacional": "TE",
+    # Ciencias Experimentales (EX) — 2
+    "Grado en Química": "EX",
+    "Grado en Bioquímica i Biología Molecular": "EX",
+    # Ciencias de la Salud (SA) — 3
+    "Grado en Psicología": "SA",
+    "Grado en Enfermería": "SA",
+    "Grado en Medicina": "SA",
+}
+
+# --- ALIAS_TITULACIONES ---
+# Mapa de equivalencias: nombre ANTIGUO (como aparece en el dataset histórico)
+# → nombre NUEVO OFICIAL (como se llama actualmente en la UJI y figura en
+# CATALOGO_TITULACIONES_UJI). Se usa para cruzar datos: al filtrar el dataset
+# por una titulación del catálogo, hay que buscar también por sus alias
+# antiguos para recuperar todos los registros históricos.
+#
+# Ejemplo: "Arquitectura Técnica" (actual) incluye alumnos del antiguo
+# "Ingeniería de la Edificación" → ambas apuntan al mismo grado.
+#
+# Titulaciones desaparecidas y no renombradas (p.ej. Ingeniería Agroalimentaria,
+# suprimida en 2023) NO están en el catálogo ni en este mapa: sus datos
+# siguen en el dataset pero no se ofrecen al usuario para pronóstico.
+ALIAS_TITULACIONES: dict = {
+    "Grado en Administración de Empresas":
+        "Grado en Administración y Dirección de Empresas",
+    "Grado en Criminologia y Seguridad":
+        "Grado en Criminología y Seguridad",
+    "Grado en Humanidades: Estudios Interculturales":
+        "Grado en Humanidades",
+    "Grado en Ingeniería Mecanica":
+        "Grado en Ingeniería Mecánica",
+    "Grado en Maestro en Educación Infantil":
+        "Grado en Maestro o Maestra en Educación Infantil",
+    "Grado en Maestro en Educación Primaria":
+        "Grado en Maestro o Maestra en Educación Primaria",
+    "Grado en Matematica Computacional":
+        "Grado en Matemática Computacional",
+    "Grado en Publicidad y Relaciones Públicas":
+        "Grado en Publicidad y Comunicación Corporativa",
+    "Grado en Ingeniería de la Edificación":
+        "Grado en Arquitectura Técnica",
+    # --- Pares viejo+nuevo con "(Plan XXXX)" --------------------------------
+    # Cada titulación tiene dos registros en el dataset: el plan antiguo y
+    # el plan nuevo. Unificamos al nombre base (sin paréntesis) porque para
+    # el alumno y el tribunal es la misma titulación, y así la app ofrece
+    # una sola opción por grado en los selectores.
+    "Grado en Arquitectura Técnica (Plan 2020)":
+        "Grado en Arquitectura Técnica",
+    "Grado en Criminologia y Seguridad  (Plan 2020)":  # doble espacio real en dataset
+        "Grado en Criminología y Seguridad",
+    "Grado en Criminología y Seguridad (Plan 2020)":
+        "Grado en Criminología y Seguridad",
+    "Grado en Historia y Patrimonio (Plan 2015)":
+        "Grado en Historia y Patrimonio",
+    "Grado en Maestro en Educación Infantil (Plan 2018)":
+        "Grado en Maestro o Maestra en Educación Infantil",
+    "Grado en Maestro en Educación Primaria (Plan 2018)":
+        "Grado en Maestro o Maestra en Educación Primaria",
+    "Grado en Medicina (Plan 2017)":
+        "Grado en Medicina",
+    # Ingeniería Agroalimentaria: titulación suprimida. Unificamos las dos
+    # variantes entre sí (Plan 2018 → sin plan) para que los registros
+    # históricos se agrupen, aunque no figure en CATALOGO_TITULACIONES_UJI
+    # (no se ofrece a prospectos, pero sí aparece en análisis históricos).
+    "Grado en Ingeniería Agroalimentaria y del Medio Rural (Plan 2018)":
+        "Grado en Ingeniería Agroalimentaria y del Medio Rural",
 }
 
 # Diccionarios inversos — código → etiqueta (para mostrar en gráficos)

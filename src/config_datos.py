@@ -366,27 +366,44 @@ FECHA_REFERENCIA: str = '2021-12-31'
 #   ax.set_ylabel(ETIQUETAS_VARIABLES.get(col, col))
 
 ETIQUETAS_VARIABLES: Dict[str, str] = {
+    # --- Notas y créditos ---
     'cred_superados_anio_1er': 'Créd. superados 1er año',
-    'nota_1er_anio': 'Nota 1er año',
-    'nota_acceso': 'Nota acceso',
-    'titulacion': 'Titulación',
-    'rama': 'Rama',
-    'sexo': 'Sexo',
-    'edad_entrada': 'Edad entrada',
-    'pais_nombre': 'País',
-    'provincia': 'Provincia',
-    'via_acceso': 'Vía acceso',
-    'orden_preferencia': 'Orden preferencia',
-    'universidad_origen': 'Univ. origen',
-    'tuvo_beca': 'Tuvo beca',
-    'n_anios_beca': 'Años con beca',
-    'situacion_laboral': 'Situación laboral',
-    'nota_selectividad': 'Nota selectividad',
-    'max_pagos': 'Máx. pagos',
-    'indicador_interrupcion': 'Interrupción',
-    'anios_gap': 'Años gap',
-    'anios_sin_beca': 'Años sin beca',
-    'abandono': 'Abandono',
+    'cred_repetidos':          'Créd. repetidos',
+    'tasa_repeticion':         'Tasa de repetición',
+    'nota_1er_anio':           'Nota 1er año',
+    'nota_acceso':             'Nota acceso',
+    'nota_selectividad':       'Nota selectividad',
+
+    # --- Identificación / categóricas ---
+    'titulacion':              'Titulación',
+    'rama':                    'Rama',
+    'sexo':                    'Sexo',
+    'edad_entrada':            'Edad entrada',
+    'pais_nombre':             'País',
+    'provincia':               'Provincia',
+    'via_acceso':              'Vía acceso',
+    'cupo':                    'Cupo',
+    'orden_preferencia':       'Orden preferencia',
+    'universidad_origen':      'Univ. origen',
+
+    # --- Beca y situación económica ---
+    'tuvo_beca':               'Tuvo beca',
+    'n_anios_beca':            'Años con beca',
+    'anios_sin_beca':          'Años sin beca',
+    'pago_fraccionado':        'Pago fraccionado',
+    'forma_pago':              'Forma de pago',
+    'max_pagos':               'Máx. pagos',
+
+    # --- Trabajo y trayectoria ---
+    'situacion_laboral':       'Situación laboral',
+    'n_anios_trabajando':      'Años trabajando',
+    'n_anios_sin_notas':       'Años sin notas',
+    'indicador_interrupcion':  'Interrupción',
+    'anios_gap':               'Años gap',
+
+    # --- Métricas agregadas / target ---
+    'tasa_abandono_titulacion': 'Tasa aband. titulación',
+    'abandono':                 'Abandono',
 }
 
 

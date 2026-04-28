@@ -36,6 +36,8 @@ from .config_entorno import (
     # Ahora reexportados aquí para uso unificado: 'from src.config import ...'
     RAMAS_NOMBRES,
     COLORES_RAMAS,
+    COLORES_RAMAS_ABR,
+    COLORES_SEXO,
     NOMBRES_LEGIBLES_FEATURES,
 )
 

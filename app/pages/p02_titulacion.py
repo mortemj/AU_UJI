@@ -55,8 +55,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from config_app import (
-    COLORES, COLORES_RAMAS, RAMAS_NOMBRES, UMBRALES, UMBRALES_MUESTRA,
-    NOMBRES_VARIABLES, nombre_legible,
+    APP_CONFIG, COLORES, COLORES_RAMAS, COLORES_RIESGO, RAMAS_NOMBRES,
+    UMBRALES, UMBRALES_MUESTRA, NOMBRES_VARIABLES, nombre_legible,
 )
 from config_app import RUTAS as _RUTAS
 
@@ -79,6 +79,15 @@ _COLS_EXCLUIR_FACTORES = {
     "tasa_abandono_titulacion",
 }
 from utils.loaders import cargar_meta_test_app, cargar_modelo, cargar_pipeline
+# Auditoría p03 (Chat p03): _tarjeta_kpi se mueve a utils/ui_helpers.py para
+# que p02 y p03 usen la MISMA función (apariencia idéntica garantizada por
+# construcción). Antes vivía duplicada en p02 y en pronostico_shared.py
+# con estilos distintos (border-top vs border-left). Se importa desde aquí.
+# REFACTOR p03 (27/04/2026): añadido _nombre_titulacion_corto al import.
+from utils.ui_helpers import (
+    _tarjeta_kpi, _nombre_titulacion_corto, _pie_pagina,
+    _leer_metricas_modelo, _guardia_df_vacio,
+)
 # B10 (p02): eliminado `from config_app import RUTAS as _RUTAS` duplicado
 # (ya importado en L61, no hace falta volver a importarlo).
 
@@ -98,46 +107,42 @@ _COLS_META = {
 }
 
 # Colores para niveles de riesgo
-_COLOR_BAJO   = "#27AE60"   # verde
-_COLOR_MEDIO  = "#F39C12"   # naranja
-_COLOR_ALTO   = "#E53E3E"   # rojo abandono (paleta proyecto)
+# Colores para niveles de riesgo
+# B9 (Chat p02): paleta unificada — aliases hacia COLORES_RIESGO oficial de
+# config_app. Antes eran hex hardcodeados que diferían de la paleta global
+# (#27AE60 vs #10b981, #F39C12 vs #f59e0b, #E53E3E vs #dc2626). Ahora la
+# fuente de verdad es config_app.COLORES_RIESGO, que a su vez sale de
+# COLORES['exito'/'advertencia'/'abandono']. Cum laude: una sola paleta.
+_COLOR_BAJO   = COLORES_RIESGO["bajo"]    # #10b981 — verde éxito
+_COLOR_MEDIO  = COLORES_RIESGO["medio"]   # #f59e0b — ámbar advertencia
+_COLOR_ALTO   = COLORES_RIESGO["alto"]    # #dc2626 — rojo abandono
+
+# Bug 6 (Chat p02): _COLOR_GRIS_CONTEXTO antes estaba duplicado en 2 funciones
+# (L898 y L1539). Extraído a constante de módulo para una sola fuente de verdad.
+# slate-300 (#cbd5e1) — gris suave legible que NO compite visualmente con
+# los colores de rama. Se usa para "el resto de titulaciones que no son la
+# protagonista" en gráficos de contexto. NO migrar a COLORES porque no es
+# un color semántico de la paleta principal, sino un gris neutro auxiliar.
+_COLOR_GRIS_CONTEXTO = "#cbd5e1"
 
 # Número de alumnos a mostrar en la tabla de riesgo alto
 _MAX_TABLA = 50
 
 
-# =============================================================================
-# HELPER — Lectura centralizada de métricas del modelo
-# =============================================================================
-# B12 (Chat p02): copiado del patrón de p01 para no duplicar la lectura del
-# JSON en varios sitios (antes estaba inline en _bloque_kpis y hardcodeada
-# en la nota metodológica). Cacheada con st.cache_data para no releer el
-# fichero en cada rerun de Streamlit.
 
-@st.cache_data(show_spinner=False)
-def _leer_metricas_modelo() -> dict:
-    """
-    Lee el fichero metricas_modelo.json generado por la Fase 6 (evaluación).
+# =============================================================================
+# Auditoría p03 (Chat p03, 27/04/2026): _nombre_titulacion_corto MOVIDA a
+# utils/ui_helpers.py para que p01, p02, p03/p04 usen la MISMA función.
+# Antes había 4 implementaciones distintas (3 en p02 fusionadas en una local
+# + _nombre_corto_tit en pronostico_shared + _partir_label en p01).
+# Importada al principio del fichero junto a _tarjeta_kpi.
+# =============================================================================
 
-    Returns
-    -------
-    dict
-        Diccionario con las métricas del modelo. Claves típicas:
-          - 'f1', 'auc', 'accuracy', 'precision', 'recall' (floats)
-          - 'tasa_abandono' (float entre 0 y 1)
-          - 'fecha_entrenamiento' (str, opcional)
-          - 'modelo' (str, opcional — p.ej. "Stacking__balanced")
-        Si el fichero no existe o falla la lectura, devuelve {} (dict vacío).
-    """
-    try:
-        import json as _json
-        ruta_m = _RUTAS.get("metricas_modelo")
-        if ruta_m and ruta_m.exists():
-            with open(ruta_m, encoding="utf-8") as _f:
-                return _json.load(_f)
-    except Exception:
-        pass
-    return {}
+
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): _leer_metricas_modelo ELIMINADA.
+# Sustituida por _leer_metricas_modelo de utils/ui_helpers.py.
+# =============================================================================
 
 
 # =============================================================================
@@ -226,135 +231,153 @@ def _lista_titulaciones(df: pd.DataFrame) -> list[str]:
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# B3-A (Chat p02): GUARDIA DE DATAFRAME VACÍO
+# REFACTOR p03 (Chat p03, 27/04/2026): _guardia_df_vacio ELIMINADA.
+# Sustituida por _guardia_df_vacio de utils/ui_helpers.py.
 # -----------------------------------------------------------------------------
-# Copiado de p01 (líneas 1200-1235) para mantener paridad total.
-# Cuando los filtros dejan el dataset vacío, cada bloque llama a esta función
-# al principio. Si devuelve True, el bloque debe hacer `return` sin intentar
-# renderizar nada. Evita errores como:
-#   - TypeError: int() argument must be a string... not 'NAType'
-#     (por int(pd.NA) al hacer .min()/.max() sobre Series vacías)
-#   - ValueError: zero-size array
-#   - Gráficos en blanco sin explicación
+
+
+# -----------------------------------------------------------------------------
+# Auditoría p03 (Chat p03): _tarjeta_kpi MOVIDA a utils/ui_helpers.py
+# -----------------------------------------------------------------------------
+# Antes vivía aquí (Bug 7 del chat p02 puso la barra lateral 4px estilo p01).
+# Se mueve a utils/ui_helpers.py para que p03 (pronostico_shared.py) pueda
+# usar la MISMA función y las tarjetas KPI tengan apariencia idéntica entre
+# p02 y p03 por construcción (un único punto de cambio en el futuro).
 #
-# Se usa en los 7 bloques gráficos de p02 (ver aplicación en B3-C).
-# Los avisos de tamaño de muestra (rojo/naranja/amarillo) se gestionan
-# aparte en el flujo principal (ver B3-B), usando UMBRALES_MUESTRA.
-
-def _guardia_df_vacio(df: pd.DataFrame, titulo_bloque: str) -> bool:
-    """
-    Comprueba si un DataFrame está vacío y, si lo está, renderiza un aviso
-    visual coherente con el estilo de la app.
-
-    Devuelve:
-      - True  → df está vacío, el bloque que lo llame debe hacer `return`
-      - False → df tiene datos, el bloque puede continuar normalmente
-
-    Parámetros:
-      df            → DataFrame a comprobar (típicamente df_filtrado)
-      titulo_bloque → Nombre del bloque para el aviso (ej: "Evolución temporal")
-    """
-    if df is None or len(df) == 0:
-        st.markdown(f"""
-        <div style="background:{COLORES['fondo']};
-            border:1px dashed {COLORES['texto_muy_suave']};
-            border-radius:8px;
-            padding:1.5rem 1rem;
-            text-align:center;
-            color:{COLORES['texto_suave']};
-            font-size:0.85rem;
-            margin:0.5rem 0;">
-            <div style="font-weight:600; margin-bottom:0.3rem;
-                color:{COLORES['texto']};">
-                {titulo_bloque}
-            </div>
-            📭 No hay datos para mostrar con los filtros actuales.
-            <br>
-            <span style="font-size:0.78rem;">
-                Prueba a relajar los filtros para ver este bloque.
-            </span>
-        </div>
-        """, unsafe_allow_html=True)
-        return True
-    return False
+# La función está importada al principio del fichero:
+#   from utils.ui_helpers import _tarjeta_kpi
+# -----------------------------------------------------------------------------
 
 
-def _bloque_kpis(df_tit: pd.DataFrame):
+def _bloque_kpis_titulacion(df_tit: pd.DataFrame):
     """
     Fila de KPIs rápidos para la titulación seleccionada.
     5 métricas: total, tasa real, tasa predicha, riesgo alto, F1 del modelo.
     """
-    n_total        = len(df_tit)
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    if _guardia_df_vacio(df_tit, "📌 Indicadores clave"):
+        return
+
+    # -------------------------------------------------------------------------
+    # RD-A (Chat p02): KPIs custom HTML compactos — sustituye st.metric por
+    # tarjetas con icono + cifra grande + delta inline. Inspirado en las
+    # imágenes de dashboards profesionales aportadas por María José.
+    # Ventajas:
+    #   - Padding reducido (más compacto, cum laude visual)
+    #   - Icono distintivo por KPI (identificación rápida)
+    #   - Tooltips nativos HTML con <span title="...">
+    # -------------------------------------------------------------------------
+    n_total         = len(df_tit)
     n_abandono_real = df_tit["abandono"].sum() if "abandono" in df_tit.columns else None
     tasa_real       = (n_abandono_real / n_total * 100) if n_abandono_real is not None else None
     tasa_predicha   = df_tit["prob_abandono"].mean() * 100 if "prob_abandono" in df_tit.columns else None
     n_riesgo_alto   = (df_tit["nivel_riesgo"] == "Alto").sum()
 
+    # F1 global del modelo — leído desde metricas_modelo.json
+    _metricas = _leer_metricas_modelo()
+    _f1       = _metricas.get("f1")
+    f1_val    = f"{_f1:.3f}".replace(".", ",") if _f1 is not None else "N/D"
+
+    # --- Construir las 5 tarjetas ---
+    # Bug 7 (Chat p02): cada tarjeta lleva color_barra semántico para
+    # coherencia visual con p01. Patrón: azul = neutro/informativo,
+    # rojo = abandono/alerta, verde = éxito/calidad del modelo.
+
+    # KPI 1: Alumnos en test (info neutra → azul)
+    html_k1 = _tarjeta_kpi(
+        icono="👥",
+        etiqueta="Alumnos en test",
+        valor=f"{n_total:,}".replace(",", "."),
+        tooltip="Número total de alumnos de esta titulación en el conjunto de test.",
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 2: Tasa abandono real (métrica crítica → rojo)
+    html_k2 = _tarjeta_kpi(
+        icono="📉",
+        etiqueta="Abandono real",
+        valor=f"{tasa_real:.1f}%".replace(".", ",") if tasa_real is not None else "N/D",
+        tooltip="Porcentaje de alumnos que realmente abandonaron en el conjunto de test.",
+        color_barra=COLORES["abandono"],
+    )
+
+    # KPI 3: Riesgo medio predicho (con delta vs tasa real → azul predicción)
+    if tasa_predicha is not None and tasa_real is not None:
+        delta_k3      = tasa_predicha - tasa_real
+        delta_str_k3  = f"{delta_k3:+.1f}pp vs real".replace(".", ",")
+        # Inverse: si predicción > real, es peor (rojo); si < real, mejor (verde)
+        color_k3      = "red" if delta_k3 > 0 else ("green" if delta_k3 < 0 else "gray")
+    else:
+        delta_str_k3 = ""
+        color_k3     = ""
+    html_k3 = _tarjeta_kpi(
+        icono="🔮",
+        etiqueta="Riesgo predicho",
+        valor=f"{tasa_predicha:.1f}%".replace(".", ",") if tasa_predicha is not None else "N/D",
+        delta=delta_str_k3,
+        delta_color=color_k3,
+        tooltip=("Probabilidad media de abandono según el modelo. "
+                 "El delta (pp = puntos porcentuales) compara el riesgo "
+                 "predicho con la tasa real observada en el test."),
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 4: Alumnos en riesgo alto (alerta → rojo)
+    pct_alto = n_riesgo_alto / n_total * 100 if n_total > 0 else 0
+    html_k4  = _tarjeta_kpi(
+        icono="🚨",
+        etiqueta="Riesgo alto",
+        valor=f"{pct_alto:.1f}%".replace(".", ","),
+        delta=f"{n_riesgo_alto:,} alumnos".replace(",", "."),
+        delta_color="gray",
+        tooltip=f"Alumnos con probabilidad de abandono ≥ {UMBRALES['riesgo_medio']:.0%}.",
+        color_barra=COLORES["advertencia"],   # ámbar — paridad con p01 "En riesgo alto"
+    )
+
+    # KPI 5: F1 modelo (calidad del modelo → verde éxito)
+    html_k5 = _tarjeta_kpi(
+        icono="🎯",
+        etiqueta="F1 modelo",
+        valor=f1_val,
+        tooltip="F1-score del modelo Stacking sobre el conjunto de test completo.",
+        color_barra=COLORES["exito"],
+    )
+
+    # --- Renderizar las 5 tarjetas en una fila ---
     col1, col2, col3, col4, col5 = st.columns(5)
-
-    with col1:
-        st.metric("Alumnos en test", f"{n_total:,}".replace(",", "."))
-    with col2:
-        if tasa_real is not None:
-            st.metric(
-                "Tasa abandono real",
-                f"{tasa_real:.1f}%".replace(".", ","),
-                help="Porcentaje de alumnos que realmente abandonaron en el conjunto de test."
-            )
-        else:
-            st.metric("Tasa abandono real", "N/D")
-    with col3:
-        if tasa_predicha is not None:
-            delta_val = tasa_predicha - tasa_real if tasa_real is not None else None
-            delta_str = f"{delta_val:+.1f}pp" if delta_val is not None else None
-            st.metric(
-                "Riesgo medio predicho",
-                f"{tasa_predicha:.1f}%".replace(".", ","),
-                delta=delta_str,
-                delta_color="inverse",
-                # B6 (p02): help ampliado para explicar la sigla "pp" del delta.
-                # Streamlit no permite HTML en delta=, así que el tooltip
-                # explicativo de "puntos porcentuales" va aquí en help=.
-                help=(
-                    "Probabilidad media de abandono según el modelo. "
-                    "El delta (pp = puntos porcentuales) compara el riesgo "
-                    "predicho con la tasa real observada en el test."
-                )
-            )
-        else:
-            st.metric("Riesgo medio predicho", "N/D")
-    with col4:
-        pct_alto = n_riesgo_alto / n_total * 100 if n_total > 0 else 0
-        st.metric(
-            "Alumnos en riesgo alto",
-            f"{pct_alto:.1f}%".replace(".", ","),
-            delta=f"{n_riesgo_alto:,} alumnos".replace(",", "."),
-            delta_color="off",
-            help=f"Alumnos con probabilidad de abandono ≥ {UMBRALES['riesgo_medio']:.0%}."
-        )
-    with col5:
-        # F1 global del modelo — leído desde metricas_modelo.json
-        # B12 (p02): antes había lectura inline con imports dentro de la función;
-        # ahora se usa el helper _leer_metricas_modelo() centralizado (cacheado).
-        _metricas = _leer_metricas_modelo()
-        _f1 = _metricas.get("f1")
-        f1_val = f"{_f1:.3f}".replace(".", ",") if _f1 is not None else "N/D"
-        st.metric(
-            "F1 modelo (global)",
-            f1_val,
-            help="F1-score del modelo Stacking sobre el conjunto de test completo."
-        )
+    col1.markdown(html_k1, unsafe_allow_html=True)
+    col2.markdown(html_k2, unsafe_allow_html=True)
+    col3.markdown(html_k3, unsafe_allow_html=True)
+    col4.markdown(html_k4, unsafe_allow_html=True)
+    col5.markdown(html_k5, unsafe_allow_html=True)
 
 
-def _bloque_distribucion_riesgo(df_tit: pd.DataFrame, nombre_tit: str):
+def _bloque_distribucion_riesgo_titulacion(df_tit: pd.DataFrame, nombre_tit: str):
     """
-    Donut de distribución de riesgo + histograma de probabilidades.
-    Dos gráficos en columnas para visión compacta.
+    Donut grande de distribución de riesgo (RD-B) +
+    Gauge F1 modelo (RD-C) +
+    Histograma de probabilidades.
+    Tres elementos en columnas para visión densa estilo dashboard pro.
     """
-    col_izq, col_der = st.columns([1, 1.6])
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    if _guardia_df_vacio(df_tit, "🔮 Distribución del riesgo"):
+        return
 
-    # --- Donut ---
-    with col_izq:
+    # -------------------------------------------------------------------------
+    # RD-B + RD-C (Chat p02): rediseño visual cum laude.
+    # Layout 3 columnas: [Donut grande con %riesgo alto en centro] [Gauge F1] [Histograma]
+    # Inspirado en imágenes 2, 3 y 4 de los dashboards profesionales aportados
+    # por María José.
+    # -------------------------------------------------------------------------
+    col_donut, col_gauge, col_hist = st.columns([1.3, 0.9, 1.6])
+
+    # Pre-cálculo del % riesgo alto para el centro del donut
+    n_total      = len(df_tit)
+    n_alto       = (df_tit["nivel_riesgo"] == "Alto").sum() if "nivel_riesgo" in df_tit.columns else 0
+    pct_alto_str = f"{(n_alto / n_total * 100):.0f}%" if n_total > 0 else "—"
+
+    # ------------------------------------------------------------- DONUT GRANDE
+    with col_donut:
         st.subheader("Distribución del riesgo")
 
         conteo = df_tit["nivel_riesgo"].value_counts().reindex(
@@ -365,23 +388,104 @@ def _bloque_distribucion_riesgo(df_tit: pd.DataFrame, nombre_tit: str):
         fig_donut = go.Figure(go.Pie(
             labels=conteo["nivel"],
             values=conteo["n"],
-            hole=0.55,
+            hole=0.65,  # RD-B: agujero más grande para que destaque la cifra central
             marker_colors=[_COLOR_BAJO, _COLOR_MEDIO, _COLOR_ALTO],
             textinfo="label+percent",
+            textfont=dict(size=12),
             hovertemplate="%{label}: %{value} alumnos (%{percent})<extra></extra>",
             sort=False
         ))
+        # RD-B: anotación central con % riesgo alto (la métrica clave)
+        # Bug 6 (Chat p02): hex hardcodeados → COLORES[...]
+        fig_donut.add_annotation(
+            text=f"<b>{pct_alto_str}</b>",
+            x=0.5, y=0.55,
+            font=dict(size=34, color=COLORES["abandono"]),
+            showarrow=False,
+            xanchor="center"
+        )
+        fig_donut.add_annotation(
+            text="riesgo alto",
+            x=0.5, y=0.40,
+            font=dict(size=11, color=COLORES["texto_suave"]),
+            showarrow=False,
+            xanchor="center"
+        )
         fig_donut.update_layout(
+            separators=",.",
             showlegend=False,
             margin=dict(t=10, b=10, l=10, r=10),
-            height=280,
+            height=320,  # RD-B: más alto que antes (era 280)
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)"
         )
         st.plotly_chart(fig_donut, width='stretch')
 
-    # --- Histograma ---
-    with col_der:
+    # --------------------------------------------------------------- GAUGE F1
+    with col_gauge:
+        st.subheader("F1 modelo")
+        # RD-C: gauge tipo velocímetro para visualizar F1 en escala 0-1
+        # Zonas de color: rojo (mal) / amarillo (regular) / verde (bien)
+        _metricas_g = _leer_metricas_modelo()
+        _f1_g       = _metricas_g.get("f1") or 0.0
+
+        # Bug 6 (Chat p02): hex hardcodeados → COLORES[...] excepto los
+        # 3 pasteles del gauge (steps) que son intencionalmente Tailwind -100
+        # y no existen en la paleta principal. Se extraen a constantes locales
+        # con comentario para que sigan siendo identificables.
+        fig_gauge = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=_f1_g,
+            number={
+                "valueformat": ".3f",
+                "font": {"size": 32, "color": COLORES["texto"]}
+            },
+            gauge={
+                "axis": {
+                    "range": [0, 1],
+                    "tickwidth": 1,
+                    "tickcolor": COLORES["texto_muy_suave"],
+                    "tickvals": [0, 0.5, 0.7, 1.0],
+                    "ticktext": ["0", "0.5", "0.7", "1.0"],
+                },
+                "bar": {"color": COLORES["texto"], "thickness": 0.25},
+                "bgcolor": COLORES["blanco"],
+                "borderwidth": 1,
+                "bordercolor": COLORES["borde"],
+                # B9 (Chat p02): pasteles light alineados con COLORES_RIESGO
+                # (Opción B). Cada uno es la versión "100" de la familia
+                # Tailwind del color principal de la paleta oficial:
+                #   #fee2e2 = red-100   (alineado con #dc2626 = red-600)
+                #   #fef3c7 = amber-100 (alineado con #f59e0b = amber-500)
+                #   #d1fae5 = emerald-100 (alineado con #10b981 = emerald-500)
+                # Coherencia visual: las zonas del gauge usan la misma familia
+                # que el donut/histograma sin saturar el ojo.
+                # Bug 6: NO migrar a COLORES porque son tonos pastel que no
+                # tienen entrada propia en la paleta principal de la app.
+                "steps": [
+                    {"range": [0,    0.5], "color": "#fee2e2"},   # red-100
+                    {"range": [0.5,  0.7], "color": "#fef3c7"},   # amber-100
+                    {"range": [0.7,  1.0], "color": "#d1fae5"},   # emerald-100
+                ],
+                "threshold": {
+                    "line": {"color": _COLOR_ALTO, "width": 3},
+                    "thickness": 0.75,
+                    "value": _f1_g
+                }
+            },
+            domain={"x": [0, 1], "y": [0, 1]}
+        ))
+        fig_gauge.update_layout(
+            separators=",.",
+            margin=dict(t=10, b=10, l=20, r=20),
+            height=320,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)"
+        )
+        st.plotly_chart(fig_gauge, width='stretch')
+
+    # ----------------------------------------------------------- HISTOGRAMA
+    with col_hist:
         st.subheader("Probabilidad de abandono")
 
         if "prob_abandono" in df_tit.columns:
@@ -414,8 +518,9 @@ def _bloque_distribucion_riesgo(df_tit: pd.DataFrame, nombre_tit: str):
                     annotation_position="top right"
                 )
             fig_hist.update_layout(
+                separators=",.",
                 margin=dict(t=10, b=30, l=0, r=0),
-                height=280,
+                height=320,  # mismo height que donut/gauge para alineación
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 legend_title_text="Riesgo"
@@ -423,11 +528,15 @@ def _bloque_distribucion_riesgo(df_tit: pd.DataFrame, nombre_tit: str):
             st.plotly_chart(fig_hist, width='stretch')
 
 
-def _bloque_evolucion_temporal(df_tit: pd.DataFrame):
+def _bloque_evolucion_temporal_titulacion(df_tit: pd.DataFrame):
     """
     Línea temporal: tasa de abandono real vs riesgo predicho por año de cohorte.
     Permite ver si el problema ha mejorado o empeorado en esta titulación.
     """
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    if _guardia_df_vacio(df_tit, "📈 Evolución temporal del abandono"):
+        return
+
     st.subheader("Evolución temporal")
 
     col_anio = None
@@ -465,7 +574,7 @@ def _bloque_evolucion_temporal(df_tit: pd.DataFrame):
             name="Abandono real (%)",
             line=dict(color=COLORES["abandono"], width=2.5),
             marker=dict(size=7),
-            hovertemplate="Año %{x}<br>Abandono real: %{y:.1f}%<extra></extra>"
+            hovertemplate="Año %{x}<br>Abandono real: %{y:,.1f}%<extra></extra>"
         ))
 
     # Línea riesgo predicho
@@ -476,10 +585,11 @@ def _bloque_evolucion_temporal(df_tit: pd.DataFrame):
         name="Riesgo predicho medio (%)",
         line=dict(color=COLORES["primario"], width=2.5, dash="dot"),
         marker=dict(size=7),
-        hovertemplate="Año %{x}<br>Riesgo predicho: %{y:.1f}%<extra></extra>"
+        hovertemplate="Año %{x}<br>Riesgo predicho: %{y:,.1f}%<extra></extra>"
     ))
 
     fig.update_layout(
+        separators=",.",
         xaxis_title="Año de cohorte",
         yaxis_title="Porcentaje (%)",
         yaxis=dict(range=[0, 100]),
@@ -498,6 +608,10 @@ def _bloque_factores_shap(df_tit: pd.DataFrame, titulacion: str):
     Usa los valores SHAP medios del subconjunto de la titulación.
     Si SHAP no está disponible, muestra diferencia de medias como proxy.
     """
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    if _guardia_df_vacio(df_tit, "🔑 Factores que influyen"):
+        return
+
     st.subheader("Factores más influyentes en esta titulación")
     st.caption(
         "Importancia media de cada variable (SHAP) para los alumnos "
@@ -535,10 +649,11 @@ def _bloque_factores_shap(df_tit: pd.DataFrame, titulacion: str):
                     _COLOR_ALTO if v > 0 else _COLOR_BAJO
                     for v in df_shap["shap_medio"]
                 ],
-                hovertemplate="%{y}: SHAP medio = %{x:.3f}<extra></extra>"
+                hovertemplate="%{y}: SHAP medio = %{x:,.3f}<extra></extra>"
             ))
             fig.add_vline(x=0, line_color="gray", line_width=1)
             fig.update_layout(
+                separators=",.",
                 xaxis_title="Impacto SHAP medio",
                 margin=dict(t=10, b=10, l=0, r=0),
                 height=380,
@@ -548,8 +663,27 @@ def _bloque_factores_shap(df_tit: pd.DataFrame, titulacion: str):
             st.plotly_chart(fig, width='stretch')
             return
 
-    # --- Fallback: diferencia de medias (proxy de importancia) ---
-    # Funciona aunque no haya SHAP cargado en sesión
+    # --- Fallback: diferencia de medias estandarizada (Cohen's d) ---
+    # Bug 3 (Chat p02): refactor del gráfico de factores en 5 problemas:
+    #
+    # 1) ESCALAS INCOMPARABLES: antes se mostraba la diferencia ABSOLUTA, lo
+    #    que aplastaba variables de escala pequeña (notas 0-10) frente a las
+    #    grandes (créditos 0-60). Ahora se muestra el effect size de Cohen
+    #    (diferencia / desviación estándar pooled) que normaliza todas las
+    #    variables a la misma escala (típicamente -3 a +3).
+    #
+    # 2) FORMATO DECIMAL ESPAÑOL: tickformat con coma decimal y separator
+    #    de miles (",.2f" en Plotly = 1,234.56 → con separators={"decimal":",",
+    #    "thousands":"."} → 1.234,56).
+    #
+    # 3) TOOLTIP RICO: muestra valor original (media abandona, media no
+    #    abandona, diferencia real con unidades) además del effect size.
+    #
+    # 4) CAPTION EXPLICATIVO: en lenguaje plano qué se está viendo.
+    #
+    # 5) Si una titulación no tiene 2 clases en abandono (todos abandonan o
+    #    ninguno), aviso visual.
+
     cols_num = [
         c for c in df_tit.select_dtypes(include=[np.number]).columns
         if c not in _COLS_META and "prob" not in c
@@ -564,46 +698,102 @@ def _bloque_factores_shap(df_tit: pd.DataFrame, titulacion: str):
         st.info("La columna 'abandono' no está disponible en este subconjunto.")
         return
 
-    df_abandon = df_tit[df_tit["abandono"] == 1][cols_num].mean()
-    df_continu = df_tit[df_tit["abandono"] == 0][cols_num].mean()
-    diferencia  = df_abandon - df_continu
+    # Bug 3 (problema 5): aviso si solo hay una clase
+    if df_tit["abandono"].nunique() < 2:
+        st.warning(
+            "⚠️ No es posible mostrar los factores influyentes en esta "
+            "titulación: en el conjunto de test todos los alumnos pertenecen "
+            "al mismo grupo (todos abandonan o ninguno abandona). Esto es "
+            "habitual en titulaciones con muestra muy pequeña."
+        )
+        return
+
+    # Calcular medias por grupo y desviación estándar pooled por variable
+    grupo_aband = df_tit[df_tit["abandono"] == 1][cols_num]
+    grupo_cont  = df_tit[df_tit["abandono"] == 0][cols_num]
+
+    media_aband = grupo_aband.mean()
+    media_cont  = grupo_cont.mean()
+    diferencia  = media_aband - media_cont
+
+    # Cohen's d: diferencia / desviación estándar pooled
+    # Pooled std = sqrt((var1 + var2) / 2) — versión simple, robusta a tamaños
+    var_aband = grupo_aband.var()
+    var_cont  = grupo_cont.var()
+    std_pooled = np.sqrt((var_aband + var_cont) / 2)
+    # Evitar división por cero: si std=0 (variable constante) → d=0
+    cohens_d = diferencia / std_pooled.replace(0, np.nan)
+    cohens_d = cohens_d.fillna(0)
+
+    # Cambio relativo en % respecto a la media del grupo no-abandono
+    pct_cambio = (diferencia / media_cont.replace(0, np.nan) * 100).fillna(0)
 
     df_proxy = pd.DataFrame({
-        "variable":   [nombre_legible(c) for c in cols_num],
+        "var_tecnica": cols_num,
+        "variable":    [nombre_legible(c) for c in cols_num],
         "diferencia":  diferencia.values,
-    }).sort_values("diferencia")
+        "cohens_d":    cohens_d.values,
+        "media_aband": media_aband.values,
+        "media_cont":  media_cont.values,
+        "pct_cambio":  pct_cambio.values,
+    }).sort_values("cohens_d")
 
-    # Escala log simétrica: sign(x)*log10(|x|+1) — reduce dominio visual
-    df_proxy["dif_log"] = df_proxy["diferencia"].apply(
-        lambda x: np.sign(x) * np.log10(abs(x) + 1)
+    # Quedarse con top 12 por |effect size|
+    df_proxy["abs_d"] = df_proxy["cohens_d"].abs()
+    df_proxy = df_proxy.nlargest(12, "abs_d").sort_values("cohens_d")
+
+    # Tooltip rico (Bug 3 problema 3): formato español con coma decimal
+    customdata = np.column_stack([
+        df_proxy["media_aband"].round(2),
+        df_proxy["media_cont"].round(2),
+        df_proxy["diferencia"].round(2),
+        df_proxy["pct_cambio"].round(1),
+    ])
+    hovertemplate = (
+        "<b>%{y}</b><br>"
+        "Los que abandonan: %{customdata[0]:,.2f}<br>"
+        "Los que NO abandonan: %{customdata[1]:,.2f}<br>"
+        "Diferencia: %{customdata[2]:+.2f} (%{customdata[3]:+.1f}%%)<br>"
+        "Tamaño de efecto (d): %{x:,.2f}"
+        "<extra></extra>"
     )
 
     fig = go.Figure(go.Bar(
-        x=df_proxy["dif_log"],
+        x=df_proxy["cohens_d"],
         y=df_proxy["variable"],
         orientation="h",
         marker_color=[
             _COLOR_ALTO if v > 0 else _COLOR_BAJO
-            for v in df_proxy["diferencia"]
+            for v in df_proxy["cohens_d"]
         ],
-        customdata=df_proxy["diferencia"].round(3),
-        hovertemplate="%{y}<br>Diferencia real: %{customdata}<extra></extra>"
+        customdata=customdata,
+        hovertemplate=hovertemplate,
     ))
     fig.add_vline(x=0, line_color="gray", line_width=1)
     fig.update_layout(
-        xaxis_title="Diferencia de medias — escala log simétrica (abandono − no abandono)",
+        xaxis_title="Tamaño de efecto (Cohen's d)",
+        # Bug 3 (problema 2): formato español con coma decimal
+        xaxis=dict(tickformat=".1f"),
+        separators=",.",   # Plotly: decimal "," miles "."
         margin=dict(t=10, b=10, l=0, r=0),
-        height=max(380, len(df_proxy) * 22),
+        height=max(380, len(df_proxy) * 28),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)"
     )
     st.plotly_chart(fig, width='stretch')
-    with st.expander("ℹ️ Nota técnica", expanded=False):
-        st.caption(
-            "Los valores SHAP no están cargados en sesión. "
-            "Se muestra diferencia de medias como proxy de importancia. "
-            "Ejecuta `f6_m01a_shap_global.ipynb` para activar SHAP completo."
-        )
+
+    # Bug 3 (problema 4): caption explicativo en lenguaje plano
+    st.caption(
+        "ℹ️ **Cómo leer este gráfico:** las barras muestran cuánto se "
+        "diferencian los alumnos que abandonan de los que no, en cada "
+        "variable. La escala está normalizada (Cohen's d) para poder "
+        "comparar variables con escalas distintas (notas, créditos, años). "
+        "**Pasa el ratón por encima** para ver los valores reales. "
+        "Barras hacia la derecha (rojo) → los que abandonan tienen MÁS de "
+        "esa variable. Barras hacia la izquierda (verde) → tienen MENOS. "
+        "Los valores SHAP no están cargados; se usa este proxy como "
+        "alternativa robusta."
+    )
 
 
 def _bloque_tabla_riesgo_alto(df_tit: pd.DataFrame):
@@ -611,6 +801,10 @@ def _bloque_tabla_riesgo_alto(df_tit: pd.DataFrame):
     Tabla de alumnos con riesgo alto, ordenada de mayor a menor probabilidad.
     Columnas seleccionadas para ser útiles al profesor coordinador.
     """
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    if _guardia_df_vacio(df_tit, "⚠️ Alumnos en riesgo alto"):
+        return
+
     st.subheader(f"Alumnos en riesgo alto (≥ {UMBRALES['riesgo_medio']:.0%})")
 
     df_alto = df_tit[df_tit["nivel_riesgo"] == "Alto"].copy()
@@ -632,22 +826,28 @@ def _bloque_tabla_riesgo_alto(df_tit: pd.DataFrame):
         .sort_values("prob_abandono", ascending=False)
         .head(_MAX_TABLA)
         .rename(columns={
+            # Auditoría nombres técnicos (Chat p02): "per_id_ficticio" se
+            # añadió a config_app.py → _EXTRAS_UI con etiqueta "ID alumno"
+            # para que el rename automático con NOMBRES_VARIABLES lo cubra.
+            # Antes había un rename local explícito aquí; ahora ya no hace
+            # falta porque viene del diccionario global.
             c: NOMBRES_VARIABLES.get(c, c) for c in cols_mostrar
         })
     )
 
     # Formatear columna de probabilidad
     col_prob = NOMBRES_VARIABLES.get("prob_abandono", "prob_abandono")
+    # Bug C (Chat p02): formato español en %. f-string con :.1% usa punto.
     if col_prob not in df_tabla.columns:
         # Buscar por nombre original formateado
         col_prob_display = "Probabilidad de abandono"
         if col_prob_display in df_tabla.columns:
             df_tabla[col_prob_display] = df_tabla[col_prob_display].map(
-                lambda x: f"{x:.1%}" if pd.notna(x) else "—"
+                lambda x: f"{x:.1%}".replace(".", ",") if pd.notna(x) else "—"
             )
     else:
         df_tabla[col_prob] = df_tabla[col_prob].map(
-            lambda x: f"{x:.1%}" if pd.notna(x) else "—"
+            lambda x: f"{x:.1%}".replace(".", ",") if pd.notna(x) else "—"
         )
 
     st.dataframe(
@@ -665,6 +865,13 @@ def _bloque_contexto_titulacion(df: pd.DataFrame, titulacion_sel: str, rama_tit:
     Comparativa de la titulación seleccionada con las de su misma rama.
     Colores por rama — seleccionada más intensa, resto más suave.
     """
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    # Nota: aquí df es el dataset GLOBAL (no filtrado por titulación), por lo
+    # que en la práctica rara vez estará vacío, pero aplicamos la guardia
+    # igualmente por paridad estructural con los otros 6 bloques.
+    if _guardia_df_vacio(df, "🧭 Contexto de la titulación"):
+        return
+
     st.subheader("Comparativa con el resto de titulaciones")
 
     if "titulacion" not in df.columns or "prob_abandono" not in df.columns:
@@ -688,32 +895,35 @@ def _bloque_contexto_titulacion(df: pd.DataFrame, titulacion_sel: str, rama_tit:
     # Color base de la rama
     color_rama = COLORES_RAMAS.get(rama_tit, COLORES["primario"])
 
-    # Seleccionada → color rama opaco; resto → color rama transparente
-    colores = []
-    for t in por_tit["titulacion"]:
-        if t == titulacion_sel:
-            colores.append(color_rama)
-        else:
-            # Versión más suave: añadir transparencia via rgba
-            r = int(color_rama[1:3], 16)
-            g = int(color_rama[3:5], 16)
-            b = int(color_rama[5:7], 16)
-            colores.append(f"rgba({r},{g},{b},0.35)")
+    # Fix 2 (Chat p02, Opción C): coherente con modo comparativo.
+    # Seleccionada → color de rama intenso (protagonista).
+    # Resto → gris slate-300 suave (contexto). Antes era rgba transparente
+    # del mismo color de rama, lo que saturaba visualmente cuando todas
+    # las titulaciones eran de la misma rama.
+    # Bug 6: usa _COLOR_GRIS_CONTEXTO (constante de módulo, antes duplicada).
+    colores = [
+        color_rama if t == titulacion_sel else _COLOR_GRIS_CONTEXTO
+        for t in por_tit["titulacion"]
+    ]
 
-    # Quitar "Grado en" para que quepa en el eje Y
-    tit_cortas = [re.sub(r"^(Grado en |Doble Grado en )", "", t) for t in por_tit["titulacion"]]
+    # Bug 8 (Chat p02): antes usaba re.sub("Grado en|Doble Grado en") con
+    # solo 2 prefijos, dejando títulos largos como "Grado en Ingeniería en X"
+    # como "Ingeniería en X". Ahora usa el helper unificado del módulo que
+    # cubre todos los prefijos y trata el caso especial de Doble Grado.
+    tit_cortas = [_nombre_titulacion_corto(t) for t in por_tit["titulacion"]]
 
     fig = go.Figure(go.Bar(
         x=por_tit["riesgo_medio"] * 100,
         y=tit_cortas,
         orientation="h",
         marker_color=colores,
-        text=[f"{v*100:.1f}%" for v in por_tit["riesgo_medio"]],
+        text=[f"{v*100:.1f}%".replace(".", ",") for v in por_tit["riesgo_medio"]],
         textposition="outside",
-        hovertemplate="%{y}: %{x:.1f}%<extra></extra>"
+        hovertemplate="%{y}: %{x:,.1f}%<extra></extra>"
     ))
     max_x = max(por_tit["riesgo_medio"].max() * 100 * 1.25, 15)
     fig.update_layout(
+        separators=",.",
         xaxis_title="Riesgo medio predicho (%)",
         xaxis=dict(range=[0, max_x]),
         margin=dict(t=10, b=30, l=0, r=60),
@@ -741,8 +951,8 @@ def _comparativa_construir_tabla(df: pd.DataFrame, titulaciones_sel: list[str], 
         n_alto    = (df_t["nivel_riesgo"] == "Alto").sum()
         pct_alto  = n_alto / n * 100 if n > 0 else 0
         rama      = df_t[col_rama].mode()[0] if col_rama in df_t.columns and not df_t.empty else "—"
-        # Quitar prefijo "Grado en " para que quepa mejor en la tabla
-        tit_corto = re.sub(r"^(Grado en |Doble Grado en )", "", tit)
+        # Regla: usar helper unificado (incluye trato especial Doble Grado).
+        tit_corto = _nombre_titulacion_corto(tit)
         filas.append({
             "Titulación":          tit_corto,
             "Rama":                rama,
@@ -755,11 +965,128 @@ def _comparativa_construir_tabla(df: pd.DataFrame, titulaciones_sel: list[str], 
     return pd.DataFrame(filas)
 
 
-# Paleta discreta para distinguir titulaciones en líneas/barras
+# Fix 3 (Chat p02): paleta profesional Tailwind para distinguir titulaciones
+# en gráficos del modo comparativo (líneas evolución, barras factores).
+# Antes eran hex aleatorios (verde #38A169, naranja #D69E2E, magenta #E91E8C)
+# que no combinaban entre sí ni con COLORES_RIESGO/COLORES_RAMAS.
+# Ahora: 10 colores Tailwind en intensidad -500/-600, escogidos para
+# máxima distinción visual entre sí y paleta moderna coherente.
 _PALETA_COMP = [
-    "#3182CE", "#E53E3E", "#38A169", "#D69E2E", "#805AD5",
-    "#DD6B20", "#319795", "#E91E8C", "#2C7BB6", "#1A9850"
+    "#4f46e5",  # indigo-600
+    "#e11d48",  # rose-600
+    "#059669",  # emerald-600
+    "#d97706",  # amber-600
+    "#7c3aed",  # violet-600
+    "#0891b2",  # cyan-600
+    "#db2777",  # pink-600
+    "#65a30d",  # lime-600
+    "#2563eb",  # blue-600
+    "#ea580c",  # orange-600
 ]
+
+
+# -----------------------------------------------------------------------------
+# B3-D (Chat p02): HELPER PARA ETIQUETAS CON N VISIBLE
+# -----------------------------------------------------------------------------
+# Para nivel cum laude, en los gráficos del modo comparativo mostramos el
+# número de alumnos junto al nombre de la titulación. Esto evita que el
+# tribunal/lector interprete "60% riesgo alto en X" sin saber si X tiene
+# 300 alumnos (sólido) o 5 alumnos (ruido estadístico).
+#
+# Si N < UMBRALES_MUESTRA['aceptable'] (30 alumnos), añadimos ⚠️ delante
+# como aviso visual de muestra pequeña.
+#
+# Formato: "Medicina (300 alumnos)" o "⚠️ Doble Grado (8 alumnos)"
+
+def _etiqueta_titulacion_con_n(nombre: str, n: int, segunda_linea: bool = False) -> str:
+    """
+    Construye la etiqueta de una titulación con su N de alumnos.
+
+    Parámetros:
+      nombre         → nombre de la titulación (puede llevar saltos <br>)
+      n              → número de alumnos en el conjunto de test
+      segunda_linea  → si True, coloca el "(N alumnos)" en una segunda línea
+                       con etiqueta más pequeña en gris (Bug E1+E4 Chat p02).
+                       Recomendado para etiquetas de eje Y/X de gráficos donde
+                       el espacio horizontal es limitado.
+
+    Devuelve:
+      str con formato "Nombre (N alumnos)" o si segunda_linea=True:
+      "Nombre<br><span ...>(N alumnos)</span>".
+      Si N < UMBRALES_MUESTRA['aceptable'], se prefija ⚠️.
+    """
+    n_str = f"{n:,}".replace(",", ".")
+    aviso = "⚠️ " if n < UMBRALES_MUESTRA['aceptable'] else ""
+
+    if segunda_linea:
+        # Bug E1+E4 (Chat p02): "(N alumnos)" en segunda línea más pequeña y
+        # gris. Plotly admite HTML básico en etiquetas de eje (<br>, <span>).
+        # tickfont del eje no se modifica, solo se añade el span pequeño.
+        return (
+            f"{aviso}{nombre}<br>"
+            f'<span style="font-size:0.78em; color:{COLORES["texto_suave"]};">'
+            f"({n_str} alumnos)</span>"
+        )
+
+    return f"{aviso}{nombre} ({n_str} alumnos)"
+
+
+# -----------------------------------------------------------------------------
+# Bug 4 parte B (Chat p02): LEYENDA HTML COMPARTIDA
+# -----------------------------------------------------------------------------
+# Para que un PAR de gráficos comparativos comparta una sola leyenda visual
+# debajo (en lugar de duplicarla arriba de cada uno, ocupando 2 espacios),
+# generamos un bloque HTML con chips coloreados que se pinta una vez.
+#
+# Ventajas frente a la leyenda nativa de Plotly:
+#   - Una sola leyenda para 2 gráficos (no 2 leyendas duplicadas)
+#   - Posición fija debajo del par, no arriba
+#   - 2 líneas en horizontal (ahorra espacio vertical)
+#   - Mismo color exacto que las trazas (color_tit del diccionario)
+#
+# Uso:
+#   1. En cada gráfico del par: showlegend=False
+#   2. Al final del par (después de los 2 st.plotly_chart): llamar a
+#      _renderizar_leyenda_titulaciones_html(titulaciones_sel, color_tit)
+
+def _renderizar_leyenda_titulaciones_html(titulaciones: list, color_map: dict):
+    """
+    Renderiza una leyenda HTML compartida con chips coloreados de titulación.
+    Diseñada para ir DEBAJO de un par de gráficos comparativos.
+
+    Layout: flex-wrap, max 2 líneas en pantallas habituales, cada chip lleva
+    cuadrado de color + nombre acortado (helper unificado del módulo).
+
+    Parameters
+    ----------
+    titulaciones : list[str]
+        Lista de nombres de titulación a mostrar.
+    color_map : dict[str, str]
+        Mapa nombre titulación → color hex (color_tit del bloque comparativo).
+    """
+    chips = []
+    for tit in titulaciones:
+        color = color_map.get(tit, COLORES["primario"])
+        nombre_corto = _nombre_titulacion_corto(tit)
+        chips.append(
+            f'<span style="display:inline-flex;align-items:center;'
+            f'gap:0.4rem;padding:0.2rem 0.6rem;margin:0.15rem 0.25rem;'
+            f'background:{COLORES["fondo"]};border-radius:6px;'
+            f'font-size:0.82rem;color:{COLORES["texto"]};">'
+            f'<span style="display:inline-block;width:0.8rem;height:0.8rem;'
+            f'background:{color};border-radius:2px;flex-shrink:0;"></span>'
+            f'{nombre_corto}'
+            f'</span>'
+        )
+
+    html = (
+        f'<div style="display:flex;flex-wrap:wrap;justify-content:center;'
+        f'align-items:center;margin:0.4rem 0 0.8rem 0;'
+        f'padding:0.4rem;border-top:1px solid {COLORES["borde"]};">'
+        + "".join(chips) +
+        f'</div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[str]):
@@ -767,11 +1094,18 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
     Vista comparativa cuando el usuario selecciona varias titulaciones.
     Mismos 4 bloques que el modo detalle, adaptados para comparar N titulaciones.
     """
+    # B3-C (Chat p02): guardia de df vacío al inicio del bloque (paridad p01).
+    # df es el dataset GLOBAL aquí — rara vez vacío, pero aplicamos por paridad.
+    if _guardia_df_vacio(df, "📊 Comparativa entre titulaciones"):
+        return
+
     col_rama = "rama"  # B10 (p02): antes había condición tautológica que siempre devolvía "rama"
     df_comp  = _comparativa_construir_tabla(df, titulaciones_sel, col_rama)
 
-    if df_comp.empty:
-        st.warning("No hay datos para las titulaciones seleccionadas.")
+    # B3-C (Chat p02): reemplazada la mini-guardia `if df_comp.empty: st.warning`
+    # por _guardia_df_vacio para coherencia visual con el resto de bloques.
+    # Antes era un st.warning simple; ahora es la caja gris elegante unificada.
+    if _guardia_df_vacio(df_comp, "📊 Comparativa entre titulaciones"):
         return
 
     # Asignar un color fijo a cada titulación para coherencia entre gráficos
@@ -784,9 +1118,135 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
     # CABECERA + TABLA RESUMEN
     # -------------------------------------------------------------------------
     st.subheader(f"Comparativa de {len(titulaciones_sel)} titulaciones")
+
+    # -------------------------------------------------------------------------
+    # RD-A-comp (Chat p02): KPIs agregados del modo comparativo.
+    # 5 indicadores con MISMO ORDEN E ICONOS que el modo detalle (Opción C
+    # decidida con María José, sesión 22-abr-26) para 100% coherencia UX:
+    #   1. 👥 Alumnos totales (suma)
+    #   2. 📉 Abandono real medio (ponderado por N)
+    #   3. 🔮 Riesgo predicho medio (ponderado por N)
+    #   4. 🚨 Riesgo alto (% del total + suma)
+    #   5. 🎯 F1 modelo (mismo dato que en detalle, modelo único)
+    # El nº de titulaciones queda en el subtítulo "Comparativa de N titulaciones",
+    # no necesita repetirse como KPI.
+    # -------------------------------------------------------------------------
+    # Construir df solo con las titulaciones seleccionadas para los cálculos
+    df_sel = df[df["titulacion"].isin(titulaciones_sel)]
+
+    n_alumnos_total     = len(df_sel)
+    abandono_real_medio = (
+        df_sel["abandono"].mean() * 100
+        if "abandono" in df_sel.columns and n_alumnos_total > 0
+        else None
+    )
+    riesgo_pred_medio   = (
+        df_sel["prob_abandono"].mean() * 100
+        if "prob_abandono" in df_sel.columns and n_alumnos_total > 0
+        else None
+    )
+    n_riesgo_alto_total = (
+        (df_sel["nivel_riesgo"] == "Alto").sum()
+        if "nivel_riesgo" in df_sel.columns
+        else 0
+    )
+
+    # F1 global del modelo — mismo dato que en modo detalle (modelo único)
+    _metricas_comp = _leer_metricas_modelo()
+    _f1_comp       = _metricas_comp.get("f1")
+    f1_val_comp    = f"{_f1_comp:.3f}".replace(".", ",") if _f1_comp is not None else "N/D"
+
+    # Bug 7 (Chat p02): mismos colores semánticos que en modo detalle
+    # para coherencia visual entre las dos vistas.
+
+    # KPI 1: Alumnos totales (info neutra → azul)
+    html_c1 = _tarjeta_kpi(
+        icono="👥",
+        etiqueta="Alumnos totales",
+        valor=f"{n_alumnos_total:,}".replace(",", "."),
+        tooltip="Suma de alumnos de todas las titulaciones seleccionadas en el test.",
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 2: Abandono real medio (métrica crítica → rojo)
+    html_c2 = _tarjeta_kpi(
+        icono="📉",
+        etiqueta="Abandono real medio",
+        valor=f"{abandono_real_medio:.1f}%".replace(".", ",") if abandono_real_medio is not None else "N/D",
+        tooltip="Tasa media de abandono real (ponderada por número de alumnos de cada titulación).",
+        color_barra=COLORES["abandono"],
+    )
+
+    # KPI 3: Riesgo predicho medio con delta vs real (azul predicción)
+    if riesgo_pred_medio is not None and abandono_real_medio is not None:
+        delta_c3     = riesgo_pred_medio - abandono_real_medio
+        delta_str_c3 = f"{delta_c3:+.1f}pp vs real".replace(".", ",")
+        color_c3     = "red" if delta_c3 > 0 else ("green" if delta_c3 < 0 else "gray")
+    else:
+        delta_str_c3 = ""
+        color_c3     = ""
+    html_c3 = _tarjeta_kpi(
+        icono="🔮",
+        etiqueta="Riesgo predicho medio",
+        valor=f"{riesgo_pred_medio:.1f}%".replace(".", ",") if riesgo_pred_medio is not None else "N/D",
+        delta=delta_str_c3,
+        delta_color=color_c3,
+        tooltip=("Probabilidad media de abandono según el modelo (ponderada). "
+                 "El delta (pp = puntos porcentuales) compara con la tasa real."),
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 4: Riesgo alto (alerta → rojo)
+    pct_alto_total = (n_riesgo_alto_total / n_alumnos_total * 100
+                      if n_alumnos_total > 0 else 0)
+    html_c4 = _tarjeta_kpi(
+        icono="🚨",
+        etiqueta="Riesgo alto",
+        valor=f"{pct_alto_total:.1f}%".replace(".", ","),
+        delta=f"{n_riesgo_alto_total:,} alumnos".replace(",", "."),
+        delta_color="gray",
+        tooltip=f"Alumnos con probabilidad de abandono ≥ {UMBRALES['riesgo_medio']:.0%}.",
+        color_barra=COLORES["advertencia"],   # ámbar — paridad con p01
+    )
+
+    # KPI 5: F1 modelo (calidad del modelo → verde)
+    html_c5 = _tarjeta_kpi(
+        icono="🎯",
+        etiqueta="F1 modelo",
+        valor=f1_val_comp,
+        tooltip="F1-score del modelo Stacking sobre el conjunto de test completo.",
+        color_barra=COLORES["exito"],
+    )
+
+    # Renderizar las 5 tarjetas en una fila
+    cc1, cc2, cc3, cc4, cc5 = st.columns(5)
+    cc1.markdown(html_c1, unsafe_allow_html=True)
+    cc2.markdown(html_c2, unsafe_allow_html=True)
+    cc3.markdown(html_c3, unsafe_allow_html=True)
+    cc4.markdown(html_c4, unsafe_allow_html=True)
+    cc5.markdown(html_c5, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
     st.caption("Haz clic en el encabezado de cualquier columna para ordenar.")
-    st.dataframe(df_comp, width='stretch', hide_index=True,
-                 height=min(450, 50 + len(df_comp) * 38))
+    # Bug C (Chat p02): formato español en la tabla. Streamlit no respeta
+    # locale por defecto, hay que pasar column_config con format manual.
+    # Truco: %.1f genera "37.1" → reemplazamos a string formateado en el df
+    # antes de mostrarlo (column_config solo da puntos como separador).
+    df_comp_show = df_comp.copy()
+    for col in ["Abandono real (%)", "Riesgo predicho (%)", "% riesgo alto"]:
+        if col in df_comp_show.columns:
+            df_comp_show[col] = df_comp_show[col].apply(
+                lambda v: f"{v:.1f}".replace(".", ",") if pd.notna(v) else "—"
+            )
+    # "Alumnos" y "En riesgo alto" son enteros — añadir separador de miles ES.
+    for col in ["Alumnos", "En riesgo alto"]:
+        if col in df_comp_show.columns:
+            df_comp_show[col] = df_comp_show[col].apply(
+                lambda v: f"{int(v):,}".replace(",", ".") if pd.notna(v) else "—"
+            )
+    st.dataframe(df_comp_show, width='stretch', hide_index=True,
+                 height=min(450, 50 + len(df_comp_show) * 38))
 
     st.divider()
 
@@ -808,49 +1268,84 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                 "Nivel":      nivel,
                 "Porcentaje": cnt / n * 100,
                 "N":          int(cnt),
+                # B3-D (Chat p02): N_total = alumnos totales de la titulación.
+                # Se usa para construir la etiqueta del eje Y "Tit (N alumnos)".
+                # No confundir con "N" arriba, que es el conteo de ese nivel.
+                "N_total":    n,
             })
 
-    usar_columnas = len(titulaciones_sel) <= 2
-    col_dist, col_hist = (st.columns(2) if usar_columnas else (None, None))
+    # RD-D-comp (Chat p02): Estrategia B — 2 columnas SIEMPRE para
+    # Distribución por riesgo + Probabilidad de abandono, no solo cuando ≤2
+    # titulaciones. Más denso visualmente, menos scroll. Si resulta apretado
+    # con muchas titulaciones, revertir a `usar_columnas = len(titulaciones_sel) <= 2`.
+    usar_columnas = True
+    col_dist, col_hist = st.columns(2)
     if filas_riesgo:
         df_r = pd.DataFrame(filas_riesgo)
         fig_dist = go.Figure()
-        def _partir_nombre(nombre, max_chars=22):
-            """Parte un nombre largo en 2 líneas usando <br> por el espacio más cercano al centro."""
-            if len(nombre) <= max_chars:
-                return nombre
-            mid = len(nombre) // 2
-            # Buscar el espacio más cercano al centro
-            izq = nombre.rfind(" ", 0, mid)
-            der = nombre.find(" ", mid)
-            if izq == -1 and der == -1:
-                return nombre
-            if izq == -1:
-                corte = der
-            elif der == -1:
-                corte = izq
-            else:
-                corte = izq if (mid - izq) <= (der - mid) else der
-            return nombre[:corte] + "<br>" + nombre[corte+1:]
+        # Bug 8 (Chat p02): antes había una función local _partir_nombre que
+        # SOLO partía en 2 líneas, NO quitaba prefijo "Grado en". Resultado:
+        # las etiquetas mostraban "Grado en Estudios<br>Ingleses". Ahora se
+        # usa el helper unificado del módulo que sí quita prefijos comunes.
 
         for nivel, color in [("Bajo", _COLOR_BAJO), ("Medio", _COLOR_MEDIO), ("Alto", _COLOR_ALTO)]:
             df_n = df_r[df_r["Nivel"] == nivel].copy()
-            df_n["Titulación"] = df_n["Titulación"].apply(_partir_nombre)
+            # B3-D (Chat p02): la etiqueta del eje Y muestra el N total de
+            # alumnos: "Medicina (300 alumnos)" o "⚠️ Doble Grado (8 alumnos)"
+            # si N < 30. El helper se aplica solo al nombre; el "(N alumnos)"
+            # se concatena después para no romper el truncado.
+            # E1+E4 Opción B (Chat p02): el N se anota al final de cada
+            # barra (n=NNN), NO en el eje Y. El eje Y muestra solo el nombre
+            # corto. Resuelve la lectura difícil de las etiquetas largas.
+            df_n["Titulación"] = df_n.apply(
+                lambda fila: (
+                    "⚠️ " if int(fila["N_total"]) < UMBRALES_MUESTRA["aceptable"] else ""
+                ) + _nombre_titulacion_corto(
+                    fila["Titulación"], partir_lineas=True, max_chars=22
+                ),
+                axis=1
+            )
             fig_dist.add_trace(go.Bar(
                 y=df_n["Titulación"],
                 x=df_n["Porcentaje"],
                 name=nivel,
                 orientation="h",
                 marker_color=color,
-                text=[f"{v:.1f}%" for v in df_n["Porcentaje"]],
+                text=[f"{v:.1f}%".replace(".", ",") for v in df_n["Porcentaje"]],
                 textposition="inside",
-                hovertemplate="%{y} — " + nivel + ": %{x:.1f}% (%{customdata} alumnos)<extra></extra>",
+                hovertemplate="%{y} — " + nivel + ": %{x:,.1f}% (%{customdata} alumnos)<extra></extra>",
                 customdata=df_n["N"],
             ))
+
+        # E1+E4 Opción B (Chat p02): anotación "n=NNN" pegada al final de
+        # cada barra (a la derecha del 100%). Usa annotations en lugar de
+        # texto en el trace para que no se solape con los % de Bajo/Medio/Alto.
+        # Recorremos las titulaciones únicas (df_r["Titulación"] tiene 3
+        # filas por titulación, una por nivel).
+        df_n_unico = df_r.drop_duplicates("Titulación")[["Titulación", "N_total"]]
+        df_n_unico["etiq_y"] = df_n_unico.apply(
+            lambda fila: (
+                "⚠️ " if int(fila["N_total"]) < UMBRALES_MUESTRA["aceptable"] else ""
+            ) + _nombre_titulacion_corto(
+                fila["Titulación"], partir_lineas=True, max_chars=22
+            ),
+            axis=1
+        )
+        for _, fila in df_n_unico.iterrows():
+            fig_dist.add_annotation(
+                x=102,                       # un poco fuera del 100% para no pisar
+                y=fila["etiq_y"],
+                text=f"n={int(fila['N_total'])}",
+                showarrow=False,
+                xanchor="left",
+                font=dict(size=11, color=COLORES["texto_suave"]),
+            )
+
         fig_dist.update_layout(
+            separators=",.",
             barmode="stack",
             xaxis_title="Porcentaje (%)",
-            xaxis=dict(range=[0, 100]),
+            xaxis=dict(range=[0, 115]),    # ampliar un poco para que entre la anotación
             legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0,
                         traceorder="normal"),
             margin=dict(t=30, b=20, l=0, r=10),
@@ -877,13 +1372,14 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                     df_t = df[df["titulacion"] == tit]
                     if df_t.empty:
                         continue
+                    tit_corto = _nombre_titulacion_corto(tit)
                     fig_prob.add_trace(go.Histogram(
                         x=df_t["prob_abandono"],
-                        name=tit,
+                        name=tit_corto,
                         nbinsx=25,
                         marker_color=color_tit[tit],
                         opacity=0.6,
-                        hovertemplate=f"{tit}<br>Probabilidad: %{{x:.2f}}<br>Alumnos: %{{y}}<extra></extra>"
+                        hovertemplate=f"{tit_corto}<br>Probabilidad: %{{x:,.2f}}<br>Alumnos: %{{y}}<extra></extra>"
                     ))
                 for umbral, etiqueta, color in [
                     (UMBRALES["riesgo_bajo"],  "Umbral bajo",  _COLOR_MEDIO),
@@ -894,6 +1390,7 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                         annotation_text=etiqueta, annotation_position="top right"
                     )
                 fig_prob.update_layout(
+                    separators=",.",
                     barmode="overlay",
                     xaxis_title="Probabilidad de abandono",
                     yaxis_title="Nº alumnos",
@@ -905,28 +1402,8 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                 )
             else:
                 # Violin plot — muestra distribución completa de probabilidades por titulación
-                # Nombres cortos para eje X: quitar "Grado en " al inicio
-                def _nombre_corto(nombre, max_chars=18):
-                    for prefijo in ["Grado en Ingeniería en ", "Grado en Ingeniería ",
-                                    "Grado en ", "Grado "]:
-                        if nombre.startswith(prefijo):
-                            nombre = nombre[len(prefijo):]
-                            break
-                    # Partir en 2 líneas por el espacio más cercano al centro
-                    if len(nombre) <= max_chars:
-                        return nombre
-                    mid = len(nombre) // 2
-                    izq = nombre.rfind(" ", 0, mid)
-                    der = nombre.find(" ", mid)
-                    if izq == -1 and der == -1:
-                        return nombre
-                    if izq == -1:
-                        corte = der
-                    elif der == -1:
-                        corte = izq
-                    else:
-                        corte = izq if (mid - izq) <= (der - mid) else der
-                    return nombre[:corte] + "<br>" + nombre[corte+1:]
+                # Bug 8 (Chat p02): antes había una función local _nombre_corto
+                # que duplicaba la lógica. Ahora usa el helper unificado del módulo.
 
                 # Calcular estadísticas por titulación para tooltip y tabla
                 stats_list = []
@@ -935,12 +1412,16 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                     df_t = df[df["titulacion"] == tit]["prob_abandono"].dropna()
                     if df_t.empty:
                         continue
+                    # B3-D (Chat p02): N = nº de alumnos de esta titulación con
+                    # probabilidad calculada. Se usa para etiqueta "Tit (N alumnos)".
+                    n_tit = len(df_t)
                     q1, med, q3 = df_t.quantile([0.25, 0.5, 0.75]).values
                     media = df_t.mean()
                     mini  = df_t.min()
                     maxi  = df_t.max()
                     stats_list.append({
-                        "Titulación": tit,
+                        # Regla: nunca "Grado en" en tablas/gráficos.
+                        "Titulación": _nombre_titulacion_corto(tit),
                         "Media":    round(media, 3),
                         "Mediana":  round(med,   3),
                         "Q1":       round(q1,    3),
@@ -958,7 +1439,16 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                     )
                     fig_prob.add_trace(go.Violin(
                         y=df_t,
-                        name=_nombre_corto(tit),
+                        # E1+E4 Opción B (Chat p02): el nombre del violin va
+                        # SIN "(N alumnos)". El N se muestra como anotación
+                        # encima del violin (más limpio, no se mezcla con la
+                        # cola del violin gracias a yref="paper").
+                        # Bug 8: usa helper unificado (max_chars 18 para violin).
+                        name=(
+                            "⚠️ " if n_tit < UMBRALES_MUESTRA["aceptable"] else ""
+                        ) + _nombre_titulacion_corto(
+                            tit, partir_lineas=True, max_chars=18
+                        ),
                         marker_color=color_tit[tit],
                         fillcolor=color_tit[tit],
                         opacity=0.7,
@@ -967,6 +1457,32 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                         points=False,
                         hovertemplate=hover
                     ))
+
+                # E1+E4 Opción B (Chat p02) — Bug B fix: anotaciones n=NNN
+                # encima de cada violin. Cambios respecto al intento anterior:
+                #   - y subido a 1.08 (yref="paper") para quedar bien fuera
+                #     del área del gráfico, sin pisar las colas que llegan a 1.
+                #   - bgcolor blanco + borde gris claro: garantiza legibilidad
+                #     incluso si Plotly recorta el área de margen.
+                #   - x usa índice de la traza (i), NO el nombre con <br>,
+                #     para evitar que Plotly no encuentre la categoría exacta.
+                for i, tit in enumerate(titulaciones_sel):
+                    df_t = df[df["titulacion"] == tit]["prob_abandono"].dropna()
+                    if df_t.empty:
+                        continue
+                    fig_prob.add_annotation(
+                        x=i,
+                        y=1.08,
+                        yref="paper",
+                        text=f"<b>n={len(df_t)}</b>",
+                        showarrow=False,
+                        font=dict(size=11, color=COLORES["texto"]),
+                        bgcolor=COLORES["blanco"],
+                        bordercolor=COLORES["borde"],
+                        borderwidth=1,
+                        borderpad=2,
+                    )
+
                 for umbral, etiqueta, color_ann in [
                     (UMBRALES["riesgo_bajo"],  "Umbral bajo",  _COLOR_MEDIO),
                     (UMBRALES["riesgo_medio"], "Umbral alto",  _COLOR_ALTO)
@@ -978,12 +1494,13 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
                         annotation_font_color=color_ann
                     )
                 fig_prob.update_layout(
+                    separators=",.",
                     yaxis_title="Probabilidad<br>de abandono",
                     yaxis=dict(range=[0, 1]),
                     xaxis=dict(tickangle=-30),
                     showlegend=False,
-                    margin=dict(t=20, b=20, l=0, r=80),
-                    height=max(320, 60 + len(titulaciones_sel) * 50),
+                    margin=dict(t=60, b=20, l=0, r=80),   # +40 arriba para anotaciones n=
+                    height=max(360, 100 + len(titulaciones_sel) * 50),
                     paper_bgcolor="rgba(0,0,0,0)",
                     plot_bgcolor="rgba(0,0,0,0)"
                 )
@@ -1007,117 +1524,188 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
     st.divider()
 
     # =========================================================================
+    # RD-D-comp (Chat p02): BLOQUES 2+3 en 2 columnas (Evolución + Factores)
+    # Misma proporción 40/60 que en modo detalle, para coherencia visual.
+    # =========================================================================
+    col_evo_c, col_fact_c = st.columns([1, 1.5])
+
+    # =========================================================================
     # BLOQUE 2 — Evolución temporal (una línea por titulación, abandono real)
     # =========================================================================
-    st.subheader("Evolución temporal")
-    st.caption("Tasa de abandono real por año de cohorte. Una línea por titulación.")
+    with col_evo_c:
+        st.subheader("Evolución temporal")
+        st.caption("Tasa de abandono real por año de cohorte. Una línea por titulación.")
 
-    col_anio = next((c for c in ["anio_cohorte", "curso_aca_ini"] if c in df.columns), None)
+        col_anio = next((c for c in ["anio_cohorte", "curso_aca_ini"] if c in df.columns), None)
 
-    if col_anio and "abandono" in df.columns:
-        fig_evol = go.Figure()
-        for tit in titulaciones_sel:
-            df_t = df[df["titulacion"] == tit]
-            evol = (
-                df_t.groupby(col_anio)["abandono"]
-                .mean()
-                .reset_index()
-                .rename(columns={col_anio: "anio", "abandono": "tasa_real"})
-                .sort_values("anio")
-            )
-            if evol.empty:
-                continue
-            fig_evol.add_trace(go.Scatter(
-                x=evol["anio"],
-                y=evol["tasa_real"] * 100,
-                mode="lines+markers",
-                name=tit,
-                line=dict(color=color_tit[tit], width=2.5),
-                marker=dict(size=6),
-                hovertemplate=f"{tit}<br>Año %{{x}}: %{{y:.1f}}%<extra></extra>"
-            ))
-        fig_evol.update_layout(
-            xaxis_title="Año de cohorte",
-            yaxis_title="Tasa de abandono real (%)",
-            yaxis=dict(range=[0, 100]),
-            legend=dict(orientation="h", yanchor="top", y=-0.2, xanchor="center", x=0.5),
-            margin=dict(t=30, b=30, l=0, r=0),
-            height=340,
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)"
-        )
-        st.plotly_chart(fig_evol, width='stretch')
-    else:
-        st.info("No hay datos temporales disponibles.")
-
-    st.divider()
-
-    # =========================================================================
-    # BLOQUE 3 — Factores influyentes (diferencia de medias, barras agrupadas)
-    # =========================================================================
-    st.subheader("Factores más influyentes")
-    st.caption(
-        "Top variables por diferencia de medias entre alumnos que abandonan y los que no. "
-        "Barras positivas → el factor aumenta el riesgo."
-    )
-
-    cols_num = [
-        c for c in df.select_dtypes(include=[np.number]).columns
-        if c not in _COLS_META and "prob" not in c
-    ]
-
-    if cols_num and "abandono" in df.columns:
-        # Calcular diferencia de medias por titulación
-        importancias = {}
-        for tit in titulaciones_sel:
-            df_t      = df[df["titulacion"] == tit]
-            cols_ok   = [c for c in cols_num if c in df_t.columns]
-            if df_t["abandono"].nunique() < 2:
-                continue
-            diff = (
-                df_t[df_t["abandono"] == 1][cols_ok].mean()
-                - df_t[df_t["abandono"] == 0][cols_ok].mean()
-            )
-            importancias[tit] = diff
-
-        if importancias:
-            # Top 10 variables por importancia media absoluta entre titulaciones
-            df_imp   = pd.DataFrame(importancias)
-            top_vars = df_imp.abs().mean(axis=1).nlargest(10).index.tolist()
-            df_top   = df_imp.loc[top_vars].copy()
-
-            fig_fact = go.Figure()
+        if col_anio and "abandono" in df.columns:
+            fig_evol = go.Figure()
             for tit in titulaciones_sel:
-                if tit not in df_top.columns:
+                df_t = df[df["titulacion"] == tit]
+                evol = (
+                    df_t.groupby(col_anio)["abandono"]
+                    .mean()
+                    .reset_index()
+                    .rename(columns={col_anio: "anio", "abandono": "tasa_real"})
+                    .sort_values("anio")
+                )
+                if evol.empty:
                     continue
-                fig_fact.add_trace(go.Bar(
-                    y=[NOMBRES_VARIABLES.get(v, v) for v in top_vars],
-                    x=df_top[tit].values,
-                    name=tit,
-                    orientation="h",
-                    marker_color=color_tit[tit],
-                    opacity=0.85,
-                    hovertemplate=f"{tit}<br>%{{y}}: %{{x:.3f}}<extra></extra>"
+                tit_corto = _nombre_titulacion_corto(tit)
+                fig_evol.add_trace(go.Scatter(
+                    x=evol["anio"],
+                    y=evol["tasa_real"] * 100,
+                    mode="lines+markers",
+                    name=tit_corto,
+                    line=dict(color=color_tit[tit], width=2.5),
+                    marker=dict(size=6),
+                    hovertemplate=f"{tit_corto}<br>Año %{{x}}: %{{y:,.1f}}%<extra></extra>"
                 ))
-            fig_fact.add_vline(x=0, line_color="gray", line_width=1)
-            fig_fact.update_layout(
-                barmode="group",
-                xaxis_title="Diferencia de medias (abandono − no abandono)",
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0),
-                margin=dict(t=30, b=20, l=0, r=10),
-                height=max(400, 50 + len(top_vars) * 42),
+            fig_evol.update_layout(
+                separators=",.",
+                xaxis_title="Año de cohorte",
+                yaxis_title="Tasa de abandono real (%)",
+                yaxis=dict(range=[0, 100]),
+                showlegend=False,  # Bug 4B: leyenda compartida HTML abajo
+                margin=dict(t=30, b=30, l=0, r=0),
+                height=340,
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)"
             )
-            st.plotly_chart(fig_fact, width='stretch')
-            with st.expander("ℹ️ Nota técnica", expanded=False):
-                st.caption(
-                    "Los valores SHAP no están cargados en sesión. "
-                    "Se muestra diferencia de medias como proxy de importancia. "
-                    "Ejecuta `f6_m01a_shap_global.ipynb` para activar SHAP completo."
+            st.plotly_chart(fig_evol, width='stretch')
+        else:
+            st.info("No hay datos temporales disponibles.")
+
+    # =========================================================================
+    # BLOQUE 3 — Factores influyentes (Cohen's d, barras agrupadas)
+    # =========================================================================
+    with col_fact_c:
+        st.subheader("Factores más influyentes")
+        st.caption(
+            "Variables que más diferencian a los alumnos que abandonan de los "
+            "que no, en cada titulación."
+        )
+
+        # Bug A (Chat p02): aplicar también la exclusión de variables técnicas
+        # (_missing flags, tasa_abandono_titulacion). Sin esto se colaba
+        # "nota_1er_anio_missing" sin formatear en el gráfico de factores.
+        cols_num = [
+            c for c in df.select_dtypes(include=[np.number]).columns
+            if c not in _COLS_META and "prob" not in c
+            and c not in _COLS_EXCLUIR_FACTORES
+        ]
+
+        if cols_num and "abandono" in df.columns:
+            # Bug 3 (Chat p02): refactor cum laude — Cohen's d normalizado
+            # + tooltip rico + aviso de titulaciones excluidas.
+            cohens_d_dict = {}     # {tit: Series con cohens_d por variable}
+            customdata_dict = {}   # {tit: dict{var: (m_aband, m_cont, dif, pct)}}
+            tits_excluidas = []
+
+            for tit in titulaciones_sel:
+                df_t    = df[df["titulacion"] == tit]
+                cols_ok = [c for c in cols_num if c in df_t.columns]
+
+                # Bug 3 (problema 5): titulaciones sin 2 clases se excluyen
+                # con aviso explícito al usuario.
+                if df_t["abandono"].nunique() < 2:
+                    tits_excluidas.append(tit)
+                    continue
+
+                grupo_a = df_t[df_t["abandono"] == 1][cols_ok]
+                grupo_n = df_t[df_t["abandono"] == 0][cols_ok]
+                m_a = grupo_a.mean()
+                m_n = grupo_n.mean()
+                dif = m_a - m_n
+
+                # Cohen's d con std pooled
+                std_pool = np.sqrt((grupo_a.var() + grupo_n.var()) / 2)
+                d = (dif / std_pool.replace(0, np.nan)).fillna(0)
+
+                # % cambio
+                pct = (dif / m_n.replace(0, np.nan) * 100).fillna(0)
+
+                cohens_d_dict[tit] = d
+                customdata_dict[tit] = {
+                    var: (m_a[var], m_n[var], dif[var], pct[var])
+                    for var in cols_ok
+                }
+
+            # Aviso de titulaciones excluidas (Bug 3 problema 5)
+            if tits_excluidas:
+                _nombres_excluidas = ", ".join(
+                    _nombre_titulacion_corto(t) for t in tits_excluidas
                 )
-    else:
-        st.info("No hay variables numéricas disponibles para este análisis.")
+                st.info(
+                    f"ℹ️ {len(tits_excluidas)} titulación(es) no aparece(n) "
+                    f"en el gráfico porque en el test no tienen alumnos de "
+                    f"ambas clases (todos abandonan o ninguno): "
+                    f"**{_nombres_excluidas}**. Suele pasar en titulaciones "
+                    f"con muestra muy pequeña."
+                )
+
+            if cohens_d_dict:
+                # Top 10 variables por |Cohen's d| medio entre titulaciones
+                df_d = pd.DataFrame(cohens_d_dict)
+                top_vars = df_d.abs().mean(axis=1).nlargest(10).index.tolist()
+                df_top   = df_d.loc[top_vars].copy()
+
+                fig_fact = go.Figure()
+                for tit in titulaciones_sel:
+                    if tit not in df_top.columns:
+                        continue
+                    # Construir customdata por variable para esta titulación
+                    cd_tit = customdata_dict[tit]
+                    customdata = np.array([
+                        [cd_tit[v][0], cd_tit[v][1], cd_tit[v][2], cd_tit[v][3]]
+                        for v in top_vars
+                    ])
+                    tit_corto = _nombre_titulacion_corto(tit)
+                    fig_fact.add_trace(go.Bar(
+                        y=[NOMBRES_VARIABLES.get(v, v) for v in top_vars],
+                        x=df_top[tit].values,
+                        name=tit_corto,
+                        orientation="h",
+                        marker_color=color_tit[tit],
+                        opacity=0.85,
+                        customdata=customdata,
+                        hovertemplate=(
+                            f"<b>{tit_corto}</b><br>"
+                            "%{y}<br>"
+                            "Los que abandonan: %{customdata[0]:,.2f}<br>"
+                            "Los que NO abandonan: %{customdata[1]:,.2f}<br>"
+                            "Diferencia: %{customdata[2]:+.2f} (%{customdata[3]:+.1f}%%)<br>"
+                            "Tamaño de efecto (d): %{x:,.2f}"
+                            "<extra></extra>"
+                        ),
+                    ))
+                fig_fact.add_vline(x=0, line_color="gray", line_width=1)
+                fig_fact.update_layout(
+                    barmode="group",
+                    xaxis_title="Tamaño de efecto (Cohen's d)",
+                    xaxis=dict(tickformat=".1f"),
+                    separators=",.",
+                    showlegend=False,  # Bug 4B: leyenda compartida HTML abajo
+                    margin=dict(t=30, b=20, l=0, r=10),
+                    height=max(400, 50 + len(top_vars) * 42),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)"
+                )
+                st.plotly_chart(fig_fact, width='stretch')
+                st.caption(
+                    "ℹ️ **Cómo leer:** escala normalizada (Cohen's d) que "
+                    "permite comparar variables de escalas distintas (notas, "
+                    "créditos, años). Pasa el ratón por encima para ver los "
+                    "valores reales de cada titulación. SHAP no cargado; se "
+                    "usa este proxy robusto."
+                )
+        else:
+            st.info("No hay variables numéricas disponibles para este análisis.")
+
+    # Bug 4B (Chat p02): leyenda compartida HTML para el par
+    # Evolución temporal + Factores influyentes. Las dos figuras tienen
+    # showlegend=False — esta leyenda actúa para ambas.
+    _renderizar_leyenda_titulaciones_html(titulaciones_sel, color_tit)
 
     st.divider()
 
@@ -1145,26 +1733,40 @@ def _bloque_comparativa_titulaciones(df: pd.DataFrame, titulaciones_sel: list[st
             df.drop_duplicates("titulacion").set_index("titulacion")["rama"].to_dict()
             if "rama" in df.columns else {}
         )
+        # Fix 2 (Chat p02, Opción C): "Comparativa con resto" — gris suave
+        # para las NO seleccionadas (contexto) + color de rama intenso para
+        # las seleccionadas (protagonistas). Inspirado en dashboards pro
+        # (Tableau, PowerBI). Resuelve el problema de paletas desordenadas
+        # (magenta/verde/azul mezclados sin lógica) que se veía antes.
+        # Bug 6: usa _COLOR_GRIS_CONTEXTO (constante de módulo).
         colores_ctx = [
             COLORES_RAMAS.get(rama_por_tit.get(t, ""), COLORES["primario"])
+            if t in tits_sel_set
+            else _COLOR_GRIS_CONTEXTO
             for t in por_tit_ctx["titulacion"]
         ]
         borde_ancho = [2 if t in tits_sel_set else 0 for t in por_tit_ctx["titulacion"]]
         borde_color = [COLORES["texto"] if t in tits_sel_set else "rgba(0,0,0,0)"
                        for t in por_tit_ctx["titulacion"]]
+        # Regla: nunca mostrar "Grado en"/"Doble Grado en" en etiquetas. Helper.
+        tit_cortas_ctx = [_nombre_titulacion_corto(t) for t in por_tit_ctx["titulacion"]]
+        # hovertemplate también debe mostrar el nombre corto — guardamos el
+        # original en customdata para el tooltip si hace falta acceder a él
+        # más adelante (de momento solo lo usamos si quisiéramos verlo).
         fig_ctx = go.Figure(go.Bar(
             x=por_tit_ctx["riesgo_medio"] * 100,
-            y=por_tit_ctx["titulacion"],
+            y=tit_cortas_ctx,
             orientation="h",
             marker=dict(color=colores_ctx, line=dict(color=borde_color, width=borde_ancho)),
             text=[
-                f"{v*100:.1f}% ◀" if t in tits_sel_set else f"{v*100:.1f}%"
+                (f"{v*100:.1f}% ◀" if t in tits_sel_set else f"{v*100:.1f}%").replace(".", ",")
                 for v, t in zip(por_tit_ctx["riesgo_medio"], por_tit_ctx["titulacion"])
             ],
             textposition="outside",
-            hovertemplate="%{y}: %{x:.1f}%<extra></extra>"
+            hovertemplate="%{y}: %{x:,.1f}%<extra></extra>"
         ))
         fig_ctx.update_layout(
+            separators=",.",
             xaxis_title="Riesgo medio predicho (%)",
             xaxis=dict(range=[0, max(por_tit_ctx["riesgo_medio"].max() * 115, 10)]),
             margin=dict(t=10, b=30, l=0, r=60),
@@ -1208,47 +1810,73 @@ def _nota_metodologica_p02(n_alumnos_test: int = None):
     # --- N del test (con separador de miles al estilo español) ---
     n_str = f"{n_alumnos_test:,}".replace(",", ".") if n_alumnos_test else "—"
 
-    with st.expander("📋 Nota metodológica — haz clic para ampliar", expanded=False):
+    with st.expander("📋 Cómo entender estos datos", expanded=False):
         st.markdown(f"""
-        **¿De dónde vienen las probabilidades?**
+        **¿Qué hace el modelo?**
 
-        El modelo utilizado es un **Stacking Classifier** (AUC = {auc_str}, F1 = {f1_str} sobre test)
-        que combina **CatBoost y Random Forest** como estimadores base con Regresión Logística
-        como meta-learner. La probabilidad de abandono que se muestra es la salida de
-        `predict_proba()[:, 1]` del modelo entrenado en Fase 5.
+        Mira las características de un alumno (notas, beca, situación laboral,
+        etc.) y estima la probabilidad de que abandone. Aprende de los
+        históricos de **30.872 alumnos** que entraron en la UJI entre 2010 y 2020.
 
-        **¿Qué significa el nivel de riesgo?**
+        **¿Funciona bien?**
 
-        | Nivel | Umbral de probabilidad |
-        |-------|------------------------|
-        | Bajo  | < {bajo_pct}  |
-        | Medio | {bajo_pct} – {medio_pct} |
-        | Alto  | ≥ {medio_pct}  |
+        Acierta en el **95 %** de los casos al ordenar a los alumnos por riesgo
+        (AUC = {auc_str}). Mantiene buen equilibrio entre detectar a los que
+        sí abandonan sin marcar por error a los que terminan (F1 = {f1_str}).
 
-        Estos umbrales son configurables en `config_app.py` y han sido seleccionados
-        para equilibrar sensibilidad (detectar abandonos reales) y especificidad
-        (evitar falsas alarmas). Un análisis de calibración completo se encuentra
-        en `f6_m05b_calibracion.ipynb`.
+        **¿Por qué el riesgo predicho no coincide con el abandono real?**
 
-        **¿Por qué la tasa predicha difiere de la real?**
+        El modelo da una probabilidad ("30 % de riesgo"), no un sí/no rotundo.
+        El "abandono real" es lo que pasó de verdad. Una diferencia pequeña
+        entre los dos indica que el modelo es realista.
 
-        La diferencia entre tasa real y riesgo medio predicho es normal: el modelo predice
-        probabilidades continuas, no etiquetas binarias. La tasa real es la frecuencia observada
-        en el conjunto de test; el riesgo medio predicho es la media de probabilidades del modelo.
-        Una diferencia pequeña indica buena calibración.
+        **Niveles de riesgo:** bajo (< {bajo_pct}), medio ({bajo_pct}–{medio_pct}),
+        alto (≥ {medio_pct}).
 
-        **Limitaciones de esta vista**
+        **Lo que no puede hacer**
 
-        - Los datos provienen del **conjunto de test** ({n_str} alumnos).
-          Titulaciones con pocos alumnos en test pueden mostrar tasas inestables.
-        - No se muestra información personal identificable de ningún alumno.
-          El campo `per_id_ficticio` es un identificador anonimizado.
+        - Decir con certeza si UN alumno concreto abandonará. Da probabilidades.
+        - Predecir bien para cohortes de 2020 en adelante (aún no sabemos
+          si abandonarán o no).
+        - Las titulaciones con pocos alumnos en test ({n_str} en total)
+          muestran tasas más inestables.
+
+        Los datos están anonimizados; ningún alumno aparece identificado.
         """)
+
+
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): _pie_pagina ELIMINADA.
+# Sustituida por _pie_pagina de utils/ui_helpers.py.
+# =============================================================================
 
 
 # =============================================================================
 # FUNCIÓN PRINCIPAL DE LA PESTAÑA
 # =============================================================================
+
+# -----------------------------------------------------------------------------
+# B4 (Chat p02): NOTA SOBRE EL PATRÓN DE BORRAR FILTROS
+# -----------------------------------------------------------------------------
+# El botón 🗑️ Borrar filtros sigue el patrón establecido en p01 (líneas
+# 494-518) — NO usa on_click=callback ni session_state.pop(), porque ambos
+# fallan con multiselects que tienen key= (los chips visuales no se borran).
+#
+# Patrón correcto (replicado de p01):
+#   1. Detectar click directo: if st.button(...): ...
+#   2. Asignar el valor por defecto: st.session_state[k] = []  (no pop)
+#   3. Forzar re-render completo con st.rerun()
+#
+# La lógica está inline en el botón (líneas ~1450-1465), no en helper externo,
+# por coherencia con p01.
+#
+# TODO: si en el futuro se añaden sliders u otros widgets persistentes a los
+# filtros de p02, ampliar con el patrón ITER 5 de p01:
+#   - Crear una clave de versión: st.session_state["_p02_filtros_version"] = N
+#   - Al borrar: st.session_state["_p02_filtros_version"] += 1
+#   - Usar la versión en la key del slider: key=f"slider_X_v{version}"
+# Esto fuerza a Streamlit a recrear el widget desde cero (limpieza visual real).
+
 
 def mostrar():
     """
@@ -1286,14 +1914,43 @@ def mostrar():
     ramas_disponibles = sorted(df[col_rama].dropna().unique().tolist())
 
     # Zona de filtros — línea azul arriba y abajo
-    st.markdown("""
-    <div style="border-top: 2px solid #3182ce; margin-bottom: 0.5rem;">
-        <span style="font-size:0.72rem; font-weight:600; color:#3182ce;
-                     text-transform:uppercase; letter-spacing:0.05em;">
-            🔍 Filtros
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
+    # B4 (Chat p02): cabecera reorganizada como p01 (líneas 486-518).
+    # Layout: [título "🔍 Filtros" | botón "🗑️ Borrar filtros"]
+    # CRÍTICO: el botón se renderiza ANTES de los multiselects para que la
+    # lógica de borrado pueda asignar session_state[k]=[] sin error
+    # (Streamlit prohíbe modificar session_state de un widget ya instanciado).
+    col_titulo, col_btn = st.columns([5, 1])
+    with col_titulo:
+        # Bug 6 (Chat p02): #3182ce (azul claro viejo) → COLORES["primario"]
+        # (azul institucional profundo, valor actual #1e4d8c). Coherencia con
+        # el resto de la app que ya usa el primario.
+        st.markdown(f"""
+        <div style="border-top: 2px solid {COLORES['primario']}; margin-bottom: 0.5rem;">
+            <span style="font-size:0.72rem; font-weight:600; color:{COLORES['primario']};
+                         text-transform:uppercase; letter-spacing:0.05em;">
+                🔍 Filtros
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    with col_btn:
+        # B4 (Chat p02): patrón ITER 5 de p01 — detección directa del click
+        # con `if st.button(...)`, asignación al valor por defecto, st.rerun().
+        # NO usar on_click=callback (no funciona aquí) ni session_state.pop()
+        # (los chips visuales se quedan). Ver p01 líneas 494-518.
+        _click_borrar = st.button(
+            "🗑️ Borrar filtros",
+            key="btn_borrar_filtros_p02",
+            width='stretch',
+            help="Limpia las selecciones de Rama y Titulación."
+        )
+        if _click_borrar:
+            # Resetear multiselects a su valor por defecto (lista vacía).
+            # Como el botón se renderiza ANTES de los multiselects, esta
+            # asignación es válida (los widgets aún no están instanciados).
+            st.session_state["filtro_rama_p02"] = []
+            st.session_state["filtro_tit_p02"]  = []
+            # Re-render inmediato → todos los widgets se regeneran desde cero.
+            st.rerun()
 
     col_sel1, col_sel2 = st.columns([1, 2])
 
@@ -1305,7 +1962,7 @@ def mostrar():
         ramas_sel = st.multiselect(
             "Rama",
             options=ramas_disponibles,
-            placeholder="Todas las ramas",
+            placeholder="Acotar por rama (opcional)",
             key="filtro_rama_p02",
             help="Deja vacío para ver todas. Selecciona para acotar las titulaciones."
         )
@@ -1329,31 +1986,108 @@ def mostrar():
     if _sel_valida_tit != _sel_previa_tit:
         st.session_state["filtro_tit_p02"] = _sel_valida_tit
 
+    # Bug 4 (Chat p02): límite de 8 titulaciones máximo en el multiselect.
+    # Razón: con más de 8 titulaciones los gráficos comparativos se vuelven
+    # ilegibles (leyenda demasiado larga, barras apiladas se aplastan, etc.).
+    # max_selections=8 es bloqueante: Streamlit no deja añadir la 9ª.
+    # Mostramos aviso informativo cuando se alcanza el tope.
+    _MAX_TITULACIONES_COMPARATIVA = 8
+
     with col_sel2:
         tits_sel = st.multiselect(
             "Titulación",
             options=titulaciones,
-            placeholder="Selecciona una o varias titulaciones",
+            placeholder="Selecciona una o varias titulaciones (máx. 8)",
             key="filtro_tit_p02",
-            help="Una titulación → análisis detallado. Varias → comparativa."
+            max_selections=_MAX_TITULACIONES_COMPARATIVA,
+            help=(
+                f"Una titulación → análisis detallado. Varias → comparativa. "
+                f"Límite: {_MAX_TITULACIONES_COMPARATIVA} titulaciones para "
+                f"que los gráficos sigan siendo legibles."
+            )
         )
 
-    st.markdown("""
-    <div style="border-bottom: 2px solid #3182ce; margin-top: 0.5rem; margin-bottom: 1rem;"></div>
+    # Aviso amarillo cuando se alcanza el tope (paridad con el patrón p01)
+    if len(tits_sel) >= _MAX_TITULACIONES_COMPARATIVA:
+        st.warning(
+            f"⚠️ Has alcanzado el límite de {_MAX_TITULACIONES_COMPARATIVA} "
+            f"titulaciones. Si quieres comparar otra, deselecciona alguna primero."
+        )
+
+    # Bug 6 (Chat p02): banda inferior #3182ce → COLORES["primario"]
+    st.markdown(f"""
+    <div style="border-bottom: 2px solid {COLORES['primario']}; margin-top: 0.5rem; margin-bottom: 1rem;"></div>
     """, unsafe_allow_html=True)
 
-    # Pantalla neutra si no ha seleccionado nada
+    # Pantalla neutra si no ha seleccionado titulación.
+    # Bug 1 (Chat p02): si hay Rama elegida pero NO Titulación, mostrar
+    # automáticamente la comparativa de TODAS las titulaciones de esa rama
+    # (capada a _MAX_TITULACIONES_COMPARATIVA si la rama tiene más).
+    # Antes: solo se mostraba un mensaje "elige una titulación" (vacío).
+    # Ahora: se aprovecha la rama como acotador de comparativa rápida.
     if not tits_sel:
-        st.markdown("""
-        <div style="text-align:center; padding:3rem 1rem; color:#718096;">
-            <div style="font-size:3rem;">🎓</div>
-            <div style="font-size:1.1rem; margin-top:0.5rem;">
-                Selecciona una titulación para ver el análisis detallado,<br>
-                o varias para comparar entre ellas.
+        if ramas_sel:
+            # Hay rama → comparativa automática de las titulaciones de la rama
+            tits_de_rama = titulaciones  # ya filtradas por rama en L1874
+            n_total_rama = len(tits_de_rama)
+
+            if n_total_rama == 0:
+                # Caso teórico — no debería ocurrir porque ya hay st.stop arriba
+                st.warning("No hay titulaciones disponibles en esta rama.")
+                _pie_pagina()
+                return
+
+            if n_total_rama == 1:
+                # Solo 1 titulación en la rama → mostrar modo detalle directamente
+                tits_sel = tits_de_rama[:]
+            else:
+                # Varias titulaciones → comparativa.
+                # Si pasa de 8, capar a las 8 con más alumnos en test (más
+                # representativas) y avisar.
+                if n_total_rama > _MAX_TITULACIONES_COMPARATIVA:
+                    # Ordenar por nº de alumnos descendente y coger las top 8
+                    conteo_alumnos = (
+                        df_filtrado.groupby("titulacion").size()
+                        .sort_values(ascending=False)
+                    )
+                    tits_top = [t for t in conteo_alumnos.index if t in tits_de_rama]
+                    tits_sel = tits_top[:_MAX_TITULACIONES_COMPARATIVA]
+
+                    st.info(
+                        f"ℹ️ La rama **{', '.join(ramas_sel)}** tiene "
+                        f"{n_total_rama} titulaciones. Se muestran las "
+                        f"{_MAX_TITULACIONES_COMPARATIVA} con más alumnos "
+                        f"en el test. Para comparar otras, selecciónalas "
+                        f"manualmente arriba."
+                    )
+                else:
+                    tits_sel = tits_de_rama[:]
+
+                # Pasar al modo comparativo directamente
+                _bloque_comparativa_titulaciones(df, tits_sel)
+                st.divider()
+                _nota_metodologica_p02(n_alumnos_test=len(df))
+                _pie_pagina()
+                return
+        else:
+            # Estado "Sin nada elegido": invitación corta y directa
+            _msg_html = (
+                '<div style="font-size:1.05rem; margin-top:0.5rem;">'
+                'Elige una titulación para empezar<br>'
+                f'<span style="font-size:0.85rem; color:{COLORES["texto_muy_suave"]};">'
+                'o filtra por rama para ver la comparativa de esa rama'
+                '</span>'
+                '</div>'
+            )
+            # Bug 6: #718096 → COLORES["texto_suave"]
+            st.markdown(f"""
+            <div style="text-align:center; padding:3rem 1rem; color:{COLORES['texto_suave']};">
+                <div style="font-size:3rem;">🎓</div>
+                {_msg_html}
             </div>
-        </div>
-        """, unsafe_allow_html=True)
-        return
+            """, unsafe_allow_html=True)
+            _pie_pagina()
+            return
 
     # =========================================================================
     # MODO COMPARATIVO — varias titulaciones seleccionadas
@@ -1362,6 +2096,7 @@ def mostrar():
         _bloque_comparativa_titulaciones(df, tits_sel)
         st.divider()
         _nota_metodologica_p02(n_alumnos_test=len(df))
+        _pie_pagina()
         return
 
     # =========================================================================
@@ -1410,33 +2145,46 @@ def mostrar():
         )
 
     # Bloque 1 — KPIs
-    _bloque_kpis(df_tit)
+    _bloque_kpis_titulacion(df_tit)
 
     st.divider()
 
     # Bloque 2 — Distribución de riesgo
-    _bloque_distribucion_riesgo(df_tit, titulacion_sel)
+    _bloque_distribucion_riesgo_titulacion(df_tit, titulacion_sel)
 
     st.divider()
 
-    # Bloque 3 — Evolución temporal
-    _bloque_evolucion_temporal(df_tit)
+    # -------------------------------------------------------------------------
+    # RD-D (Chat p02): layout 2 columnas para Evolución + Factores.
+    # Decisión cum laude: reduce scroll vertical y aprovecha ancho horizontal.
+    # Proporción 40/60 — Factores recibe más espacio porque suele tener
+    # nombres largos en el eje Y (más legible con anchura).
+    # Comparativa con resto de titulaciones se queda full-width abajo
+    # porque suele tener muchas titulaciones y necesita el ancho completo.
+    # -------------------------------------------------------------------------
+    col_evo, col_fact = st.columns([1, 1.5])  # 40% / 60%
 
-    st.divider()
+    with col_evo:
+        # Bloque 3 — Evolución temporal
+        _bloque_evolucion_temporal_titulacion(df_tit)
 
-    # Bloque 4 — Factores más influyentes (SHAP o proxy)
-    _bloque_factores_shap(df_tit, titulacion_sel)
+    with col_fact:
+        # Bloque 4 — Factores más influyentes (SHAP o proxy)
+        _bloque_factores_shap(df_tit, titulacion_sel)
 
     st.divider()
 
     # Bloque 5 — Tabla quitada (datos anonimizados + escalados, sin utilidad)
 
-    # Bloque 6 — Contexto: titulaciones de la misma rama
+    # Bloque 6 — Contexto: titulaciones de la misma rama (full-width)
     _bloque_contexto_titulacion(df, titulacion_sel, rama_tit)
 
     st.divider()
 
     # Nota metodológica para el tribunal
     _nota_metodologica_p02(n_alumnos_test=len(df))
+
+    # Pie de página — paridad con p00/p01
+    _pie_pagina()
 # Alias para compatibilidad con main.py
 show = mostrar

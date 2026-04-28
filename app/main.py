@@ -79,3 +79,5 @@ for tab, p in zip(tabs_resto, PESTANAS):
             from pages import p04_en_curso as _p04; _p04.show()
         elif p["id"] == "equidad":
             from pages import p05_equidad as _p05; _p05.show()
+        elif p["id"] == "leyenda":
+            from pages import p06_leyenda as _p06; _p06.show()

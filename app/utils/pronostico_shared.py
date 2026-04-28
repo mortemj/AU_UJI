@@ -63,6 +63,11 @@ import _path_setup  # noqa: F401
 from config_app import (
     COLORES, COLORES_RAMAS, COLORES_RIESGO, NOMBRES_VARIABLES,
     RAMAS_NOMBRES, UMBRALES,
+    CATALOGO_TITULACIONES_UJI, ALIAS_TITULACIONES,
+    # Auditoría p03 (Chat p03, 27/04/2026): añadido APP_CONFIG para pie
+    # de página coherente con p00/p01/p02. Antes pronostico_shared no
+    # tenía pie de página (bug grave) — afecta a p03 y p04.
+    APP_CONFIG,
     # Refactor SRC↔APP: ya no importamos los 7 MAPS (con bugs en
     # SITUACION_LABORAL=11/8). En su lugar, usamos OPCIONES_*_UI:
     # subconjuntos limpios filtrados desde los mapas oficiales de SRC.
@@ -71,8 +76,16 @@ from config_app import (
     # Mapas SRC: solo los necesarios para defaults defensivos en provincia/país
     # (formularios no muestran selectbox para estos, son código defensivo).
     PROVINCIA_MAP, PAIS_NOMBRE_MAP,
+    # CUPO_MAP: necesario para convertir strings "General", "Mayor 25 Años"...
+    # que vienen del dataset cuando se imputa por moda (meta_test_app guarda
+    # cupo como string, el modelo espera int 1-7).
+    CUPO_MAP, RAMA_MAP,
 )
 from utils.loaders import cargar_meta_test_app, cargar_modelo, cargar_pipeline
+# Auditoría p03 (Chat p03): _tarjeta_kpi MOVIDA a utils/ui_helpers.py para
+# que p02 y p03 usen la MISMA función (apariencia idéntica garantizada por
+# construcción). Sustituye las cards inline con border-top:3px que tenía p03.
+from utils.ui_helpers import _tarjeta_kpi, _nombre_titulacion_corto, _clasificar_riesgo, _pie_pagina, _hex_a_rgba
 
 
 # =============================================================================
@@ -131,13 +144,68 @@ _OPCIONES_UNIVERSIDAD = list(OPCIONES_UNIVERSIDAD_UI.keys())
 
 
 # =============================================================================
-# CORRECCIÓN HEURÍSTICA: prob × (tasa_tit / tasa_rama)
+# HELPER: filtrar dataset por titulación considerando alias históricos
+# =============================================================================
+# El dataset puede tener nombres antiguos ("Ingeniería Mecanica") mientras que
+# el usuario selecciona nombres oficiales actuales ("Ingeniería Mecánica") vía
+# CATALOGO_TITULACIONES_UJI. Este helper resuelve la equivalencia usando
+# ALIAS_TITULACIONES para que el filtro devuelva TODOS los registros que
+# pertenecen al mismo grado, incluyendo los antiguos.
+# =============================================================================
+def _filtrar_por_titulacion(df: "pd.DataFrame", titulacion: str) -> "pd.DataFrame":
+    if "titulacion" not in df.columns or not titulacion:
+        return df.iloc[0:0]  # DataFrame vacío con mismas columnas
+    # Incluimos el nombre actual + todos sus alias antiguos
+    nombres_equivalentes = {titulacion} | {
+        antiguo for antiguo, nuevo in ALIAS_TITULACIONES.items()
+        if nuevo == titulacion
+    }
+    return df[df["titulacion"].isin(nombres_equivalentes)]
+
+
+
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): _nombre_corto_tit ELIMINADO.
+# Se sustituye por _nombre_titulacion_corto de utils/ui_helpers.py.
+# Antes había 4 implementaciones distintas:
+#   - _nombre_titulacion_corto en p02 (la base)
+#   - _nombre_corto_tit aquí (no manejaba 'Doble Grado en' al inicio)
+#   - _partir_label en p01 (solo quitaba 'Grado en')
+#   - regex inline en p01
+# Ahora todas usan la misma función desde ui_helpers.
+# =============================================================================
+
+
+
+# =============================================================================
+# CORRECCIÓN HEURÍSTICA EN ESPACIO LOGIT: logit(p) + log(tasa_tit / tasa_rama)
 # =============================================================================
 # El modelo predice a nivel de RAMA (5 categorías). Para titulaciones de la
 # misma rama el modelo daría el mismo %, aunque su abandono histórico difiera.
-# Esta función aplica un factor de escala post-hoc basado en datos históricos.
+# Esta función aplica un reescalado post-hoc basado en datos históricos.
 #
-# Limitación documentada: es univariante y lineal (no aprende interacciones).
+# IMPLEMENTACIÓN (abril 2026): ajuste en espacio LOGIT, no multiplicativo.
+#   logit_ajustado = logit(prob) + log(tasa_tit / tasa_rama)
+#   prob_ajustada  = sigmoid(logit_ajustado)
+#
+# Por qué logit y no multiplicativo (prob × factor):
+#   - Una probabilidad alta (p.ej. 0,96) multiplicada por un factor > 1 satura
+#     en [0, 1] y obligaba a un cap duro en 0,99. Eso hacía que perfiles
+#     extremos dieran 99,0% en varias titulaciones a la vez, ocultando
+#     diferencias reales entre ellas.
+#   - En espacio logit no hay saturación artificial: sumar log-odds es la
+#     operación natural que usa cualquier regresión logística para combinar
+#     evidencia. Los extremos se siguen diferenciando (0,96 y 0,98 son
+#     logits 3,18 y 3,89 — muy distintos).
+#   - Matemáticamente equivale a sumar un offset de log-odds al logit base,
+#     que es exactamente el tipo de recalibración que haría un modelo con
+#     variable binaria "es titulación X" si hubiera datos suficientes.
+#
+# El factor (tasa_tit / tasa_rama) se sigue limitando a [0,3 · 3,0] por
+# seguridad frente a titulaciones con muy pocos registros.
+#
+# Limitación documentada: es univariante (solo tasa histórica), no aprende
+# interacciones con otras variables del perfil.
 # Referencia: README_titulacion_vs_rama.md · Fase 3 M08 (auditoría leakage)
 # =============================================================================
 
@@ -145,17 +213,26 @@ def _ajustar_prob_por_titulacion(prob: float,
                                   contexto: dict,
                                   df_ref: "pd.DataFrame") -> tuple:
     """
-    Aplica corrección heurística cuando el contexto es una titulación concreta.
+    Aplica corrección heurística EN ESPACIO LOGIT cuando el contexto es una
+    titulación concreta.
 
-    prob_ajustada = prob_modelo × (tasa_hist_titulacion / tasa_hist_rama)
+    logit_base     = log(prob / (1 - prob))
+    logit_ajustado = logit_base + log(tasa_tit / tasa_rama)
+    prob_ajustada  = 1 / (1 + exp(-logit_ajustado))
 
-    El factor se limita a [0.3, 3.0] para evitar extrapolaciones extremas.
+    El factor (tasa_tit / tasa_rama) se limita a [0,3 · 3,0] por seguridad,
+    y el logit final se limita a ±10 (prob ≈ 0,99995 / 0,00005) para evitar
+    overflow numérico con perfiles extremos.
+
+    Ventaja sobre la versión multiplicativa anterior: no satura en 1,0, así
+    perfiles de alto riesgo en titulaciones distintas siguen diferenciándose
+    (p.ej. ADE 97,3% vs Derecho 98,1%) en lugar de aplastarse todos al cap.
 
     Returns
     -------
     prob_ajustada : float   (igual a prob si contexto no es titulación)
     ajustada      : bool    (True si se aplicó corrección)
-    factor        : float   (el factor aplicado)
+    factor        : float   (el factor tasa_tit / tasa_rama aplicado)
     aviso         : str     (texto para mostrar al usuario, "" si no aplica)
     """
     if contexto.get("tipo") != "titulacion":
@@ -167,7 +244,7 @@ def _ajustar_prob_por_titulacion(prob: float,
     if "titulacion" not in df_ref.columns or "abandono" not in df_ref.columns:
         return prob, False, 1.0, ""
 
-    df_tit  = df_ref[df_ref["titulacion"] == titulacion]
+    df_tit  = _filtrar_por_titulacion(df_ref, titulacion)
     if len(df_tit) < 10:
         return prob, False, 1.0, ""
 
@@ -183,20 +260,42 @@ def _ajustar_prob_por_titulacion(prob: float,
     if tasa_rama < 0.01:
         return prob, False, 1.0, ""
 
+    # Factor multiplicativo en espacio probabilidad (solo se usa para el
+    # aviso y para devolverlo a quien lo necesite con fines informativos).
     factor = tasa_tit / tasa_rama
     factor = max(0.3, min(3.0, factor))   # límites de seguridad
 
-    prob_ajustada = float(max(0.01, min(0.99, prob * factor)))
+    # ---- Ajuste en espacio LOGIT (log-odds) ------------------------------
+    # 1) Clamp numérico de prob para evitar logit(0) o logit(1).
+    prob_clip = float(np.clip(prob, 1e-6, 1.0 - 1e-6))
+
+    # 2) Pasar a logit, sumar el log-ratio de tasas, volver a probabilidad.
+    logit_base     = np.log(prob_clip / (1.0 - prob_clip))
+    logit_ajustado = logit_base + np.log(factor)
+
+    # 3) Clamp en logit (±10) → equivale a prob ∈ [~0,00005, ~0,99995].
+    #    Evita overflow de exp() y mantiene separación entre titulaciones
+    #    en los extremos sin necesidad de un cap duro en probabilidad.
+    logit_ajustado = float(np.clip(logit_ajustado, -10.0, 10.0))
+
+    prob_ajustada = float(1.0 / (1.0 + np.exp(-logit_ajustado)))
 
     aviso = (
         f"⚠️ La probabilidad base del modelo ({prob*100:.1f}%) opera a nivel de "
-        f"**rama de conocimiento**. Se ha aplicado un ajuste por la tasa "
-        f"histórica de abandono de **{titulacion.replace('Grado en ', '')}** "
+        f"**rama de conocimiento**. Se ha aplicado un ajuste en espacio logit "
+        f"por la tasa histórica de abandono de **{titulacion.replace('Grado en ', '')}** "
         f"({tasa_tit*100:.1f}%) respecto a la media de su rama ({tasa_rama*100:.1f}%). "
         f"Este ajuste no forma parte del modelo entrenado."
     )
 
     return prob_ajustada, True, factor, aviso
+
+
+# =============================================================================
+# REFACTOR p03 (Chat p03, 27/04/2026): _pie_pagina ELIMINADA.
+# Sustituida por _pie_pagina de utils/ui_helpers.py (importada al principio).
+# =============================================================================
+
 
 def show_pronostico(modo: str = "prospecto"):
     """
@@ -212,14 +311,24 @@ def show_pronostico(modo: str = "prospecto"):
         "modo debe ser 'prospecto' o 'en_curso'"
 
     # Textos que cambian según el modo
+    # n_alumnos_unicos — leído de metricas_modelo.json, fallback 30.872
+    try:
+        import json as _json_sp
+        from config_app import RUTAS as _RUTAS_SP
+        _ruta_sp = _RUTAS_SP.get("metricas_modelo")
+        _m_sp    = _json_sp.loads(_ruta_sp.read_text(encoding="utf-8")) if _ruta_sp and _ruta_sp.exists() else {}
+        _n_alu   = f"{_m_sp.get('n_alumnos_unicos', 30872):,}".replace(",", ".")
+    except Exception:
+        _n_alu = "30.872"  # fallback documentado
+
     textos = {
         "prospecto": {
             "titulo":      "🔍 Pronóstico para futuro estudiante",
             "subtitulo":   "Estima tu riesgo de abandono antes de matricularte",
             "descripcion": (
                 "Rellena tu perfil de entrada y obtendrás una estimación "
-                "de tu riesgo de abandono basada en patrones de 30.872 "
-                "estudiantes de la UJI entre 2010 y 2020."
+                f"de tu riesgo de abandono basada en patrones de "
+                f"{_n_alu} estudiantes de la UJI entre 2010 y 2020."
             ),
         },
         "en_curso": {
@@ -233,23 +342,26 @@ def show_pronostico(modo: str = "prospecto"):
         },
     }[modo]
 
-    # Cabecera
+    # Cabecera compacta: título + subtítulo en 1 bloque pequeño
     st.markdown(f"""
-    <h2 style="color:{COLORES['primario']}; margin-bottom:0.2rem;">
-        {textos['titulo']}
-    </h2>
-    <p style="color:{COLORES['texto_suave']}; margin-top:0; font-size:0.95rem;">
-        {textos['subtitulo']}
-    </p>
-    <p style="color:{COLORES['texto']}; font-size:0.88rem; max-width:700px;">
-        {textos['descripcion']}
-    </p>
+    <div style="margin-bottom:0.8rem;">
+        <h4 style="color:{COLORES['primario']}; margin:0; font-weight:500; font-size:1.15rem;">
+            {textos['titulo']}
+        </h4>
+        <p style="color:{COLORES['texto_suave']}; margin:0.1rem 0 0 0; font-size:0.78rem;">
+            {textos['subtitulo']} · {textos['descripcion']}
+        </p>
+    </div>
     """, unsafe_allow_html=True)
 
     # Carga de datos y modelos — cacheados, solo se ejecuta la primera vez
     with st.spinner("Cargando modelo..."):
         try:
             df_ref   = cargar_meta_test_app()   # titulaciones fusionadas (para contexto/filtros)
+            # Filtro canónico tribunal/memoria (28/04/2026): cohortes 2010-2020.
+            # Antes mostraba 6.725 sin filtrar; ahora 6.596, igual que p01.
+            if 'curso_aca_ini' in df_ref.columns:
+                df_ref = df_ref[df_ref['curso_aca_ini'].between(2010, 2020)].copy()
             modelo   = cargar_modelo()
             pipeline = cargar_pipeline()
             # X_test_prep: features numéricas reales — para imputar medias correctas
@@ -264,12 +376,11 @@ def show_pronostico(modo: str = "prospecto"):
             st.error(f"❌ {e}")
             st.stop()
 
-    st.divider()
-
     # --- Paso 1: selector de contexto ---
     contexto = _selector_contexto(df_ref, modo)
 
-    st.divider()
+    st.markdown(f"<hr style='margin:0.5rem 0; border:none; border-top:1px solid {COLORES['borde']};'>",
+                 unsafe_allow_html=True)
 
     # --- Bifurcación: comparativa vs pronóstico individual ---
     # Si el usuario eligió "Comparar varias titulaciones", mostramos
@@ -278,6 +389,7 @@ def show_pronostico(modo: str = "prospecto"):
         perfil, calcular = _formulario_perfil(modo, df_ref, contexto)
         if not calcular:
             _mostrar_instrucciones()
+            _pie_pagina()
             return
         with st.spinner("Calculando comparativa..."):
             _mostrar_comparativa(perfil, contexto["titulaciones"],
@@ -291,6 +403,7 @@ def show_pronostico(modo: str = "prospecto"):
             históricos. No determina ni condiciona ninguna decisión académica.</em>
         </div>
         """, unsafe_allow_html=True)
+        _pie_pagina()
         return
 
     # --- Paso 2: formulario de perfil (básico + avanzado) ---
@@ -314,6 +427,7 @@ def show_pronostico(modo: str = "prospecto"):
 
         if error:
             st.error(f"❌ Error al calcular: {error}")
+            _pie_pagina()
             return
 
         prob, ajustada, factor, aviso_ajuste = _ajustar_prob_por_titulacion(
@@ -338,37 +452,52 @@ def show_pronostico(modo: str = "prospecto"):
     else:
         # Nunca se ha calculado — mostrar instrucciones
         _mostrar_instrucciones()
+        _pie_pagina()
         return
 
-    st.divider()
+    st.markdown(f"<hr style='margin:0.3rem 0; border:none; border-top:1px solid {COLORES['borde']};'>",
+                 unsafe_allow_html=True)
 
-    # --- Pasos 4-8: resultados ---
-    _mostrar_resultado_principal(prob, modo)
+    # === FILA DE KPIs (4 chips resumen) ==============================
+    _kpis_resumen(prob, perfil, contexto, df_ctx, df_ref)
 
     # Aviso de corrección heurística (solo si se aplicó)
     if ajustada and aviso_ajuste:
+        # Auditoría p03 (Chat p03): hex hardcodeados → COLORES.
+        # Auditoría p00 (28/04/2026): #fffbeb → rgba derivado de
+        # advertencia con _hex_a_rgba (sin hardcoded).
+        _bg_aviso = _hex_a_rgba(COLORES['advertencia'], 0.10)
         st.markdown(
-            f"<div style='font-size:0.78rem; color:#718096; "
-            f"border-left:3px solid #d69e2e; padding:0.4rem 0.8rem; "
-            f"margin:0.3rem 0; border-radius:4px; background:#fffbeb;'>"
+            f"<div style='font-size:0.78rem; color:{COLORES['texto_suave']}; "
+            f"border-left:3px solid {COLORES['advertencia']}; "
+            f"padding:0.4rem 0.8rem; margin:0.3rem 0; border-radius:4px; "
+            f"background:{_bg_aviso};'>"
             f"⚠️ {aviso_ajuste}</div>",
             unsafe_allow_html=True,
         )
 
-    st.divider()
-    _grafico_indicador_riesgo(prob)
-    st.divider()
+    # === FILA 1: Velocímetro + Histórico (scatter) ===================
+    col_veloci, col_scatter = st.columns([1, 1])
+    with col_veloci:
+        _grafico_indicador_riesgo(prob, modo=modo)
+    with col_scatter:
+        _grafico_historico_scatter(prob, contexto, df_ref, perfil=perfil)
 
-    col_radar, col_cascada = st.columns([1, 1])
-    with col_radar:
-        _grafico_radar(perfil, df_ref, contexto, prob)
-    with col_cascada:
-        _grafico_cascada(perfil, df_ctx, prob, modelo, pipeline)
+    # === FILA 2: Detalle técnico (expander con radar + cascada) ======
+    with st.expander("📊 Detalle técnico — radar del perfil y factores de riesgo", expanded=False):
+        col_radar, col_cascada = st.columns([1, 1])
+        with col_radar:
+            _grafico_radar(perfil, df_ref, contexto, prob)
+        with col_cascada:
+            _grafico_cascada(perfil, df_ctx, prob, modelo, pipeline, modo=modo)
 
-    st.divider()
-    _grafico_percentil(prob, df_ref, contexto, modelo, pipeline)
-    st.divider()
-    _recomendaciones(perfil, prob, modo)
+    # === FILA 3: Percentil (expander) =================================
+    with st.expander("📏 Tu posición en la distribución histórica", expanded=False):
+        _grafico_percentil(prob, df_ref, contexto, modelo, pipeline)
+
+    # === RECOMENDACIONES (compactas) ==================================
+    st.markdown("")
+    _recomendaciones(perfil, prob, modo, df_ctx=contexto.get('df_contexto'))
 
     # Aviso legal / limitaciones
     st.markdown(f"""
@@ -381,10 +510,15 @@ def show_pronostico(modo: str = "prospecto"):
     ">
         ⚠️ <em>Este pronóstico es una estimación estadística basada en datos
         históricos. No determina ni condiciona ninguna decisión académica.
-        Si tienes dudas sobre tu situación, consulta con el servicio de
-        orientación universitaria de la UJI.</em>
+        Si tienes dudas, visita el
+        <a href="https://www.uji.es/perfils/estudiantat/v2/nou-estudiantat/"
+        target="_blank">Portal Nuevo Estudiantado</a> de la UJI o consulta
+        con la Unidad de Soporte Educativo (USE).</em>
     </div>
     """, unsafe_allow_html=True)
+
+    # Pie de página (paridad p00/p01/p02)
+    _pie_pagina()
 
 
 # =============================================================================
@@ -446,8 +580,8 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
                     font-size:0.83rem;
                     margin-top:1.6rem;
                 ">
-                    <strong>Alumnos en histórico:</strong> {len(df_ctx):,}<br>
-                    <strong>Tasa abandono histórica:</strong> {tasa:.1f}%
+                    <strong>Alumnos en histórico:</strong> {f"{len(df_ctx):,}".replace(",", ".")}<br>
+                    <strong>Tasa abandono histórica:</strong> {f"{tasa:.1f}".replace('.', ',')}%
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -459,15 +593,45 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
     # =========================================================================
     # MODO PROSPECTO — flujo original con radio buttons
     # =========================================================================
-    st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin-bottom:0.5rem;">
-        1️⃣ ¿Tienes una titulación en mente?
-    </h4>
-    <p style="font-size:0.85rem; color:{COLORES['texto_suave']};">
-        Opcional. Si eliges una titulación o rama, las comparativas
-        se calcularán respecto a alumnos de ese mismo contexto.
-    </p>
-    """, unsafe_allow_html=True)
+    # Versión para el selector de contexto (independiente del formulario)
+    # Se incrementa con el botón borrar para resetear los selects de rama/titulación.
+    _ver_ctx_key = f"_ctx_v_{modo}"
+    if _ver_ctx_key not in st.session_state:
+        st.session_state[_ver_ctx_key] = 0
+    _vc = st.session_state[_ver_ctx_key]
+    _suf_ctx = f"{modo}_v{_vc}"
+
+    # Cabecera con título y botón Borrar a la derecha
+    col_titulo, col_borrar_top = st.columns([5, 1])
+    with col_titulo:
+        st.markdown(f"""
+        <h5 style="color:{COLORES['texto']}; margin:0 0 0.2rem 0; font-weight:500;">
+            1️⃣ ¿Tienes una titulación en mente?
+            <span style="font-size:0.72rem; color:{COLORES['texto_suave']}; font-weight:400;">
+            · opcional, sirve para contextualizar la comparativa
+            </span>
+        </h5>
+        """, unsafe_allow_html=True)
+    with col_borrar_top:
+        # Espaciado vertical para alinear con el título
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button(
+            "🗑️ Borrar todo",
+            key=f"btn_borrar_top_{modo}",
+            help="Borra todo: selector de titulación, perfil y resultado",
+            width='stretch',
+        ):
+            # Limpiar resultado guardado
+            for _k in (f"_prob_{modo}", f"_perfil_{modo}", f"_contexto_{modo}",
+                       f"_df_ctx_{modo}", f"_ajuste_{modo}"):
+                st.session_state.pop(_k, None)
+            # Incrementar ambas versiones (formulario y contexto) para
+            # forzar a Streamlit a recrear todos los widgets vacíos.
+            st.session_state[_ver_ctx_key] += 1
+            st.session_state[f"_form_v_{modo}"] = st.session_state.get(
+                f"_form_v_{modo}", 0
+            ) + 1
+            st.rerun()
 
     col1, col2 = st.columns([1, 2])
 
@@ -481,7 +645,7 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
                 "🔀 Comparar varias titulaciones",
             ],
             index=0,
-            key=f"tipo_contexto_{modo}",
+            key=f"tipo_contexto_{_suf_ctx}",
             help=(
                 "Elige el grupo con el que quieres compararte. "
                 "Con 'Comparar varias titulaciones' puedes ver tu riesgo "
@@ -495,69 +659,158 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
         # Usamos rama_meta (nombre legible) si está disponible, si no rama
         col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
 
+        # Helper: traduce códigos (EX/HU/SA/SO/TE) a nombres completos legibles
+        # usando RAMAS_NOMBRES. Si la columna ya es legible (rama_meta), no toca.
+        def _ramas_legibles(df):
+            if col_rama not in df.columns:
+                return [], {}
+            valores = sorted(df[col_rama].dropna().unique().tolist())
+            if col_rama == 'rama_meta':
+                return valores, {v: v for v in valores}
+            legibles = [RAMAS_NOMBRES.get(v, v) for v in valores]
+            return legibles, {RAMAS_NOMBRES.get(v, v): v for v in valores}
+
+        # Helper: construye lista de titulaciones agrupada
+        # - Arriba: titulaciones con datos en el dataset (orden alfabético)
+        # - Separador visual
+        # - Abajo: titulaciones del catálogo SIN datos, con emoji "⚠️ (sin datos)"
+        # Devuelve (opciones_desplegable, set_con_datos, mapa_display→nombre_real)
+        # sigla_rama opcional para filtrar catálogo por rama.
+        # Aplica ALIAS_TITULACIONES para reconocer nombres antiguos del dataset.
+        def _titulaciones_con_estado(df_base, sigla_rama=None):
+            # Titulaciones presentes en el dataset (pueden ser nombres antiguos)
+            tit_dataset = set(df_base['titulacion'].dropna().unique().tolist()) \
+                if 'titulacion' in df_base.columns else set()
+            # Normalizar: aplicar alias → nombres oficiales actuales
+            # Así "Ingeniería Mecanica" cuenta como "Ingeniería Mecánica"
+            con_datos = {
+                ALIAS_TITULACIONES.get(t, t) for t in tit_dataset
+            }
+            # Catálogo oficial filtrado por rama si aplica
+            if sigla_rama:
+                catalogo_rama = {
+                    t: r for t, r in CATALOGO_TITULACIONES_UJI.items()
+                    if r == sigla_rama
+                }
+            else:
+                catalogo_rama = dict(CATALOGO_TITULACIONES_UJI)
+            # Separación: con datos vs sin datos (respecto al catálogo)
+            todas_catalogo = set(catalogo_rama.keys())
+            tit_con = sorted(con_datos & todas_catalogo)
+            tit_sin = sorted(todas_catalogo - con_datos)
+            # Construir opciones del selectbox (solo nombres del catálogo)
+            opciones = list(tit_con)
+            mapa_display = {t: t for t in opciones}
+            if tit_sin:
+                opciones.append("────────── Sin datos suficientes ──────────")
+                for t in tit_sin:
+                    display = f"{t} ⚠️ (sin datos)"
+                    opciones.append(display)
+                    mapa_display[display] = t
+            return opciones, con_datos, mapa_display
+
         if tipo_contexto == "Una rama concreta" and col_rama in df_ref.columns:
-            ramas = sorted(df_ref[col_rama].dropna().unique().tolist())
-            valor_contexto = st.selectbox(
+            ramas_leg, mapa_leg_cod = _ramas_legibles(df_ref)
+            rama_legible = st.selectbox(
                 label="Selecciona la rama",
-                options=ramas,
-                key=f"sel_rama_{modo}",
+                options=ramas_leg,
+                key=f"sel_rama_{_suf_ctx}",
             )
+            # Guardamos el código internamente (para filtros) pero mostramos legible
+            valor_contexto = mapa_leg_cod[rama_legible]
 
         elif tipo_contexto == "Una titulación concreta" and 'titulacion' in df_ref.columns:
             # Primero filtramos por rama si el usuario la eligió
             # Así la lista de titulaciones es manejable (~8-10 por rama)
-            ramas_disponibles = sorted(df_ref[col_rama].dropna().unique().tolist()) \
-                if col_rama in df_ref.columns else []
+            ramas_leg, mapa_leg_cod = _ramas_legibles(df_ref)
 
-            if ramas_disponibles:
+            sigla_rama_filtro = None
+            if ramas_leg:
                 rama_filtro = st.selectbox(
                     label="Filtrar por rama (opcional)",
-                    options=["Todas las ramas"] + ramas_disponibles,
-                    key=f"sel_rama_filtro_{modo}",
+                    options=["Todas las ramas"] + ramas_leg,
+                    key=f"sel_rama_filtro_{_suf_ctx}",
                     help="Filtra la lista de titulaciones por rama para encontrarla más fácil",
                 )
                 if rama_filtro != "Todas las ramas":
-                    df_filtrado = df_ref[df_ref[col_rama] == rama_filtro]
+                    df_filtrado = df_ref[df_ref[col_rama] == mapa_leg_cod[rama_filtro]]
+                    # Convertir código interno a sigla (EX/HU/...) para filtrar catálogo
+                    sigla_rama_filtro = mapa_leg_cod[rama_filtro]
                 else:
                     df_filtrado = df_ref
             else:
                 df_filtrado = df_ref
 
-            titulaciones = sorted(df_filtrado['titulacion'].dropna().unique().tolist())
-            valor_contexto = st.selectbox(
-                label="Selecciona la titulación",
-                options=titulaciones,
-                key=f"sel_tit_{modo}",
-                help="Puedes escribir para buscar dentro de la lista",
+            # Lista mixta: con datos arriba + separador + sin datos abajo
+            opciones, con_datos, mapa_display = _titulaciones_con_estado(
+                df_filtrado, sigla_rama=sigla_rama_filtro
             )
+            seleccion = st.selectbox(
+                label="Selecciona la titulación",
+                options=opciones,
+                key=f"sel_tit_{_suf_ctx}",
+                help="Las marcadas con ⚠️ están en la UJI pero no tienen suficientes datos en el histórico",
+            )
+            # Si es el separador, ignorar
+            if seleccion and seleccion.startswith("──"):
+                valor_contexto = None
+                st.info("👆 Selecciona una titulación (no el separador).")
+            else:
+                valor_contexto = mapa_display.get(seleccion, seleccion)
+                # Aviso transparente si no tiene datos suficientes
+                if valor_contexto and valor_contexto not in con_datos:
+                    st.warning(
+                        f"⚠️ **{valor_contexto}** no tiene suficientes datos en el "
+                        f"histórico del modelo. El pronóstico se calculará usando "
+                        f"la **rama** como referencia en lugar de la titulación."
+                    )
 
         # --- Opción comparativa: multiselect de titulaciones ---
         titulaciones_comparar = []
         if "Comparar" in tipo_contexto and 'titulacion' in df_ref.columns:
-            col_rama_c = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
-
-            # Filtro opcional por rama para acotar la lista
-            ramas_disp = sorted(df_ref[col_rama_c].dropna().unique().tolist())                 if col_rama_c in df_ref.columns else []
-            if ramas_disp:
+            # Filtro opcional por rama para acotar la lista (con nombres legibles)
+            ramas_leg_c, mapa_leg_cod_c = _ramas_legibles(df_ref)
+            sigla_rama_filtro_c = None
+            if ramas_leg_c:
                 rama_filtro_c = st.selectbox(
                     label="Filtrar por rama (opcional)",
-                    options=["Todas las ramas"] + ramas_disp,
-                    key=f"rama_comp_{modo}",
+                    options=["Todas las ramas"] + ramas_leg_c,
+                    key=f"rama_comp_{_suf_ctx}",
                     help="Reduce la lista de titulaciones disponibles",
                 )
-                df_comp_filtrado = df_ref[df_ref[col_rama_c] == rama_filtro_c]                     if rama_filtro_c != "Todas las ramas" else df_ref
+                if rama_filtro_c != "Todas las ramas":
+                    df_comp_filtrado = df_ref[df_ref[col_rama] == mapa_leg_cod_c[rama_filtro_c]]
+                    sigla_rama_filtro_c = mapa_leg_cod_c[rama_filtro_c]
+                else:
+                    df_comp_filtrado = df_ref
             else:
                 df_comp_filtrado = df_ref
 
-            todas_tit = sorted(df_comp_filtrado['titulacion'].dropna().unique().tolist())
-            titulaciones_comparar = st.multiselect(
+            # Lista agrupada: con datos arriba + separador + sin datos abajo
+            opciones_c, con_datos_c, mapa_display_c = _titulaciones_con_estado(
+                df_comp_filtrado, sigla_rama=sigla_rama_filtro_c
+            )
+            # Quitamos el separador del multiselect (no tiene sentido ahí)
+            opciones_c = [o for o in opciones_c if not o.startswith("──")]
+            seleccion_raw = st.multiselect(
                 label="Selecciona 2-5 titulaciones para comparar",
-                options=todas_tit,
+                options=opciones_c,
                 default=[],
                 max_selections=5,
-                key=f"multisel_tit_{modo}",
-                help="Mínimo 2, máximo 5 titulaciones.",
+                key=f"multisel_tit_{_suf_ctx}",
+                help="Mínimo 2, máximo 5. Las marcadas con ⚠️ no tienen datos suficientes.",
             )
+            # Convertir display → nombre real y avisar si hay sin datos
+            titulaciones_comparar = [mapa_display_c.get(t, t) for t in seleccion_raw]
+            sin_datos_elegidas = [
+                t for t in titulaciones_comparar if t not in con_datos_c
+            ]
+            if sin_datos_elegidas:
+                st.warning(
+                    f"⚠️ {len(sin_datos_elegidas)} titulación(es) sin datos suficientes: "
+                    f"{', '.join(sin_datos_elegidas)}. "
+                    f"Se usará la rama como referencia para esas."
+                )
 
             # Aviso si selección fuera de rango
             n = len(titulaciones_comparar)
@@ -571,11 +824,18 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
             if tipo_contexto == "Una rama concreta":
                 df_ctx = df_ref[df_ref[col_rama] == valor_contexto]
             else:
-                df_ctx = df_ref[df_ref['titulacion'] == valor_contexto]
+                # El helper aplica ALIAS_TITULACIONES automáticamente
+                df_ctx = _filtrar_por_titulacion(df_ref, valor_contexto)
 
             tasa_ctx = (df_ctx['abandono'].sum() / len(df_ctx) * 100) \
                 if 'abandono' in df_ctx.columns and len(df_ctx) > 0 else 0
 
+            # Si estamos en rama, mostramos el nombre legible (no el código)
+            contexto_display = (
+                RAMAS_NOMBRES.get(valor_contexto, valor_contexto)
+                if tipo_contexto == "Una rama concreta"
+                else valor_contexto
+            )
             st.markdown(f"""
             <div style="
                 background:{COLORES['fondo']};
@@ -585,9 +845,9 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
                 font-size:0.83rem;
                 margin-top:0.3rem;
             ">
-                <strong>Contexto:</strong> {valor_contexto}<br>
-                <strong>Alumnos en histórico:</strong> {len(df_ctx):,}<br>
-                <strong>Tasa abandono histórica:</strong> {tasa_ctx:.1f}%
+                <strong>Contexto:</strong> {contexto_display}<br>
+                <strong>Alumnos en histórico:</strong> {f"{len(df_ctx):,}".replace(",", ".")}<br>
+                <strong>Tasa abandono histórica:</strong> {f"{tasa_ctx:.1f}".replace('.', ',')}%
             </div>
             """, unsafe_allow_html=True)
         else:
@@ -603,8 +863,8 @@ def _selector_contexto(df_ref: pd.DataFrame, modo: str) -> dict:
                 margin-top:0.3rem;
             ">
                 <strong>Contexto:</strong> Toda la UJI<br>
-                <strong>Alumnos en histórico:</strong> {len(df_ref):,}<br>
-                <strong>Tasa abandono histórica:</strong> {tasa_uji:.1f}%
+                <strong>Alumnos en histórico:</strong> {f"{len(df_ref):,}".replace(",", ".")}<br>
+                <strong>Tasa abandono histórica:</strong> {f"{tasa_uji:.1f}".replace('.', ',')}%
             </div>
             """, unsafe_allow_html=True)
 
@@ -645,14 +905,23 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
     Devuelve (perfil_dict, calcular_bool).
     calcular_bool es True cuando el usuario pulsa el botón.
     """
+    # Versión de keys de los widgets — se incrementa al pulsar "Borrar"
+    # para forzar a Streamlit a recrear los widgets con valores por defecto
+    # (el patrón clásico de del session_state[k] no funciona con widgets).
+    _ver_key = f"_form_v_{modo}"
+    if _ver_key not in st.session_state:
+        st.session_state[_ver_key] = 0
+    _v = st.session_state[_ver_key]
+    # Sufijo común para todas las keys de widgets de este formulario
+    _suf = f"{modo}_v{_v}"
+
     st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin-bottom:0.5rem;">
+    <h5 style="color:{COLORES['texto']}; margin:0.5rem 0 0.3rem 0; font-weight:500;">
         2️⃣ Rellena tu perfil
-    </h4>
-    <p style="font-size:0.83rem; color:{COLORES['texto_suave']}; margin-top:0;">
-        Los campos marcados con <strong>*</strong> son los más influyentes en el modelo.
-        Los opcionales mejoran la precisión de la estimación.
-    </p>
+        <span style="font-size:0.72rem; color:{COLORES['texto_suave']}; font-weight:400;">
+        · campos con <strong>*</strong> son los más influyentes
+        </span>
+    </h5>
     """, unsafe_allow_html=True)
 
     df_ctx = contexto['df_contexto']
@@ -662,7 +931,10 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
         col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
         n_alumnos = len(df_ctx)
         tasa = (df_ctx['abandono'].sum() / n_alumnos * 100)             if 'abandono' in df_ctx.columns and n_alumnos > 0 else None
-        tasa_txt = f" · Abandono histórico: {tasa:.1f}%" if tasa is not None else ""
+        tasa_txt = (
+            f" · Abandono histórico: {tasa:.1f}%".replace('.', ',')
+            if tasa is not None else ""
+        )
         st.markdown(f"""
         <div style="
             background:{COLORES['fondo']};
@@ -673,8 +945,8 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
             color:{COLORES['texto']};
             margin-bottom:0.6rem;
         ">
-            📚 Calculando para: <strong>{contexto['valor']}</strong>
-            · {n_alumnos:,} alumnos en histórico{tasa_txt}
+            📚 Calculando para: <strong>{RAMAS_NOMBRES.get(contexto['valor'], contexto['valor']) if contexto.get('tipo') == 'rama' else contexto['valor']}</strong>
+            · {f"{n_alumnos:,}".replace(",", ".")} alumnos en histórico{tasa_txt}
         </div>
         """, unsafe_allow_html=True)
 
@@ -697,101 +969,185 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
     # -------------------------------------------------------------------------
 
     if modo == "en_curso":
-        # Encabezado diferenciador visual
-        st.markdown(f"""
-        <div style="
-            background:#ebf8ff;
-            border-left:4px solid {COLORES['primario']};
-            border-radius:6px;
-            padding:0.6rem 1rem;
-            font-size:0.83rem;
-            color:{COLORES['primario']};
-            margin-bottom:0.8rem;
-        ">
-            📊 Introduce tus datos de rendimiento académico — son los predictores
-            más importantes para un alumno que ya está cursando.
-        </div>
+        # ---------------------------------------------------------------------
+        # Layout en 3 cards temáticas:
+        #   📘 Académico       (nota, créditos, repetidos, años matriculado)
+        #   👤 Personal        (edad, sexo, provincia, interrupción)
+        #   💼 Socioeconómico  (situación laboral, años trabajando, beca)
+        # Cada card tiene un encabezado visual con icono y borde lateral azul.
+        # Más profesional que el layout plano anterior y reduce el scroll.
+        # ---------------------------------------------------------------------
+
+        # HACK CSS para estrechar los inputs numéricos y selectores en p04.
+        # Streamlit por defecto estira los widgets al 100% de la columna.
+        # Aplicamos max-width SOLO a number_input y selectbox en modo en_curso.
+        # Es un parche cosmético — si rompe algo, basta con quitar este bloque.
+        # Los sliders se dejan anchos porque necesitan espacio para deslizar.
+        st.markdown("""
+        <style>
+        /* Limitar ancho de number_input (edad, años, créditos...) */
+        div[data-testid="stNumberInput"] {
+            max-width: 200px;
+        }
+        /* Limitar ancho de selectbox (sexo, provincia, situación laboral) */
+        div[data-testid="stSelectbox"] {
+            max-width: 260px;
+        }
+        </style>
         """, unsafe_allow_html=True)
 
-        col1, col2, col3 = st.columns(3)
+        col_aca, col_per, col_eco = st.columns(3)
 
-        # Columna 1: rendimiento académico (protagonista en p04)
-        with col1:
-            _no_nota = st.checkbox(
-                "No recuerdo la nota",
+        # === CARD 1 · ACADÉMICO ==============================================
+        with col_aca:
+            st.markdown(f"""
+            <div style="
+                background:{COLORES['fondo']};
+                border:1.5px solid {COLORES['primario']};
+                border-radius:10px;
+                padding:0.6rem 0.9rem;
+                margin-bottom:0.5rem;
+            ">
+                <div style="font-size:0.85rem; font-weight:600; color:{COLORES['primario']};">
+                    📘 Académico
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Checkbox único para cubrir los dos casos de "no recuerdo"
+            _no_datos_acad = st.checkbox(
+                "No recuerdo mis datos académicos de 1º",
                 value=False,
-                key=f"no_nota_1er_{modo}",
+                key=f"no_datos_acad_{modo}",
             )
-            perfil['nota_1er_anio'] = np.nan if _no_nota else st.slider(
-                label="Nota media del primer año *",
+            perfil['nota_1er_anio'] = np.nan if _no_datos_acad else st.slider(
+                label="Nota 1º *",
                 min_value=0.0, max_value=10.0,
                 value=round(_med('nota_1er_anio', 6.0), 1),
                 step=0.1,
                 help="Uno de los predictores más fuertes del modelo para alumnos en curso.",
                 key=f"nota_1er_{modo}",
-                disabled=_no_nota,
+                disabled=_no_datos_acad,
             )
-            _no_cred = st.checkbox(
-                "No recuerdo los créditos",
-                value=False,
-                key=f"no_cred_1er_{modo}",
-            )
-            perfil['cred_superados_anio_1er'] = np.nan if _no_cred else st.number_input(
-                label="Créditos superados en 1.º *",
+            perfil['cred_superados_anio_1er'] = np.nan if _no_datos_acad else st.number_input(
+                label="Créditos superados 1º *",
                 min_value=0, max_value=80,
                 value=int(_med('cred_superados_anio_1er', 40)),
                 step=1,
                 help="Créditos aprobados durante el primer año académico.",
                 key=f"cred_1er_{modo}",
-                disabled=_no_cred,
+                disabled=_no_datos_acad,
             )
-
-        # Columna 2: situación personal (también muy predictiva)
-        with col2:
-            perfil['situacion_laboral'] = st.selectbox(
-                label="Situación laboral *",
-                options=_OPCIONES_LABORAL,
-                index=0,
-                help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
-                key=f"laboral_{modo}",
-            )
-            perfil['n_anios_beca'] = st.slider(
-                label="Años con beca *",
-                min_value=0, max_value=6,
-                value=int(round(_med('n_anios_beca', 2))),
+            # cred_repetidos: preguntado como ASIGNATURAS (más natural) × 6 ECTS
+            n_asignaturas_repetidas = st.number_input(
+                label="Asignaturas repetidas",
+                min_value=0, max_value=20,
+                value=0,
                 step=1,
-                help="Factor protector muy importante. Los becarios tienen tasas de abandono significativamente más bajas.",
-                key=f"beca_{modo}",
+                help="Número de asignaturas que has tenido que matricular más de una vez. 0 si no has repetido ninguna. Se calculan como 6 créditos cada una.",
+                key=f"n_asig_rep_{_suf}",
             )
+            perfil['cred_repetidos'] = n_asignaturas_repetidas * 6
+            # Años matriculado va aquí (académico) — su valor se usa como
+            # max del slider "años con beca" que está en la card económica.
             perfil['_anios_matriculado'] = st.number_input(
-                label="Años matriculado en total *",
+                label="Años matriculado *",
                 min_value=1, max_value=10,
                 value=1,
                 step=1,
                 help="Número de cursos académicos que llevas matriculado. Se usa para calcular los años sin beca.",
-                key=f"anios_mat_bas_{modo}",
+                key=f"anios_mat_bas_{_suf}",
             )
-            perfil['indicador_interrupcion'] = int(st.checkbox(
-                label="¿Has interrumpido los estudios algún año sin matricularte?",
-                value=False,
-                help="Marca si hubo algún curso en que no te matriculaste estando todavía en la carrera.",
-                key=f"interrupcion_{modo}",
-            ))
 
-        # Columna 3: edad + sexo
-        with col3:
+        # === CARD 2 · PERSONAL ===============================================
+        with col_per:
+            st.markdown(f"""
+            <div style="
+                background:{COLORES['fondo']};
+                border:1.5px solid {COLORES['primario']};
+                border-radius:10px;
+                padding:0.6rem 0.9rem;
+                margin-bottom:0.5rem;
+            ">
+                <div style="font-size:0.85rem; font-weight:600; color:{COLORES['primario']};">
+                    👤 Personal
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
             perfil['edad_entrada'] = st.number_input(
                 label="Edad al acceder",
                 min_value=17, max_value=65,
                 value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
                 step=1,
-                key=f"edad_{modo}",
+                key=f"edad_{_suf}",
             )
             perfil['sexo'] = st.selectbox(
                 label="Sexo",
                 options=_OPCIONES_SEXO,
                 index=0,
-                key=f"sexo_bas_{modo}",
+                key=f"sexo_bas_{_suf}",
+            )
+            # provincia: 70% Castelló, 24% València, resto residual
+            # PROVINCIA_MAP traduce el string a código al enviar al modelo
+            perfil['provincia'] = st.selectbox(
+                label="Provincia",
+                options=['Castelló', 'València', 'Alacant', 'Tarragona', 'Terol', 'Otra / sin datos'],
+                index=0,  # Castelló es mayoritario (UJI está en Castelló)
+                help="Tu provincia de residencia actual.",
+                key=f"prov_{_suf}",
+            )
+            perfil['indicador_interrupcion'] = int(st.checkbox(
+                label="¿Has interrumpido algún curso?",
+                value=False,
+                help="Marca si hubo algún curso en que no te matriculaste estando todavía en la carrera.",
+                key=f"interrupcion_{_suf}",
+            ))
+
+        # === CARD 3 · SOCIOECONÓMICO =========================================
+        with col_eco:
+            st.markdown(f"""
+            <div style="
+                background:{COLORES['fondo']};
+                border:1.5px solid {COLORES['primario']};
+                border-radius:10px;
+                padding:0.6rem 0.9rem;
+                margin-bottom:0.5rem;
+            ">
+                <div style="font-size:0.85rem; font-weight:600; color:{COLORES['primario']};">
+                    💼 Socioeconómico
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            perfil['situacion_laboral'] = st.selectbox(
+                label="Situación laboral *",
+                options=_OPCIONES_LABORAL,
+                index=0,
+                help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
+                key=f"laboral_{_suf}",
+            )
+            # n_anios_trabajando: complementa a situacion_laboral
+            perfil['n_anios_trabajando'] = st.number_input(
+                label="Años trabajando",
+                min_value=0, max_value=10,
+                value=int(_med('n_anios_trabajando', 0)),
+                step=1,
+                help="Número total de cursos en los que has trabajado mientras estudiabas.",
+                key=f"anios_trab_{_suf}",
+            )
+            # Años con beca: máximo dinámico = años matriculado (validación
+            # por construcción). Usamos number_input para coherencia visual.
+            _max_beca    = int(perfil['_anios_matriculado'])
+            _med_beca    = int(round(_med('n_anios_beca', 2)))
+            _valor_beca  = min(_med_beca, _max_beca)
+            perfil['n_anios_beca'] = st.number_input(
+                label="Años con beca *",
+                min_value=0, max_value=_max_beca,
+                value=_valor_beca,
+                step=1,
+                help="Factor protector muy importante. Los becarios tienen tasas de abandono significativamente más bajas. No puede superar los años matriculados.",
+                key=f"beca_{_suf}",
             )
 
     else:
@@ -806,13 +1162,13 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 value=_val_nota,
                 step=0.1,
                 help="Nota de acceso a la universidad (escala 0–14). Es uno de los predictores más importantes.",
-                key=f"nota_acceso_{modo}",
+                key=f"nota_acceso_{_suf}",
             )
             perfil['via_acceso'] = st.selectbox(
                 label="Vía de acceso *",
                 options=_OPCIONES_VIA_ACCESO,
                 index=0,
-                key=f"tipo_acceso_{modo}",
+                key=f"tipo_acceso_{_suf}",
             )
 
         with col2:
@@ -821,16 +1177,16 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 options=_OPCIONES_LABORAL,
                 index=0,
                 help="La situación laboral es el predictor categórico más fuerte del modelo (Cramér V=0.26).",
-                key=f"laboral_{modo}",
+                key=f"laboral_{_suf}",
             )
             _solicita_beca = st.checkbox(
                 label="¿Piensas solicitar beca? *",
-                value=True,
+                value=False,
                 help=(
                     "Los becarios tienen tasas de abandono significativamente más bajas. "
                     "Si marcas que sí, el modelo asume una media de 4 años con beca."
                 ),
-                key=f"beca_checkbox_{modo}",
+                key=f"beca_checkbox_{_suf}",
             )
             perfil['n_anios_beca'] = 4 if _solicita_beca else 0
 
@@ -840,36 +1196,58 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 min_value=17, max_value=65,
                 value=int(np.clip(_med('edad_entrada', 19), 17, 65)),
                 step=1,
-                key=f"edad_{modo}",
+                key=f"edad_{_suf}",
             )
             perfil['sexo'] = st.selectbox(
                 label="Sexo",
                 options=_OPCIONES_SEXO,
                 index=0,
-                key=f"sexo_bas_{modo}",
+                key=f"sexo_bas_{_suf}",
             )
-            # Prospecto: aviso claro de que no se incluye rendimiento
-            st.markdown(f"""
-            <div style="
-                background:{COLORES['fondo']};
-                border-radius:6px;
-                padding:0.7rem 0.9rem;
-                font-size:0.80rem;
-                color:{COLORES['texto_suave']};
-                margin-top:0.3rem;
-            ">
-                📌 Como todavía no estás matriculado/a, los datos de
-                rendimiento académico no están disponibles. El modelo
-                los imputará con la media histórica de tu contexto.
-            </div>
-            """, unsafe_allow_html=True)
+            # Prospecto: aviso compacto de que no se incluye rendimiento
+            st.caption(
+                "📌 Sin rendimiento académico (no matriculado/a). "
+                "El modelo imputa con media histórica."
+            )
 
     # -------------------------------------------------------------------------
     # BLOQUE AVANZADO — en expander
+    # Los campos aquí se marcan como `_rellenado_<var>=True` SOLO si el
+    # usuario activa el checkbox "He revisado mis datos avanzados".
+    #
+    # Histórico: antes se comparaba el valor del slider con el default
+    # (heurística `abs(valor - default) > 0.05`). El problema era que el
+    # default se recalculaba en cada re-render desde el contexto actual
+    # (media histórica), y pequeñas variaciones de contexto entre clicks
+    # disparaban falsos positivos: el flag se marcaba True aunque el usuario
+    # no hubiera abierto siquiera el expander. Resultado: el dot plot
+    # mostraba nota_selectividad como factor aunque el usuario no la había
+    # rellenado (perfil D del testing).
+    #
+    # Ahora: checkbox explícito. El usuario decide si sus valores avanzados
+    # deben entrar en la cascada, independientemente de si coinciden con el
+    # default o no. Más transparente y defendible en tribunal.
     # -------------------------------------------------------------------------
     st.markdown("<br>", unsafe_allow_html=True)
 
-    label_exp = "⚙️ Datos avanzados (opcionales — mejoran la precisión)"
+    # Cabecera con borde azul (mismo estilo que las 3 cards: Académico,
+    # Personal, Socioeconómico). Se renderiza JUSTO ENCIMA del expander
+    # para que visualmente formen un bloque coherente.
+    st.markdown(f"""
+    <div style="
+        background:{COLORES['fondo']};
+        border:1.5px solid {COLORES['primario']};
+        border-radius:10px;
+        padding:0.6rem 0.9rem;
+        margin-bottom:0.3rem;
+    ">
+        <div style="font-size:0.85rem; font-weight:600; color:{COLORES['primario']};">
+            ⚙️ Datos avanzados (opcionales — mejoran la precisión)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    label_exp = "Desplegar / ocultar"
     with st.expander(label_exp, expanded=False):
         st.markdown(f"""
         <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin-bottom:0.8rem;">
@@ -878,47 +1256,73 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
         </p>
         """, unsafe_allow_html=True)
 
+        # Checkbox global de confirmación: controla TODOS los flags
+        # _rellenado_ de las variables del bloque avanzado.
+        usar_avanzados = st.checkbox(
+            label="✍️ He revisado mis datos avanzados · usar estos valores en el pronóstico",
+            value=False,
+            help=(
+                "Si lo marcas, los valores que pongas abajo se usarán en tu "
+                "pronóstico y aparecerán como factores en la cascada de "
+                "influencias. Si no lo marcas, el modelo usará las medias "
+                "históricas de tu contexto. Si no conoces algún campo concreto, "
+                "déjalo en su valor por defecto."
+            ),
+            key=f"usar_avanzados_{_suf}",
+        )
+
         adv1, adv2 = st.columns(2)
 
         with adv1:
             if modo != "en_curso":
+                _default_sel = round(_med('nota_selectividad', 6.5), 1)
                 perfil['nota_selectividad'] = st.slider(
                     label="Nota de selectividad",
-                    min_value=0.0, max_value=10.0,
-                    value=round(_med('nota_selectividad', 6.5), 1),
+                    # Rango 0-14: fase general (máx 10) + fase específica
+                    # (hasta +4 pp por ponderaciones). Coherente con
+                    # config_datos.py → 'nota_selectividad' rango (0, 14).
+                    min_value=0.0, max_value=14.0,
+                    value=_default_sel,
                     step=0.1,
-                    key=f"selectividad_{modo}",
+                    key=f"selectividad_{_suf}",
                 )
+                # Flag controlado por el checkbox global (ver arriba)
+                perfil['_rellenado_nota_selectividad'] = usar_avanzados
 
+            _default_orden = max(1, int(_med('orden_preferencia', 1)))
             perfil['orden_preferencia'] = st.number_input(
                 label="Orden de preferencia de la titulación",
                 min_value=1, max_value=20,
-                value=max(1, int(_med('orden_preferencia', 1))),
+                value=_default_orden,
                 step=1,
                 help="Posición en la que pediste esta titulación en la preinscripción (1 = primera opción).",
-                key=f"orden_pref_{modo}",
+                key=f"orden_pref_{_suf}",
             )
+            perfil['_rellenado_orden_preferencia'] = usar_avanzados
 
             if modo == "en_curso":
+                _default_gap = int(_med('anios_gap', 0))
                 perfil['anios_gap'] = st.number_input(
                     label="Años sin matricularse durante la carrera",
                     min_value=0, max_value=10,
-                    value=int(_med('anios_gap', 0)),
+                    value=_default_gap,
                     step=1,
                     help="Cursos en que no te matriculaste estando todavía en la carrera.",
-                    key=f"gap_{modo}",
+                    key=f"gap_{_suf}",
                 )
+                perfil['_rellenado_anios_gap'] = usar_avanzados
 
             if modo == "en_curso":
-                _val_nota = float(np.clip(round(_med('nota_acceso', 8.0), 1), 5.0, 14.0))
+                _val_nota_def = float(np.clip(round(_med('nota_acceso', 8.0), 1), 5.0, 14.0))
                 perfil['nota_acceso'] = st.slider(
                     label="Nota de acceso (PAU / FP)",
                     min_value=5.0, max_value=14.0,
-                    value=_val_nota,
+                    value=_val_nota_def,
                     step=0.1,
                     help="Nota de acceso a la universidad (escala 0–14).",
-                    key=f"nota_acceso_{modo}",
+                    key=f"nota_acceso_{_suf}",
                 )
+                perfil['_rellenado_nota_acceso'] = usar_avanzados
 
         with adv2:
             perfil['universidad_origen'] = st.selectbox(
@@ -926,8 +1330,9 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                 options=_OPCIONES_UNIVERSIDAD,
                 index=0,
                 help="Universidad a través de la cual realizaste la preinscripción. La mayoría de alumnos de bachillerato seleccionan UJI.",
-                key=f"univ_origen_{modo}",
+                key=f"univ_origen_{_suf}",
             )
+            perfil['_rellenado_universidad_origen'] = usar_avanzados
 
             if modo == "en_curso":
                 # En prospecto, via_acceso ya está en el bloque básico
@@ -936,8 +1341,9 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
                     label="Vía de acceso",
                     options=_OPCIONES_VIA_ACCESO,
                     index=0,
-                    key=f"tipo_acceso_{modo}",
+                    key=f"tipo_acceso_{_suf}",
                 )
+                perfil['_rellenado_via_acceso'] = usar_avanzados
 
     # -------------------------------------------------------------------------
     # Rellenar valores por defecto para features no mostradas
@@ -968,16 +1374,34 @@ def _formulario_perfil(modo: str, df_ref: pd.DataFrame,
         n_beca    = perfil.get('n_anios_beca', 0)
         perfil['anios_sin_beca'] = max(0, int(anios_mat) - int(n_beca))
 
+        # tasa_repeticion: derivada de cred_repetidos según la fórmula Fase 3
+        # (f3_m02_agregacion.ipynb, celda 3):
+        #     tasa_repeticion = (cred_repetidos / cred_titulacion) * 100
+        # cred_titulacion depende de la titulación:
+        #   - Medicina            → 360 ECTS
+        #   - Doble Grado         → 384 ECTS
+        #   - Resto (96% grados)  → 240 ECTS
+        titulacion_sel = (contexto.get('valor') or '') if isinstance(contexto, dict) else ''
+        if 'Medicina' in titulacion_sel:
+            cred_titulacion = 360
+        elif 'Doble Grado' in titulacion_sel:
+            cred_titulacion = 384
+        else:
+            cred_titulacion = 240
+        cred_rep = perfil.get('cred_repetidos', 0) or 0
+        perfil['tasa_repeticion'] = (cred_rep / cred_titulacion) * 100
+
         # indicador_interrupcion ya viene del checkbox — no sobreescribir
         # (el default de arriba solo aplica si no estaba en perfil, lo cual
         # no ocurre en en_curso porque el checkbox siempre devuelve 0 o 1)
 
-        # Limpiar auxiliares del expander si existen (campos no-feature)
+        # Limpiar auxiliares del formulario si existen (no son features del modelo).
+        # Nota: tasa_repeticion SÍ es feature, se calcula arriba y no se limpia.
         for _aux in ('_creditos_por_curso', 'creditos_superados',
                      'creditos_matriculados', 'tasa_rendimiento'):
             perfil.pop(_aux, None)
 
-    # Botón centrado
+    # Botón Calcular centrado (el botón Borrar está arriba en el bloque 1️⃣)
     st.markdown("<br>", unsafe_allow_html=True)
     _, col_btn, _ = st.columns([2, 1, 2])
     with col_btn:
@@ -1064,6 +1488,53 @@ def _traducir_perfil_a_codigos(perfil: dict) -> dict:
     return p
 
 
+# =============================================================================
+# HELPER: convertir valor string a código numérico para columnas categóricas
+# =============================================================================
+# Cuando imputamos desde df_ref (meta_test_app), las columnas categóricas
+# vienen como strings ("General", "Mujer"...) pero el pipeline del modelo
+# espera enteros. Este helper aplica el MAP correspondiente según el nombre
+# de la columna. Si no hay MAP o el valor no está mapeado, devuelve 0 (default
+# seguro alineado con la regla "fillna(0)" del preprocesado en SRC).
+# =============================================================================
+_MAPS_CATEGORICAS = {
+    'cupo': CUPO_MAP,
+    'rama': RAMA_MAP,
+    'situacion_laboral': OPCIONES_LABORAL_UI,
+    'via_acceso': OPCIONES_VIA_UI,
+    'sexo': OPCIONES_SEXO_UI,
+    'universidad_origen': OPCIONES_UNIVERSIDAD_UI,
+    'provincia': PROVINCIA_MAP,
+    'pais_nombre': PAIS_NOMBRE_MAP,
+}
+
+def _codificar_si_string(col: str, valor):
+    """Si valor es string y existe MAP para esa columna, devuelve el código
+    numérico. Si ya es numérico o no hay MAP, devuelve el valor tal cual."""
+    if not isinstance(valor, str):
+        return valor
+    mapa = _MAPS_CATEGORICAS.get(col)
+    if mapa is None:
+        # Sin MAP conocido → último recurso: devolver 0 para evitar
+        # que pipeline.transform() falle al convertir string a float
+        return 0
+    return mapa.get(valor, 0)
+
+
+def _codificar_df_categoricas(df: "pd.DataFrame") -> "pd.DataFrame":
+    """Versión vectorizada para DataFrames completos: convierte columnas
+    string de categóricas conocidas (cupo, situacion_laboral, etc.) a su
+    código numérico. Devuelve una COPIA del df con las columnas transformadas.
+    Las columnas numéricas o no mapeadas se dejan intactas.
+    """
+    df_out = df.copy()
+    for col, mapa in _MAPS_CATEGORICAS.items():
+        if col in df_out.columns and df_out[col].dtype == object:
+            # fillna(0) en los no mapeados — alineado con regla SRC
+            df_out[col] = df_out[col].map(mapa).fillna(0).astype(int)
+    return df_out
+
+
 def _calcular_probabilidad(perfil: dict, modelo, pipeline,
                             df_ref: pd.DataFrame) -> tuple[float | None, str | None]:
     """
@@ -1114,7 +1585,10 @@ def _calcular_probabilidad(perfil: dict, modelo, pipeline,
                 if df_ref[col].dtype.kind in ('f', 'i'):
                     fila[col] = float(df_ref[col].mean())
                 else:
-                    fila[col] = df_ref[col].mode()[0]
+                    # Moda puede venir como string ("General", "Mujer"...)
+                    # Convertimos a código numérico antes de pasar al pipeline.
+                    valor_moda = df_ref[col].mode()[0]
+                    fila[col] = _codificar_si_string(col, valor_moda)
             elif col in medias_scaler:
                 # Prioridad 3: media del training set (del scaler)
                 # Mejor que 0 — evita predicciones absurdas
@@ -1124,23 +1598,28 @@ def _calcular_probabilidad(perfil: dict, modelo, pipeline,
                 fila[col] = 0
 
         X_usuario = pd.DataFrame([fila], columns=cols_pipeline)
+        # Defensivo: si alguna celda quedó como NaN (p.ej. el formulario
+        # devolvió None para un campo opcional no rellenado), el pipeline
+        # o el modelo final (LogisticRegression del meta-learner) revientan.
+        # Rellenamos NaN con 0 como último recurso (alineado con regla SRC).
+        X_usuario = X_usuario.fillna(0)
         X_prep    = pipeline.transform(X_usuario)
 
-        # Mejora D (iter 6): convertir X_prep a DataFrame con nombres de
-        # columnas para evitar el warning de sklearn:
-        #   "X does not have valid feature names, but ... was fitted with
-        #   feature names"
-        # El warning sale porque pipeline.transform() devuelve numpy array.
-        # Usamos get_feature_names_out() si está disponible (sklearn >=1.0).
-        try:
-            nombres_salida = pipeline.get_feature_names_out()
-            X_prep = pd.DataFrame(X_prep, columns=nombres_salida)
-        except (AttributeError, ValueError):
-            # Pipelines antiguos o sin get_feature_names_out — asumimos
-            # que las columnas de salida son las mismas que las de entrada
-            # (caso sin OneHotEncoder). Es una aproximación mejor que nada.
-            if X_prep.shape[1] == len(cols_pipeline):
-                X_prep = pd.DataFrame(X_prep, columns=cols_pipeline)
+        # El modelo fue entrenado con los nombres ORIGINALES de features
+        # (cupo, anios_gap...), no con los del preprocesador (minmax__*).
+        # Pasamos X_prep como numpy array directamente para evitar que el
+        # modelo se queje de "feature names mismatch". El warning cosmético
+        # de sklearn "X does not have valid feature names" es inofensivo.
+        import numpy as _np
+        if hasattr(X_prep, 'values'):
+            X_prep = X_prep.values
+        elif not isinstance(X_prep, _np.ndarray):
+            X_prep = _np.asarray(X_prep)
+
+        # Defensa final: si quedó algún NaN tras el pipeline, rellenar con 0.
+        # El meta-learner LogisticRegression no acepta NaN.
+        if _np.isnan(X_prep).any():
+            X_prep = _np.nan_to_num(X_prep, nan=0.0)
 
         prob      = modelo.predict_proba(X_prep)[0, 1]
 
@@ -1158,6 +1637,7 @@ def _mostrar_resultado_principal(prob: float, modo: str):
     """Banner con el resultado principal antes de los gráficos."""
     pct = prob * 100
     nivel, color, emoji, mensaje = _clasificar_riesgo(prob)
+    _pct_txt = f"{pct:.1f}".replace('.', ',')
 
     st.markdown(f"""
     <div style="
@@ -1170,7 +1650,7 @@ def _mostrar_resultado_principal(prob: float, modo: str):
     ">
         <div style="font-size:2.5rem;">{emoji}</div>
         <div style="font-size:2rem; font-weight:bold; color:{color};">
-            {pct:.1f}%
+            {_pct_txt}%
         </div>
         <div style="font-size:1.1rem; font-weight:bold; color:{COLORES['texto']};">
             Riesgo de abandono: <span style="color:{color};">{nivel}</span>
@@ -1187,25 +1667,32 @@ def _mostrar_resultado_principal(prob: float, modo: str):
 # =============================================================================
 
 
-def _hex_to_rgba(hex_color: str, alpha: float) -> str:
-    """Convierte color hex a rgba para Plotly (que no acepta hex de 8 chars)."""
-    h = hex_color.lstrip('#')
-    if len(h) == 6:
-        r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
-        return f'rgba({r},{g},{b},{alpha})'
-    return hex_color  # fallback si ya es rgba u otro formato
+# _hex_to_rgba ELIMINADA (Chat p00, 28/04/2026) — sustituida por
+# _hex_a_rgba de utils/ui_helpers.py para no duplicar lógica.
+# Las llamadas internas de este fichero ahora usan _hex_a_rgba.
 
 
 
 def _grafico_velocimetro_comparativa(resultados: list):
     """
-    Velocímetro único con un marcador de color distinto para cada titulación.
-    El fondo muestra las zonas verde/amarillo/rojo como siempre.
-    Cada titulación tiene su aguja/anotación en su color de la paleta comparativa.
+    Velocímetro híbrido para comparativa de carreras:
+      - 2-3 carreras → 1 velocímetro grande con N agujas (Opción D)
+      - 4-5 carreras → N mini-velocímetros en grid (Opción C)
+    Cada carrera mantiene su color distintivo de la paleta comparativa.
     """
+    n = len(resultados)
+    # Modo grid SIEMPRE: mini-velocímetros lado a lado (mejor lectura
+    # que agujas solapadas en un único velocímetro, incluso con 2-3 carreras).
+    cols = st.columns(n)
+    for col_st, r in zip(cols, resultados):
+        with col_st:
+            _mini_gauge_individual(r)
+    return
+
+    # Modo agujas (2-3 carreras): un velocímetro con varias agujas
     fig = go.Figure()
 
-    # Zonas de fondo del velocímetro
+    # Zonas de fondo del velocímetro (verde / amarillo / rojo)
     fig.add_trace(go.Indicator(
         mode="gauge",
         value=0,  # valor dummy — no mostramos número central
@@ -1233,66 +1720,61 @@ def _grafico_velocimetro_comparativa(resultados: list):
         domain={'x': [0, 1], 'y': [0, 1]},
     ))
 
-    # Añadir una aguja por titulación usando shapes + annotations
+    # Una aguja desde el centro hacia el % de cada carrera
     import math
+    cx, cy = 0.5, 0.27       # centro del gauge en coord paper
+    longitud = 0.34          # longitud de la aguja
     for r in resultados:
         pct   = r["pct"]
         color = r["color_comp"]
-        nc    = r["titulacion"]
-        for pref in ["Grado en ", "Doble Grado en ", "Grado Universitario en "]:
-            if nc.startswith(pref):
-                nc = nc[len(pref):]
-                break
-        nc = nc[:25] + "…" if len(nc) > 25 else nc
-
-        # El velocímetro va de 180° (izq, 0%) a 0° (der, 100%)
-        # Ángulo en radianes: 180° - (pct/100 * 180°)
         angulo_deg = 180 - (pct / 100 * 180)
         angulo_rad = math.radians(angulo_deg)
-        # Centro del velocímetro en coordenadas paper (0-1)
-        cx, cy = 0.5, 0.27  # centro aproximado del gauge
-        longitud = 0.35
-
         x1 = cx + longitud * math.cos(angulo_rad)
         y1 = cy + longitud * math.sin(angulo_rad)
-
+        # Aguja
         fig.add_shape(
             type="line",
             x0=cx, y0=cy, x1=x1, y1=y1,
             line=dict(color=color, width=3),
             xref="paper", yref="paper",
         )
-        # Etiqueta fuera de la aguja
-        x_label = cx + (longitud + 0.07) * math.cos(angulo_rad)
-        y_label = cy + (longitud + 0.07) * math.sin(angulo_rad)
-        fig.add_annotation(
-            x=x_label, y=y_label,
-            text=f"<b style='color:{color}'>{pct:.1f}%</b><br><span style='font-size:9px'>{nc}</span>",
-            showarrow=False,
-            xref="paper", yref="paper",
-            font=dict(size=10, color=color),
-            align="center",
-        )
+    # Pivot central oscuro encima de las agujas
+    fig.add_shape(
+        type="circle",
+        xref="paper", yref="paper",
+        x0=cx - 0.018, y0=cy - 0.018,
+        x1=cx + 0.018, y1=cy + 0.018,
+        fillcolor=COLORES['texto'],
+        line=dict(color=COLORES['texto'], width=0),
+    )
 
-    # Leyenda textual debajo
+    # Leyenda textual debajo (■ color · nombre · pct)
     partes_leyenda = []
     for r in resultados:
         col  = r["color_comp"]
-        nom  = r["titulacion"].split("Grado en ")[-1][:30]
+        nom  = r["titulacion"]
+        for pref in ["Grado en ", "Doble Grado en ", "Grado Universitario en "]:
+            if nom.startswith(pref):
+                nom = nom[len(pref):]
+                break
+        nom = nom[:32] + "…" if len(nom) > 32 else nom
         pct  = r["pct"]
+        _pct_leyenda_txt = f"{pct:.1f}".replace('.', ',')
         partes_leyenda.append(
-            f"<span style='color:{col};font-weight:bold;'>■</span> {nom} ({pct:.1f}%)"
+            f"<span style='color:{col};font-weight:bold;'>■</span> {nom} "
+            f"({_pct_leyenda_txt}%)"
         )
     leyenda_html = " &nbsp;·&nbsp; ".join(partes_leyenda)
 
     fig.update_layout(
+        separators=",.",
         paper_bgcolor="white",
         margin=dict(l=20, r=20, t=20, b=10),
         height=260,
         showlegend=False,
     )
 
-    st.plotly_chart(fig, width='stretch')
+    st.plotly_chart(fig, width='stretch', key="velocimetro_comparativa")
     st.markdown(
         f"<p style='font-size:0.78rem; color:{COLORES['texto_suave']}; "
         f"text-align:center; margin-top:-0.5rem;'>{leyenda_html}</p>",
@@ -1300,16 +1782,332 @@ def _grafico_velocimetro_comparativa(resultados: list):
     )
 
 
-def _grafico_indicador_riesgo(prob: float):
+def _mini_gauge_individual(r: dict):
+    """Mini-velocímetro individual para grid de 4-5 carreras (modo C).
+    r contiene: titulacion (nombre), pct (0-100), color_comp (hex)."""
+    pct   = r["pct"]
+    color = r["color_comp"]
+    # Auditoría p03 (Chat p03, 27/04/2026): se usa el helper centralizado
+    # _nombre_titulacion_corto en vez de la lógica local que truncaba
+    # con "…" a 18 caracteres. Ahora el nombre se parte en 2 líneas con <br>
+    # para que entre completo (24 chars + 24 chars). Helper consistente con
+    # el resto de la app y maneja correctamente "Doble Grado en ...".
+    nom = _nombre_titulacion_corto(r["titulacion"], partir_lineas=True, max_chars=24)
+
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=pct,
+        number={'suffix': '%', 'font': {'size': 22, 'color': color}},
+        gauge={
+            'axis': {'range': [0, 100], 'tickvals': [0, 50, 100],
+                     'tickfont': {'size': 8, 'color': COLORES['texto_suave']}},
+            'bar': {'color': color, 'thickness': 0.25},
+            'bgcolor': 'white',
+            'borderwidth': 0,
+            'steps': [
+                {'range': [0,  UMBRALES['riesgo_bajo']  * 100],
+                 'color': 'rgba(56,161,105,0.15)'},
+                {'range': [UMBRALES['riesgo_bajo']  * 100,
+                           UMBRALES['riesgo_medio'] * 100],
+                 'color': 'rgba(236,201,75,0.15)'},
+                {'range': [UMBRALES['riesgo_medio'] * 100, 100],
+                 'color': 'rgba(229,62,62,0.15)'},
+            ],
+        },
+        domain={'x': [0, 1], 'y': [0, 1]},
+    ))
+    fig.update_layout(
+        separators=",.",
+        paper_bgcolor="white",
+        margin=dict(l=10, r=10, t=10, b=10),
+        height=170,
+        showlegend=False,
+    )
+    # Key con titulación completa (no el 'nom' truncado) para evitar colisiones
+    # si 2 titulaciones comparten los primeros 18 chars + mismo pct.
+    _key = f"mini_gauge_{r['titulacion']}_{pct:.2f}"
+    st.plotly_chart(fig, width='stretch', key=_key)
+    st.markdown(
+        f"<p style='font-size:0.78rem; color:{color}; font-weight:500; "
+        f"text-align:center; margin-top:-0.6rem;'>{nom}</p>",
+        unsafe_allow_html=True
+    )
+
+
+def _kpis_resumen(prob: float, perfil: dict, contexto: dict,
+                   df_ctx: pd.DataFrame, df_ref: pd.DataFrame):
+    """Fila de 4 KPIs compactos con lectura rápida del resultado.
+
+    KPIs:
+      1. Riesgo personal (%) con delta vs media UJI (29.2%)
+      2. Media del contexto (%)
+      3. Percentil del alumno en su contexto
+      4. Factor clave (variable con mayor peso del perfil)
+    """
+    # Tasa media UJI — leída de metricas_modelo.json si está disponible, fallback 29.2
+    try:
+        import json as _json
+        _ruta_m = _RUTAS.get("metricas_modelo")
+        _m_ps   = _json.loads(_ruta_m.read_text(encoding="utf-8")) if _ruta_m and _ruta_m.exists() else {}
+        media_uji = float(_m_ps.get("tasa_abandono", 0.292)) * 100
+    except Exception:
+        media_uji = 29.2  # fallback documentado
+
+    # KPI 2: media del contexto (titulación/rama/todas)
+    if df_ctx is not None and 'abandono' in df_ctx.columns and len(df_ctx) > 0:
+        media_ctx_pct = float(df_ctx['abandono'].mean()) * 100
+        nombre_ctx = contexto.get('valor') or 'UJI completo'
+    else:
+        media_ctx_pct = media_uji
+        nombre_ctx = 'UJI completo'
+
+    # KPI 3: ranking del alumno por NOTA de acceso dentro del contexto.
+    # Mide el % de alumnos del contexto con nota INFERIOR a la del usuario.
+    # Rápido (sin predicción), intuitivo y aporta info nueva al resto de KPIs.
+    ranking_nota = None
+    nota_alumno = perfil.get('nota_acceso')
+    if (df_ctx is not None and len(df_ctx) > 0
+            and 'nota_acceso' in df_ctx.columns
+            and nota_alumno is not None):
+        try:
+            nota_alumno_f = float(nota_alumno)
+            notas = df_ctx['nota_acceso'].dropna()
+            if len(notas) > 0:
+                ranking_nota = int((notas < nota_alumno_f).mean() * 100)
+        except Exception:
+            ranking_nota = None
+
+    # KPI 4: factor clave — variable con mayor peso según diferencia
+    # de medias del perfil vs la media del contexto (proxy simple).
+    factores_top = [
+        ('nota_acceso', 'Nota de acceso'),
+        ('n_anios_beca', 'Años con beca'),
+        ('n_anios_trabajando', 'Años trabajando'),
+        ('edad_entrada', 'Edad de entrada'),
+    ]
+    factor_clave = 'Nota de acceso'
+    if df_ctx is not None and len(df_ctx) > 0:
+        max_z = -1.0
+        for col, nombre in factores_top:
+            if col in df_ctx.columns and col in perfil:
+                try:
+                    val_usuario = float(perfil[col])
+                    media_col = float(df_ctx[col].mean())
+                    std_col = float(df_ctx[col].std()) or 1.0
+                    z = abs((val_usuario - media_col) / std_col)
+                    if z > max_z:
+                        max_z = z
+                        factor_clave = nombre
+                except Exception:
+                    pass
+
+    nivel, color, _, _ = _clasificar_riesgo(prob)
+    delta_pp = prob * 100 - media_uji
+    # Formato español: coma decimal (variables intermedias para evitar
+    # f-strings anidadas con comillas, no soportadas en todas las versiones).
+    delta_txt = (
+        f"{'+' if delta_pp >= 0 else ''}{delta_pp:.1f}pp vs media UJI"
+    ).replace(".", ",")
+    _prob_kpi_txt       = f"{prob*100:.1f}".replace('.', ',')
+    _media_ctx_kpi_txt  = f"{media_ctx_pct:.1f}".replace('.', ',')
+
+    # -------------------------------------------------------------------------
+    # Auditoría p03 (Chat p03): renderizado migrado a _tarjeta_kpi de
+    # utils/ui_helpers.py para apariencia IDÉNTICA a p02 (border-left:4px,
+    # etiqueta MAYÚSCULA con CSS text-transform:uppercase, valor 1.7rem,
+    # padding y altura uniforme). Antes vivía con cards inline border-top:3px
+    # que rompían la coherencia visual con el resto de la app.
+    #
+    # Mapeo de colores semánticos (alineado con p02):
+    #   🎯 RIESGO PERSONAL → color del nivel (verde/ámbar/rojo) — el dato
+    #                         más importante: la barra refleja el nivel.
+    #   📚 MEDIA CONTEXTO  → primario (azul) — informativo neutro
+    #   📏 RANKING DE NOTA → texto_muy_suave (gris) — métrica auxiliar
+    #   🔑 FACTOR CLAVE    → primario (azul) — informativo neutro
+    # -------------------------------------------------------------------------
+
+    # KPI 1: riesgo personal — barra del color del nivel
+    # delta_color: el delta indica si estás POR ENCIMA (peor=red) o
+    # POR DEBAJO (mejor=green) de la media UJI.
+    _delta_color_k1 = "red" if delta_pp > 0 else ("green" if delta_pp < 0 else "gray")
+    html_k1 = _tarjeta_kpi(
+        icono="🎯",
+        etiqueta="Riesgo personal",
+        valor=f"{_prob_kpi_txt}%",
+        delta=f"{nivel} · {delta_txt}",
+        delta_color=_delta_color_k1,
+        tooltip="Probabilidad estimada de abandono según tu perfil. "
+                "El delta (pp = puntos porcentuales) compara con la media UJI "
+                f"({media_uji:.1f}%).".replace(".", ","),
+        color_barra=color,   # verde / ámbar / rojo según el nivel
+    )
+
+    # KPI 2: media contexto — barra azul primario
+    nombre_corto = nombre_ctx[:24] + "…" if len(nombre_ctx) > 24 else nombre_ctx
+    html_k2 = _tarjeta_kpi(
+        icono="📚",
+        etiqueta="Media contexto",
+        valor=f"{_media_ctx_kpi_txt}%",
+        delta=nombre_corto,
+        delta_color="gray",
+        tooltip="Tasa real de abandono observada en el contexto seleccionado "
+                "(titulación, rama o UJI completo).",
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 3: ranking de nota — barra gris (métrica auxiliar)
+    if ranking_nota is not None:
+        valor_k3 = f"{ranking_nota}%"
+        nota_txt = f"{float(nota_alumno):.1f}".replace(".", ",") if nota_alumno else "—"
+        delta_k3 = f"alumnos con nota peor · tu nota: {nota_txt}"
+    else:
+        valor_k3 = "—"
+        delta_k3 = "sin datos de nota"
+    html_k3 = _tarjeta_kpi(
+        icono="📏",
+        etiqueta="Ranking de nota",
+        valor=valor_k3,
+        delta=delta_k3,
+        delta_color="gray",
+        tooltip="Porcentaje de alumnos del contexto con nota de acceso "
+                "INFERIOR a la tuya. Cuanto mayor, mejor posicionada está "
+                "tu nota dentro del contexto.",
+        color_barra=COLORES["texto_muy_suave"],
+    )
+
+    # KPI 4: factor clave — barra azul primario
+    html_k4 = _tarjeta_kpi(
+        icono="🔑",
+        etiqueta="Factor clave",
+        valor=factor_clave,
+        delta="Mayor desviación en tu perfil",
+        delta_color="gray",
+        tooltip="Variable de tu perfil con mayor desviación respecto a la "
+                "media del contexto (z-score absoluto). Es el factor que más "
+                "te diferencia del alumnado típico de tu contexto.",
+        color_barra=COLORES["primario"],
+    )
+
+    # Renderizar las 4 tarjetas en una fila
+    cols = st.columns(4)
+    cols[0].markdown(html_k1, unsafe_allow_html=True)
+    cols[1].markdown(html_k2, unsafe_allow_html=True)
+    cols[2].markdown(html_k3, unsafe_allow_html=True)
+    cols[3].markdown(html_k4, unsafe_allow_html=True)
+
+
+def _grafico_historico_scatter(prob: float, contexto: dict,
+                                 df_ref: pd.DataFrame,
+                                 perfil: dict = None):
+    """Histograma compacto de la distribución de notas de acceso del
+    contexto, con una línea vertical marcando la nota del usuario.
+    Sirve para visualizar de un vistazo dónde se sitúa el alumno
+    respecto al resto de alumnos del contexto elegido (titulación,
+    rama o toda UJI)."""
+    df_ctx_plot = contexto.get('df_contexto')
+    if df_ctx_plot is None or len(df_ctx_plot) == 0 \
+       or 'nota_acceso' not in df_ctx_plot.columns:
+        st.info("Sin datos suficientes para el histórico del contexto.")
+        return
+
+    notas = df_ctx_plot['nota_acceso'].dropna()
+    if len(notas) == 0:
+        st.info("Sin notas de acceso disponibles en el contexto.")
+        return
+
+    nota_usuario = None
+    if perfil is not None and perfil.get('nota_acceso') is not None:
+        try:
+            nota_usuario = float(perfil['nota_acceso'])
+        except Exception:
+            nota_usuario = None
+    media_notas = float(notas.mean())
+
+    nombre_ctx = contexto.get('valor') or 'UJI completo'
+
+    st.markdown(f"""
+    <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0.3rem 0 0.2rem 0;">
+        📊 Distribución de notas · <strong>{nombre_ctx}</strong>
+    </p>
+    """, unsafe_allow_html=True)
+    import plotly.graph_objects as _go
+    fig = _go.Figure()
+
+    # Histograma de notas del contexto
+    fig.add_trace(_go.Histogram(
+        x=notas,
+        nbinsx=30,
+        marker=dict(color=COLORES['primario'], opacity=0.45),
+        name='Contexto',
+        hovertemplate='Nota %{x:,.1f}<br>%{y} alumnos<extra></extra>',
+    ))
+
+    # Línea vertical: media del contexto (gris oscuro, anclada abajo)
+    fig.add_vline(
+        x=media_notas,
+        line=dict(color=COLORES['texto'], width=1.5, dash='dash'),
+        annotation_text=f"Media: {media_notas:.1f}".replace(".", ","),
+        annotation_position="bottom left",
+        annotation_font=dict(size=11, color=COLORES['texto']),
+        annotation_bgcolor="rgba(255,255,255,0.85)",
+    )
+
+    # Línea vertical: nota del usuario (verde si por encima de media, rojo si debajo)
+    # Auditoría p03 (Chat p03): hex #1D9E75/#C53030 → COLORES['exito']/COLORES['abandono'].
+    if nota_usuario is not None:
+        col_user = (COLORES['exito']
+                    if nota_usuario >= media_notas
+                    else COLORES['abandono'])
+        fig.add_vline(
+            x=nota_usuario,
+            line=dict(color=col_user, width=3),
+            annotation_text=f"Tu nota: {nota_usuario:.1f}".replace(".", ","),
+            annotation_position="top right",
+            annotation_font=dict(size=11, color=col_user),
+            annotation_bgcolor="rgba(255,255,255,0.85)",
+        )
+
+    fig.update_layout(
+        separators=",.",
+        xaxis_title=None,
+        yaxis_title="Nº alumnos",
+        paper_bgcolor='white',
+        plot_bgcolor='white',
+        height=200,
+        margin=dict(l=40, r=10, t=5, b=5),
+        showlegend=False,
+        xaxis=dict(range=[max(0, float(notas.min()) - 0.5),
+                           min(14, float(notas.max()) + 0.5)],
+                   showgrid=True,
+                   gridcolor=COLORES['borde']),
+        yaxis=dict(showgrid=True, gridcolor=COLORES['borde']),
+    )
+    # Key única: prob + contexto (tipo+valor) para evitar colisiones si 2
+    # llamadas distintas tienen la misma prob.
+    _ctx_key = f"{contexto.get('tipo','x')}_{str(contexto.get('valor','x'))[:20]}"
+    st.plotly_chart(fig, width='stretch',
+                     key=f'historico_nota_{prob:.4f}_{_ctx_key}')
+
+
+def _grafico_indicador_riesgo(prob: float, modo: str = "prospecto"):
     """
     Velocímetro semicircular con la probabilidad de abandono.
     La aguja apunta al valor predicho. Verde → amarillo → rojo.
     Delta muestra la diferencia respecto a la media UJI (29.2%).
     """
+    # media_uji — leída de metricas_modelo.json, fallback 29.2
+    try:
+        import json as _json_ig
+        from config_app import RUTAS as _RUTAS_IG
+        _ruta_ig = _RUTAS_IG.get("metricas_modelo")
+        _m_ig    = _json_ig.loads(_ruta_ig.read_text(encoding="utf-8")) if _ruta_ig and _ruta_ig.exists() else {}
+        media_uji = float(_m_ig.get("tasa_abandono", 0.292)) * 100
+    except Exception:
+        media_uji = 29.2  # fallback documentado
     st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin-bottom:0.3rem;">
-        🎯 Indicador de riesgo
-    </h4>
+    <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0.3rem 0 0.2rem 0;">
+        🎯 Tu riesgo personal
+    </p>
     """, unsafe_allow_html=True)
 
     pct = prob * 100
@@ -1320,7 +2118,7 @@ def _grafico_indicador_riesgo(prob: float):
         value=pct,
         number={'suffix': '%', 'font': {'size': 36, 'color': color}},
         delta={
-            'reference': 29.2,
+            'reference': media_uji,
             'increasing': {'color': COLORES['abandono']},
             'decreasing': {'color': COLORES['exito']},
             'suffix': ' pp vs media UJI',
@@ -1353,9 +2151,13 @@ def _grafico_indicador_riesgo(prob: float):
         },
         title={
             'text': (
+                # Auditoría p03 (Chat p03, 27/04/2026): antes "media UJI = 29.2%"
+                # estaba HARDCODEADO. Ahora se lee de metricas_modelo.json
+                # vía media_uji (línea ~2198) y se formatea con coma decimal.
                 "Probabilidad de abandono predicha<br>"
                 "<span style='font-size:0.8em;color:gray'>"
-                "Referencia: media UJI = 29.2%</span>"
+                f"Referencia: media UJI = {media_uji:.1f}%".replace(".", ",") +
+                "</span>"
             ),
             'font': {'size': 14},
         },
@@ -1363,12 +2165,13 @@ def _grafico_indicador_riesgo(prob: float):
     ))
 
     fig.update_layout(
+        separators=",.",
         paper_bgcolor="white",
-        margin=dict(l=30, r=30, t=60, b=20),
-        height=300,
+        margin=dict(l=10, r=10, t=20, b=5),
+        height=200,
     )
 
-    st.plotly_chart(fig, width='stretch')
+    st.plotly_chart(fig, width='stretch', key=f"indicador_riesgo_{modo}")
 
 
 # =============================================================================
@@ -1376,7 +2179,7 @@ def _grafico_indicador_riesgo(prob: float):
 # =============================================================================
 
 def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
-                   contexto: dict, prob: float):
+                   contexto: dict, prob: float, key_suffix: str = ""):
     """
     Gráfico de araña con 3 trazas:
       - Perfil de éxito  (azul) — media de los que NO abandonaron
@@ -1385,6 +2188,11 @@ def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
 
     Cada eje es una variable numérica normalizada a 0-1 usando los
     rangos del dataset completo (para comparabilidad).
+
+    Bug fix (Chat p03, 27/04/2026): añadido key_suffix para evitar
+    StreamlitDuplicateElementKey cuando el radar se renderiza varias veces
+    en la misma sesión (ej: contexto principal + dentro de expander de
+    comparativa con la misma titulación).
     """
     st.markdown(f"""
     <h4 style="color:{COLORES['texto']}; margin-bottom:0.3rem;">
@@ -1468,13 +2276,14 @@ def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
     fig.add_trace(go.Scatterpolar(
         r=usuario_c, theta=nombres_c,
         fill='toself',
-        fillcolor=_hex_to_rgba(color_usuario, 0.18),
+        fillcolor=_hex_a_rgba(color_usuario, 0.18),
         line=dict(color=color_usuario, width=2.5, dash='dash'),
         name='Tu perfil',
     ))
 
     nombre_ctx = contexto['valor'] or "toda la UJI"
     fig.update_layout(
+        separators=",.",
         polar=dict(
             radialaxis=dict(
                 visible=True, range=[0, 1],
@@ -1492,7 +2301,12 @@ def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
         height=360,
     )
 
-    st.plotly_chart(fig, width='stretch')
+    # Key único derivado del contexto + sufijo opcional para evitar
+    # DuplicateElementId cuando se renderiza varias veces (ej: expanders
+    # de comparativa con la misma titulación que el contexto principal).
+    _sfx = f"_{key_suffix}" if key_suffix else ""
+    _key = f"radar_{contexto.get('tipo','x')}_{contexto.get('valor','x')}{_sfx}"
+    st.plotly_chart(fig, width='stretch', key=_key)
     st.caption(
         f"💡 Comparativa sobre alumnos de {nombre_ctx}. "
         "Cuanto más cerca del borde exterior, mejor en esa variable."
@@ -1505,13 +2319,17 @@ def _grafico_radar(perfil: dict, df_ref: pd.DataFrame,
 # =============================================================================
 
 def _grafico_cascada(perfil: dict, df_ref: pd.DataFrame,
-                     prob: float, modelo, pipeline):
+                     prob: float, modelo, pipeline,
+                     key_suffix: str = "",
+                     modo: str = "prospecto"):
     """
-    Gráfico de cascada (waterfall) que muestra cómo cada variable del
-    perfil sube o baja el riesgo respecto a la probabilidad base.
+    Dot plot de impacto de factores (antes era cascada/waterfall).
 
-    Método rápido  : diferencia de medias por grupo (instántaneo)
-    Método preciso : SHAP TreeExplainer en tiempo real (~1-3s)
+    key_suffix: identificador único (p.ej. titulación) para evitar keys
+    duplicadas cuando se renderizan varios dot plots con la misma prob.
+
+    modo: "prospecto" (excluye variables académicas del 1er año) o
+    "en_curso" (las incluye).
     """
     st.markdown(f"""
     <h4 style="color:{COLORES['texto']}; margin-bottom:0.3rem;">
@@ -1523,28 +2341,66 @@ def _grafico_cascada(perfil: dict, df_ref: pd.DataFrame,
     # El método Preciso (SHAP sobre CatBoost base) produce valores en escala
     # log-odds no convertibles a % de forma fiable para el Stacking completo.
     # Se mantiene el código _contribuciones_shap por si se resuelve en el futuro.
-    contribuciones = _contribuciones_proxy(perfil, df_ref)
+    contribuciones = _contribuciones_proxy(perfil, df_ref, modo=modo)
 
     if not contribuciones:
-        st.info("No hay suficientes datos para calcular las contribuciones.")
+        st.info(
+            "No hay suficientes datos rellenados para mostrar los factores. "
+            "Completa más campos del perfil para ver el análisis."
+        )
         return
 
-    _renderizar_waterfall(contribuciones, prob, df_ref)
+    _renderizar_waterfall(contribuciones, prob, df_ref, key_suffix=key_suffix)
 
 
-def _contribuciones_proxy(perfil: dict, df_ref: pd.DataFrame) -> list[dict]:
+def _contribuciones_proxy(perfil: dict, df_ref: pd.DataFrame,
+                            modo: str = "prospecto") -> list[dict]:
     """
     Método rápido: para cada variable, calcula cuánto difiere la tasa
     de abandono media del grupo del usuario respecto a la media general.
     Es una aproximación marginal (no considera interacciones).
+
+    Filtrado de variables:
+      - En modo 'prospecto' se EXCLUYEN variables académicas (nota_1er_anio,
+        cred_superados_anio_1er) porque un futuro estudiante aún no las tiene.
+      - Variables que el usuario NO haya rellenado explícitamente (flag
+        `_rellenado_` en el perfil) se excluyen para no falsear la cascada
+        con valores imputados.
+      - Se descartan contribuciones con magnitud < 0.5 pp (ruido).
     """
     prob_base = df_ref['abandono'].mean() \
         if 'abandono' in df_ref.columns else 0.292
 
-    vars_cascada = ['nota_acceso', 'situacion_laboral', 'n_anios_beca',
-                    'nota_1er_anio', 'edad_entrada', 'tasa_rendimiento',
-                    'via_acceso', 'nota_selectividad']
-    vars_ok = [v for v in vars_cascada if v in perfil and v in df_ref.columns]
+    # Variables candidatas según modo
+    vars_cascada_base = ['nota_acceso', 'situacion_laboral', 'n_anios_beca',
+                          'edad_entrada', 'via_acceso', 'nota_selectividad']
+    vars_cascada_curso = ['nota_1er_anio', 'tasa_rendimiento']
+
+    if modo == "en_curso":
+        vars_cascada = vars_cascada_base + vars_cascada_curso
+    else:
+        # Prospecto: excluimos variables académicas (aún no existen)
+        vars_cascada = vars_cascada_base
+
+    # Solo variables que el usuario haya indicado (rellenado) y existan en df_ref.
+    # Si el perfil tiene marcador explícito `_rellenado_<var>`=False, excluir.
+    def _rellenada(v: str) -> bool:
+        marcador = f"_rellenado_{v}"
+        if marcador in perfil:
+            return bool(perfil[marcador])
+        # Fallback defensivo: considerar rellenada si el valor no es None ni NaN
+        val = perfil.get(v)
+        if val is None:
+            return False
+        try:
+            if isinstance(val, float) and np.isnan(val):
+                return False
+        except Exception:
+            pass
+        return True
+
+    vars_ok = [v for v in vars_cascada
+               if v in perfil and v in df_ref.columns and _rellenada(v)]
 
     contribuciones = []
     for v in vars_ok:
@@ -1581,6 +2437,10 @@ def _contribuciones_proxy(perfil: dict, df_ref: pd.DataFrame) -> list[dict]:
             'contribucion': float(contribucion),
         })
 
+    # Filtrar contribuciones <0.5 pp (ruido) — no aportan al dot plot
+    contribuciones = [c for c in contribuciones
+                      if abs(c['contribucion']) >= 0.005]
+
     # Ordenar por valor absoluto, top 6
     contribuciones.sort(key=lambda x: abs(x['contribucion']), reverse=True)
     return contribuciones[:6]
@@ -1613,8 +2473,12 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
                     if df_ref[col].dtype.kind in ('f', 'i'):
                         fila[col] = df_ref[col].mean()
                     else:
-                        fila[col] = df_ref[col].mode()[0] \
-                            if df_ref[col].notna().any() else ""
+                        if df_ref[col].notna().any():
+                            # Convertir string de moda a código numérico
+                            valor_moda = df_ref[col].mode()[0]
+                            fila[col] = _codificar_si_string(col, valor_moda)
+                        else:
+                            fila[col] = 0
                 else:
                     fila[col] = 0
 
@@ -1706,49 +2570,139 @@ def _contribuciones_shap(perfil: dict, df_ref: pd.DataFrame,
 
 
 def _renderizar_waterfall(contribuciones: list[dict], prob: float,
-                           df_ref: pd.DataFrame):
-    """Renderiza el gráfico de cascada con las contribuciones calculadas."""
+                           df_ref: pd.DataFrame,
+                           key_suffix: str = ""):
+    """Renderiza un dot plot de impacto de factores (reemplaza al waterfall).
+
+    Cada factor es un punto sobre una línea desde 0, con tamaño proporcional
+    a la magnitud del impacto. Verde a la izquierda = reduce riesgo, rojo a
+    la derecha = lo aumenta. Los valores NO son aditivos: son impactos
+    marginales estimados por factor, no componentes que sumen al riesgo final.
+    Por eso mostramos el riesgo final como KPI grande aparte, no como suma.
+
+    key_suffix: string opcional para evitar keys duplicadas cuando se
+    renderizan varios dot plots con la misma prob.
+    """
 
     prob_base = df_ref['abandono'].mean() \
         if 'abandono' in df_ref.columns else 0.292
 
-    labels  = ['Base UJI'] + [c['variable'] for c in contribuciones] + ['Tu riesgo']
-    valores = [prob_base] + [c['contribucion'] for c in contribuciones] + [prob]
-    medidas = ['absolute'] + ['relative'] * len(contribuciones) + ['total']
+    # --- KPI grande con el riesgo final y comparativa con la media ---
+    _, color_user, _, _ = _clasificar_riesgo(prob)
+    diff_pp = (prob - prob_base) * 100
+    sig     = "+" if diff_pp >= 0 else ""
+    # Valores formateados con coma decimal española (solo los datos, no el CSS)
+    _prob_txt      = f"{prob*100:.1f}%".replace('.', ',')
+    _prob_base_txt = f"{prob_base*100:.1f}%".replace('.', ',')
+    _diff_txt      = f"{sig}{diff_pp:.1f} pp".replace('.', ',')
+    st.markdown(f"""
+    <div style="background:{COLORES['fondo']}; border-radius:8px;
+                padding:0.8rem 1rem; margin-bottom:0.8rem;
+                text-align:center;">
+        <div style="font-size:0.72rem; color:{COLORES['texto_suave']};
+                    letter-spacing:0.5px;">TU RIESGO ESTIMADO</div>
+        <div style="font-size:1.8rem; font-weight:500; color:{color_user};
+                    margin:0.2rem 0; line-height:1;">
+            {_prob_txt}
+        </div>
+        <div style="font-size:0.72rem; color:{COLORES['texto_suave']};">
+            media del contexto: {_prob_base_txt} · {_diff_txt}
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    fig = go.Figure(go.Waterfall(
-        orientation='v',
-        measure=medidas,
-        x=labels,
-        y=[v * 100 for v in valores],
-        text=[
-            f"{v*100:+.1f}%" if 0 < i < len(labels) - 1 else f"{v*100:.1f}%"
-            for i, v in enumerate(valores)
-        ],
-        textposition='outside',
-        connector={'line': {'color': COLORES['borde'], 'width': 1}},
-        increasing={'marker': {'color': COLORES['abandono']}},
-        decreasing={'marker': {'color': COLORES['exito']}},
-        totals={'marker': {'color': COLORES['primario']}},
-        hovertemplate="<b>%{x}</b><br>Contribución: %{y:.1f} pp<extra></extra>",
+    if not contribuciones:
+        st.info("No hay suficientes datos para mostrar los factores.")
+        return
+
+    # --- Preparar datos: ordenados por magnitud absoluta (los más
+    # influyentes arriba), convertidos a puntos porcentuales. ---
+    factores_raw = [
+        {
+            'nombre': c['variable'],
+            'valor_pp': float(c['contribucion']) * 100,  # a puntos porcentuales
+        }
+        for c in contribuciones
+    ]
+    factores_raw.sort(key=lambda f: abs(f['valor_pp']), reverse=True)
+
+    nombres = [f['nombre'] for f in factores_raw]
+    valores = [f['valor_pp'] for f in factores_raw]
+    colores = [COLORES['exito'] if v < 0 else COLORES['abandono']
+               for v in valores]
+
+    # Tamaños proporcionales a |valor|, con mínimo y máximo razonables
+    max_abs = max((abs(v) for v in valores), default=1)
+    tamanos = [max(12, 12 + (abs(v) / max_abs) * 22) for v in valores]
+
+    # Textos con signo explícito y coma decimal española
+    textos      = [f"{'+' if v >= 0 else ''}{v:.1f} pp".replace('.', ',')
+                   for v in valores]
+    posiciones  = ['middle left' if v < 0 else 'middle right' for v in valores]
+
+    fig = go.Figure()
+
+    # Línea conectora de cada factor desde el cero — misma y que el punto.
+    # Ancho mayor para que no se vea pobre en columnas estrechas.
+    for nom, v, col in zip(nombres, valores, colores):
+        fig.add_trace(go.Scatter(
+            x=[0, v], y=[nom, nom],
+            mode='lines',
+            line=dict(color=col, width=3),
+            hoverinfo='skip', showlegend=False,
+        ))
+
+    # Puntos con tamaño variable y etiqueta a un lado.
+    # textposition: siempre 'outside' del punto respecto al cero; así
+    # la etiqueta nunca tapa la línea conectora.
+    fig.add_trace(go.Scatter(
+        x=valores, y=nombres,
+        mode='markers+text',
+        marker=dict(size=tamanos, color=colores,
+                    line=dict(color='white', width=2)),
+        text=textos,
+        textposition=posiciones,
+        textfont=dict(size=11, color=COLORES['texto']),
+        hovertemplate='%{y}: %{x:,.1f} pp<extra></extra>',
+        showlegend=False,
+        cliponaxis=False,  # No recortar etiquetas cerca del borde del eje
     ))
 
-    fig.update_layout(
-        yaxis_title="Probabilidad de abandono (%)",
-        yaxis=dict(ticksuffix='%'),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(l=40, r=20, t=40, b=80),
-        height=380,
-        showlegend=False,
-        xaxis=dict(tickangle=-25),
-    )
-    fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
+    # Rango simétrico para que el eje 0 quede visualmente centrado.
+    # Factor 1.5 + 8 pp para dejar aire a las etiquetas (±N,N pp).
+    rango = max(abs(min(valores, default=-1)),
+                abs(max(valores, default=1))) * 1.5 + 8
 
-    st.plotly_chart(fig, width='stretch')
+    fig.update_layout(
+        separators=",.",
+        xaxis=dict(
+            title="Impacto (puntos porcentuales)",
+            zeroline=True,
+            zerolinecolor=COLORES['texto_suave'],
+            zerolinewidth=2,
+            ticksuffix=' pp',
+            range=[-rango, rango],
+            gridcolor=COLORES['borde'],
+        ),
+        yaxis=dict(
+            autorange='reversed',
+            gridcolor='rgba(0,0,0,0)',
+        ),
+        paper_bgcolor="white",
+        plot_bgcolor="white",
+        height=max(260, 50 + 42 * len(factores_raw)),
+        margin=dict(l=120, r=50, t=10, b=50),
+        showlegend=False,
+    )
+
+    # Clave única incluyendo sufijo (p.ej. titulación)
+    _key_base = f'factores_{prob:.4f}'
+    _key      = f'{_key_base}_{key_suffix}' if key_suffix else _key_base
+    st.plotly_chart(fig, width='stretch', key=_key)
     st.caption(
-        "🔴 Rojo = ese factor aumenta tu riesgo respecto a la media.  "
-        "🟢 Verde = ese factor lo reduce."
+        "🟢 Verde = ese factor reduce tu riesgo.  🔴 Rojo = lo aumenta.  "
+        "Los valores son impactos marginales por factor, no componentes que "
+        "sumen al riesgo final."
     )
 
 
@@ -1770,42 +2724,64 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
 
     col_rama = 'rama_meta' if 'rama_meta' in df_ref.columns else 'rama'
 
-    # Opciones de grupo de referencia — siempre las 3 si el contexto lo permite
-    opciones_grupo = ["Toda la UJI"]
-    if contexto['tipo'] in ('rama', 'titulacion') and col_rama in df_ref.columns:
-        opciones_grupo.append("Solo mi rama")
-    if contexto['tipo'] == 'titulacion' and 'titulacion' in df_ref.columns:
-        opciones_grupo.append("Solo mi titulación")
+    # --- Caso especial: modo comparativa (2b) con varias titulaciones ---
+    # No mostramos selector, solo usamos el df_contexto agregado que nos llega.
+    if contexto['tipo'] == 'titulaciones_multiples':
+        df_grupo     = contexto.get('df_contexto', df_ref.copy())
+        nombre_grupo = contexto.get('valor', 'titulaciones elegidas')
+        # Número real de titulaciones elegidas: lo pasa _seccion_donde_estas_multi
+        # en contexto['n_titulaciones']. Fallback al unique del df si no está.
+        n_tit_reales = contexto.get('n_titulaciones')
+        if n_tit_reales is None:
+            n_tit_reales = (len(df_grupo['titulacion'].unique())
+                            if 'titulacion' in df_grupo.columns else '—')
+        col_sel, col_info = st.columns([1, 2])
+        with col_sel:
+            st.markdown(
+                f"<p style='font-size:0.78rem; color:{COLORES['texto_suave']}; "
+                f"margin:0.5rem 0 0 0;'>Agregado sobre las <strong>{n_tit_reales}"
+                f"</strong> titulaciones seleccionadas.</p>",
+                unsafe_allow_html=True,
+            )
+        grupo_sel = nombre_grupo  # placeholder; la lógica siguiente se salta
 
-    col_sel, col_info = st.columns([1, 2])
-
-    with col_sel:
-        grupo_sel = st.radio(
-            label="Comparar con:",
-            options=opciones_grupo,
-            index=0,
-            key=f"grupo_percentil_{contexto['tipo']}_{contexto['valor']}",
-            help="Elige el grupo con el que quieres comparar tu posición.",
-        )
-
-    # DataFrame del grupo seleccionado
-    if grupo_sel == "Toda la UJI":
-        df_grupo     = df_ref.copy()
-        nombre_grupo = "toda la UJI"
-    elif "titulación" in grupo_sel and contexto['valor']:
-        df_grupo     = df_ref[df_ref['titulacion'] == contexto['valor']]
-        nombre_grupo = contexto['valor']
     else:
-        # "Solo mi rama" — obtener la rama del contexto correctamente
-        # Si el contexto es titulación, la rama está en df_contexto, no en valor
-        if contexto['tipo'] == 'titulacion' and contexto.get('df_contexto') is not None:
-            df_tit = contexto['df_contexto']
-            val_rama = df_tit[col_rama].mode()[0] if col_rama in df_tit.columns and len(df_tit) > 0 else None
+        # Opciones de grupo de referencia — siempre las 3 si el contexto lo permite
+        opciones_grupo = ["Toda la UJI"]
+        if contexto['tipo'] in ('rama', 'titulacion') and col_rama in df_ref.columns:
+            opciones_grupo.append("Solo mi rama")
+        if contexto['tipo'] == 'titulacion' and 'titulacion' in df_ref.columns:
+            opciones_grupo.append("Solo mi titulación")
+
+        col_sel, col_info = st.columns([1, 2])
+
+        with col_sel:
+            grupo_sel = st.radio(
+                label="Comparar con:",
+                options=opciones_grupo,
+                index=0,
+                key=f"grupo_percentil_{contexto['tipo']}_{contexto['valor']}",
+                help="Elige el grupo con el que quieres comparar tu posición.",
+            )
+
+        # DataFrame del grupo seleccionado
+        if grupo_sel == "Toda la UJI":
+            df_grupo     = df_ref.copy()
+            nombre_grupo = "toda la UJI"
+        elif "titulación" in grupo_sel and contexto['valor']:
+            df_grupo     = df_ref[df_ref['titulacion'] == contexto['valor']]
+            nombre_grupo = contexto['valor']
         else:
-            val_rama = contexto['valor']
-        df_grupo     = df_ref[df_ref[col_rama] == val_rama] \
-            if val_rama else df_ref.copy()
-        nombre_grupo = val_rama or "toda la UJI"
+            # "Solo mi rama" — obtener la rama del contexto correctamente
+            # Si el contexto es titulación, la rama está en df_contexto, no en valor
+            if contexto['tipo'] == 'titulacion' and contexto.get('df_contexto') is not None:
+                df_tit = contexto['df_contexto']
+                val_rama = df_tit[col_rama].mode()[0] if col_rama in df_tit.columns and len(df_tit) > 0 else None
+            else:
+                val_rama = contexto['valor']
+            df_grupo     = df_ref[df_ref[col_rama] == val_rama] \
+                if val_rama else df_ref.copy()
+            nombre_grupo = val_rama or "toda la UJI"
 
     # Probabilidades del grupo (usamos col precalculada si existe)
     if 'prob_abandono' in df_grupo.columns:
@@ -1813,37 +2789,58 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
     else:
         try:
             cols_pipeline = list(pipeline.feature_names_in_)                 if hasattr(pipeline, 'feature_names_in_') else                 [c for c in df_grupo.columns if c not in _COLS_META]
-            cols_ok = [c for c in cols_pipeline if c in df_grupo.columns]
-            X_prep  = pipeline.transform(df_grupo[cols_ok])
-            # Mejora D: convertir a DataFrame con nombres (evita warning sklearn)
-            try:
-                nombres_salida = pipeline.get_feature_names_out()
-                X_prep = pd.DataFrame(X_prep, columns=nombres_salida)
-            except (AttributeError, ValueError):
-                if X_prep.shape[1] == len(cols_ok):
-                    X_prep = pd.DataFrame(X_prep, columns=cols_ok)
-            probs_grupo   = modelo.predict_proba(X_prep)[:, 1]
+            # Si a df_grupo le faltan columnas que el pipeline necesita,
+            # no podemos calcular probs reales — usamos fallback: tasa
+            # histórica de abandono del grupo como aproximación simple.
+            cols_faltantes = [c for c in cols_pipeline if c not in df_grupo.columns]
+            if cols_faltantes:
+                # Fallback: aproximamos prob con la tasa histórica del grupo
+                # (cada alumno con abandono=1 → prob≈1, abandono=0 → prob≈0)
+                if 'abandono' in df_grupo.columns:
+                    probs_grupo = df_grupo['abandono'].dropna().astype(float).values
+                else:
+                    probs_grupo = np.array([])
+            else:
+                cols_ok = [c for c in cols_pipeline if c in df_grupo.columns]
+                # Convertir columnas categóricas string a código antes del pipeline
+                df_grupo_cod = _codificar_df_categoricas(df_grupo[cols_ok])
+                # Defensivo: rellenar NaN con 0 antes del transform
+                df_grupo_cod = df_grupo_cod.fillna(0)
+                X_prep  = pipeline.transform(df_grupo_cod)
+                # Pasamos array numpy directamente al modelo para evitar
+                # "feature names mismatch" (el modelo se entrenó con nombres
+                # originales, no con los prefijos del preprocesador).
+                if hasattr(X_prep, 'values'):
+                    X_prep = X_prep.values
+                elif not isinstance(X_prep, np.ndarray):
+                    X_prep = np.asarray(X_prep)
+                # Defensa NaN para el meta-learner LogisticRegression
+                if np.isnan(X_prep).any():
+                    X_prep = np.nan_to_num(X_prep, nan=0.0)
+                probs_grupo   = modelo.predict_proba(X_prep)[:, 1]
         except Exception:
             probs_grupo = np.array([0.292])
 
     # Percentil del usuario
     percentil = float((probs_grupo < prob).mean() * 100)
 
+    # Banner compacto (1 sola línea) con los datos clave
     with col_info:
         _, color, _, _ = _clasificar_riesgo(prob)
+        # Variable intermedia para coma decimal
+        _prob_pct_txt = f"{prob*100:.1f}".replace('.', ',')
         st.markdown(f"""
         <div style="
-            background:{color}15;
-            border-left:4px solid {color};
-            border-radius:6px;
-            padding:0.8rem 1.2rem;
-            font-size:0.9rem;
+            background:{color}12;
+            border-left:3px solid {color};
+            border-radius:4px;
+            padding:0.5rem 0.9rem;
+            font-size:0.82rem;
+            line-height:1.4;
         ">
-            Tu riesgo predicho es <strong>{prob*100:.1f}%</strong>.<br><br>
-            Estás mejor que el
-            <strong style="color:{color};">{100-percentil:.0f}%</strong>
-            de los alumnos de <em>{nombre_grupo}</em> —
-            solo el <strong>{percentil:.0f}%</strong> tiene un riesgo menor que el tuyo.
+            Tu riesgo es <strong style="color:{color};">{_prob_pct_txt}%</strong>.
+            Estás mejor que el <strong>{100-percentil:.0f}%</strong> de
+            alumnos de <em>{nombre_grupo}</em>.
         </div>
         """, unsafe_allow_html=True)
 
@@ -1857,89 +2854,247 @@ def _grafico_percentil(prob: float, df_ref: pd.DataFrame,
         )
         return
 
-    # --- Eje X dinámico: centrado en el rango real de los datos ---
-    p5  = float(np.percentile(probs_grupo * 100, 3))
-    p95 = float(np.percentile(probs_grupo * 100, 97))
-    margen = max(5.0, (p95 - p5) * 0.15)
-    x_min = max(0.0,   p5  - margen)
-    x_max = min(100.0, p95 + margen)
-    # Asegurar que tanto "Tú" como "Media" quedan dentro del eje
-    x_min = min(x_min, prob * 100 - margen, probs_grupo.mean() * 100 - margen)
-    x_max = max(x_max, prob * 100 + margen, probs_grupo.mean() * 100 + margen)
-    x_min = max(0.0, x_min)
-    x_max = min(100.0, x_max)
-
-    # Histograma
+    # === FILA: 3 MINI-KPIs arriba del violín ============================
     media_grupo = float(probs_grupo.mean() * 100)
-    fig = go.Figure()
+    mediana_grupo = float(np.median(probs_grupo) * 100)
+    diff_pp = prob * 100 - media_grupo
 
-    fig.add_trace(go.Histogram(
-        x=probs_grupo * 100,
-        nbinsx=30,
-        name=f"Distribución ({nombre_grupo})",
-        marker_color=COLORES['primario'],
-        opacity=0.6,
-        hovertemplate="Rango: %{x:.0f}%<br>Alumnos: %{y}<extra></extra>",
-    ))
+    _, color_user, _, _ = _clasificar_riesgo(prob)
+    # Variables intermedias para coma decimal en los 3 KPIs
+    _media_grp_txt   = f"{media_grupo:.1f}".replace('.', ',')
+    _mediana_grp_txt = f"{mediana_grupo:.1f}".replace('.', ',')
+    _diff_grp_txt    = f"{diff_pp:.1f}".replace('.', ',')
 
-    # Línea vertical: posición del usuario
-    fig.add_vline(
-        x=prob * 100,
-        line_color=color, line_width=3, line_dash="solid",
-        annotation_text=f"  Tú ({prob*100:.1f}%)",
-        annotation_position="top right",
-        annotation_font_color=color,
-        annotation_font_size=13,
+    # Auditoría p03 (Chat p03, 27/04/2026): 3 KPIs migradas a _tarjeta_kpi
+    # de ui_helpers.py para coherencia visual con resto de p03 y con p02.
+    # Antes: cards inline border-top:2px (estilo distinto). Ahora: barra
+    # lateral 4px estándar de la app. Iconos:
+    #   📏 PERCENTIL EN GRUPO → barra del color del nivel del usuario
+    #   📊 MEDIA DEL GRUPO    → primario (azul)
+    #   ⚖️  TÚ VS MEDIA       → rojo si peor, verde si mejor
+    sig = "+" if diff_pp >= 0 else ""
+    col_diff = COLORES['abandono'] if diff_pp > 0 else COLORES['exito']
+
+    nombre_grupo_corto = nombre_grupo[:22] + "…" if len(nombre_grupo) > 22 else nombre_grupo
+
+    html_p1 = _tarjeta_kpi(
+        icono="📏",
+        etiqueta="Percentil en grupo",
+        valor=f"{percentil:.0f}",
+        delta=f"de 100 · {nombre_grupo_corto}",
+        delta_color="gray",
+        tooltip=("Posición del usuario dentro de la distribución de probabilidad "
+                 "del grupo de referencia. 0 = mejor que nadie, 100 = peor que nadie."),
+        color_barra=color_user,
+    )
+    html_p2 = _tarjeta_kpi(
+        icono="📊",
+        etiqueta="Media del grupo",
+        valor=f"{_media_grp_txt}%",
+        delta=f"mediana: {_mediana_grp_txt}%",
+        delta_color="gray",
+        tooltip="Probabilidad media de abandono del grupo de referencia "
+                "según el modelo.",
+        color_barra=COLORES["primario"],
+    )
+    html_p3 = _tarjeta_kpi(
+        icono="⚖️",
+        etiqueta="Tú vs media",
+        valor=f"{sig}{_diff_grp_txt} pp",
+        delta=("peor que la media" if diff_pp > 0 else "mejor que la media"),
+        delta_color=("red" if diff_pp > 0 else "green"),
+        tooltip="Diferencia entre tu riesgo personal y la media del grupo, "
+                "en puntos porcentuales (pp). Positivo = peor que la media.",
+        color_barra=col_diff,
     )
 
-    # Línea vertical: media del grupo
-    fig.add_vline(
-        x=media_grupo,
-        line_color=COLORES['texto_suave'], line_width=1.5, line_dash="dash",
-        annotation_text=f"  Media ({media_grupo:.1f}%)",
-        annotation_position="top left",
-        annotation_font_color=COLORES['texto_suave'],
-        annotation_font_size=11,
-    )
+    kpi_cols = st.columns(3)
+    kpi_cols[0].markdown(html_p1, unsafe_allow_html=True)
+    kpi_cols[1].markdown(html_p2, unsafe_allow_html=True)
+    kpi_cols[2].markdown(html_p3, unsafe_allow_html=True)
 
-    # Leyenda manual como trazas invisibles
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None], mode='lines',
-        line=dict(color=color, width=3),
-        name=f"Tu posición ({prob*100:.1f}%)",
-    ))
-    fig.add_trace(go.Scatter(
-        x=[None], y=[None], mode='lines',
-        line=dict(color=COLORES['texto_suave'], width=1.5, dash='dash'),
-        name=f"Media grupo ({media_grupo:.1f}%)",
-    ))
+    # === 2 GRÁFICOS LADO A LADO =======================================
+    col_dot, col_spark = st.columns([1, 1])
 
-    fig.update_layout(
-        xaxis_title="Probabilidad de abandono predicha (%)",
-        yaxis_title="Nº alumnos",
-        xaxis=dict(range=[x_min, x_max], ticksuffix='%'),
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        margin=dict(l=40, r=20, t=20, b=40),
-        height=300,
-        showlegend=True,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom", y=1.02,
-            xanchor="right",  x=1,
-            font=dict(size=11),
-        ),
-        bargap=0.05,
-    )
-    fig.update_xaxes(showgrid=True, gridcolor=COLORES['borde'])
-    fig.update_yaxes(showgrid=True, gridcolor=COLORES['borde'])
+    # --------- GRÁFICO 1: DOT PLOT (1 punto = 1 alumno) ----------------
+    with col_dot:
+        st.markdown(f"""
+        <p style="font-size:0.78rem; color:{COLORES['texto_suave']};
+                  margin:0 0 0.2rem 0;">
+            🎯 Cada punto = 1 alumno · color por nivel de riesgo
+        </p>
+        """, unsafe_allow_html=True)
 
-    st.plotly_chart(fig, width='stretch')
+        # Reducimos a máx 500 puntos si hay muchos (muestreo determinista)
+        MAX_PUNTOS = 500
+        if len(probs_grupo) > MAX_PUNTOS:
+            np.random.seed(42)
+            idx = np.random.choice(len(probs_grupo), MAX_PUNTOS, replace=False)
+            probs_plot = probs_grupo[idx]
+        else:
+            probs_plot = probs_grupo.copy()
+
+        # Distribuir puntos en grid: x = prob, y = jitter vertical
+        n = len(probs_plot)
+        y_jitter = np.random.uniform(0, 1, size=n)
+
+        # Color por umbral de riesgo
+        colors = []
+        for p in probs_plot:
+            if p < UMBRALES['riesgo_bajo']:
+                colors.append(COLORES_RIESGO['bajo'])
+            elif p < UMBRALES['riesgo_medio']:
+                colors.append(COLORES_RIESGO['medio'])
+            else:
+                colors.append(COLORES_RIESGO['alto'])
+
+        fig_dot = go.Figure()
+        fig_dot.add_trace(go.Scatter(
+            x=probs_plot * 100,
+            y=y_jitter,
+            mode='markers',
+            marker=dict(size=6, color=colors, opacity=0.55,
+                         line=dict(width=0)),
+            hovertemplate='%{x:,.1f}%<extra></extra>',
+            showlegend=False,
+        ))
+
+        # Tu punto: anillo negro grande destacado
+        fig_dot.add_trace(go.Scatter(
+            x=[prob * 100], y=[0.5],
+            mode='markers',
+            marker=dict(
+                size=20, color=color,
+                line=dict(color=COLORES['texto'], width=2.5),
+                symbol='circle',
+            ),
+            hovertemplate=f'Tu riesgo: {prob*100:.1f}%<extra></extra>',
+            showlegend=False,
+        ))
+
+        fig_dot.update_layout(
+            separators=",.",
+            xaxis=dict(title='Probabilidad de abandono (%)',
+                        range=[0, 100], ticksuffix='%',
+                        showgrid=True, gridcolor=COLORES['borde']),
+            yaxis=dict(showgrid=False, showticklabels=False,
+                        range=[-0.1, 1.1]),
+            plot_bgcolor='white', paper_bgcolor='white',
+            margin=dict(l=20, r=10, t=10, b=40),
+            height=230,
+            showlegend=False,
+        )
+        st.plotly_chart(fig_dot, width='stretch',
+                         key=f'dotplot_{nombre_grupo[:15]}_{prob:.4f}_{contexto.get("tipo","x")}')
+
+    # --------- GRÁFICO 2: SPARKLINES ESTILO ECONOMIST ------------------
+    with col_spark:
+        st.markdown(f"""
+        <p style="font-size:0.78rem; color:{COLORES['texto_suave']};
+                  margin:0 0 0.2rem 0;">
+            📈 Distribución por niveles de riesgo
+        </p>
+        """, unsafe_allow_html=True)
+
+        # Contamos alumnos por nivel de riesgo
+        n_bajo  = int((probs_grupo < UMBRALES['riesgo_bajo']).sum())
+        n_medio = int(((probs_grupo >= UMBRALES['riesgo_bajo'])
+                        & (probs_grupo < UMBRALES['riesgo_medio'])).sum())
+        n_alto  = int((probs_grupo >= UMBRALES['riesgo_medio']).sum())
+        total = max(1, n_bajo + n_medio + n_alto)
+
+        # Determinar en qué nivel estás
+        if prob < UMBRALES['riesgo_bajo']:
+            nivel_usr = 'Bajo'
+        elif prob < UMBRALES['riesgo_medio']:
+            nivel_usr = 'Medio'
+        else:
+            nivel_usr = 'Alto'
+
+        niveles = [
+            ('Bajo',  n_bajo,  COLORES_RIESGO['bajo']),
+            ('Medio', n_medio, COLORES_RIESGO['medio']),
+            ('Alto',  n_alto,  COLORES_RIESGO['alto']),
+        ]
+
+        fig_spark = go.Figure()
+        for nom, cnt, col in niveles:
+            pct = cnt / total * 100
+            # Barra con opacidad alta en "tu nivel"
+            opacity = 0.95 if nom == nivel_usr else 0.45
+            fig_spark.add_trace(go.Bar(
+                x=[cnt], y=[nom], orientation='h',
+                marker=dict(color=col, opacity=opacity),
+                text=[f'{pct:.1f}% · {cnt:,} alumnos'.replace(',', '.')],
+                textposition='outside',
+                textfont=dict(size=11,
+                               color=col if nom == nivel_usr else COLORES['texto_suave']),
+                hoverinfo='skip',
+                showlegend=False,
+            ))
+
+        # Añadir emoji "tú" en tu nivel
+        fig_spark.add_annotation(
+            x=0, y=nivel_usr,
+            text=" ← TÚ",
+            showarrow=False,
+            xanchor='left',
+            xref='paper',
+            font=dict(size=11, color=color, family='Arial Black'),
+        )
+
+        fig_spark.update_layout(
+            separators=",.",
+            xaxis=dict(showgrid=True, gridcolor=COLORES['borde'],
+                        showticklabels=False, zeroline=False,
+                        range=[0, max(n_bajo, n_medio, n_alto) * 1.35]),
+            yaxis=dict(showgrid=False,
+                        tickfont=dict(size=12),
+                        categoryorder='array',
+                        categoryarray=['Alto', 'Medio', 'Bajo']),
+            plot_bgcolor='white', paper_bgcolor='white',
+            margin=dict(l=55, r=20, t=10, b=40),
+            height=230,
+            showlegend=False,
+            bargap=0.35,
+        )
+        st.plotly_chart(fig_spark, width='stretch',
+                         key=f'spark_{nombre_grupo[:15]}_{prob:.4f}_{contexto.get("tipo","x")}')
+
     st.caption(
-        f"📊 Distribución de probabilidades predichas para {nombre_grupo} "
-        f"({len(probs_grupo):,} alumnos). La línea de color marca tu posición."
+        f"📊 {len(probs_grupo):,} alumnos · {nombre_grupo}".replace(",", ".")
     )
 
+
+
+# =============================================================================
+# SECCIÓN PERCENTIL AGREGADO (modo 2b - sobre titulaciones elegidas)
+# =============================================================================
+
+def _seccion_donde_estas_multi(prob: float, titulaciones: list,
+                                 df_ref: "pd.DataFrame", modelo, pipeline):
+    """Variante de la sección '¿Dónde estás respecto a otros alumnos?'
+    agregada sobre las titulaciones elegidas en modo comparativa.
+    Reutiliza _grafico_percentil con un contexto sintético que une los
+    registros de todas las titulaciones seleccionadas."""
+    if "titulacion" not in df_ref.columns or not titulaciones:
+        return
+
+    df_multi = df_ref[df_ref['titulacion'].isin(titulaciones)].copy()
+    if len(df_multi) == 0:
+        st.info("Sin datos suficientes para el agregado de titulaciones elegidas.")
+        return
+
+    # Etiqueta legible del agregado — usamos el número real de titulaciones
+    # pedidas (el df_multi puede tener menos si alguna no tiene test disponible)
+    etiqueta = f"titulaciones elegidas ({len(titulaciones)})"
+    contexto_multi = {
+        "tipo":            "titulaciones_multiples",
+        "valor":           etiqueta,
+        "df_contexto":     df_multi,
+        "n_titulaciones":  len(titulaciones),
+    }
+    _grafico_percentil(prob, df_ref, contexto_multi, modelo, pipeline)
 
 
 # =============================================================================
@@ -1984,7 +3139,7 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
 
     datos = []
     for i, tit in enumerate(titulaciones):
-        df_tit = df_ref[df_ref["titulacion"] == tit] \
+        df_tit = _filtrar_por_titulacion(df_ref, tit) \
             if "titulacion" in df_ref.columns else df_ref.copy()
         # Fallback: si la titulación no tiene datos, usamos df_ref global
         if len(df_tit) == 0:
@@ -2006,7 +3161,7 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         prob_tit, _, _, _ = _ajustar_prob_por_titulacion(prob_tit, ctx_tit_tmp, df_ref)
         nivel_tit, color_tit, _, _ = _clasificar_riesgo(prob_tit)
 
-        # Nombre corto
+        # Nombre corto (sin prefijo "Grado en ...") — versión plana
         nc = tit
         for pref in ["Grado en ", "Doble Grado en ", "Grado Universitario en "]:
             if nc.startswith(pref):
@@ -2016,7 +3171,14 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         datos.append({
             "titulacion":   tit,
             "nombre":       nc,
-            "nombre_40":    nc[:40] + "…" if len(nc) > 40 else nc,
+            # nombre_40: versión sencilla truncada con "…" para contextos que
+            # NO admiten <br> (ej. títulos de expanders, captions).
+            # Ampliado a 50 chars para que entre "Ingeniería en Diseño
+            # Industrial y Desarrollo de Productos" casi completo.
+            "nombre_40":    nc[:50] + "…" if len(nc) > 50 else nc,
+            # nombre_corto: versión en 2 líneas con <br> (usa el helper
+            # _nombre_titulacion_corto). Para gráficos Plotly y HTML markdown.
+            "nombre_corto": _nombre_titulacion_corto(tit, partir_lineas=True, max_chars=24),
             "tasa_hist":    tasa_hist,
             "n_alumnos":    n_alumnos,
             "rama":         rama,
@@ -2028,6 +3190,112 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
 
     # Ordenar por tasa histórica de mayor a menor
     datos.sort(key=lambda x: x["tasa_hist"], reverse=True)
+
+    # ------------------------------------------------------------------
+    # Auditoría p03 (Chat p03, 27/04/2026): bloque de 5 KPIs agregados
+    # ANTES de la tabla. Réplica EXACTA del patrón de p02 modo comparativa
+    # (líneas 1331+ de p02_titulacion.py) con _tarjeta_kpi de ui_helpers.
+    #
+    # 5 indicadores con MISMO ORDEN E ICONOS que p02 para coherencia UX:
+    #   1. 👥 Alumnos totales (suma) — primario azul
+    #   2. 📉 Abandono real medio (ponderado por N) — abandono rojo
+    #   3. 🔮 Riesgo predicho medio (medio del perfil del usuario) — primario azul
+    #   4. 🚨 Riesgo alto (% de titulaciones con riesgo del usuario alto) — advertencia ámbar
+    #   5. 🎯 F1 modelo (mismo dato que en detalle, modelo único) — exito verde
+    # ------------------------------------------------------------------
+    n_alumnos_total      = sum(d["n_alumnos"] for d in datos)
+    # Abandono real medio ponderado por N de cada titulación
+    if n_alumnos_total > 0:
+        abandono_real_medio = sum(d["tasa_hist"] * d["n_alumnos"] for d in datos) / n_alumnos_total
+    else:
+        abandono_real_medio = 0.0
+    # Riesgo predicho medio = media del riesgo del usuario en cada titulación
+    riesgo_pred_medio = (sum(d["prob"] for d in datos) / len(datos) * 100) if datos else 0.0
+    # Riesgo alto: cuántas titulaciones devuelven riesgo "Alto" para el usuario
+    n_riesgo_alto_titulaciones = sum(1 for d in datos if d["nivel"] == "Alto")
+    pct_alto = (n_riesgo_alto_titulaciones / len(datos) * 100) if datos else 0.0
+
+    # F1 global del modelo — leído desde metricas_modelo.json (patrón de p02)
+    try:
+        import json as _json_comp
+        _ruta_m_comp = _RUTAS.get("metricas_modelo")
+        _m_comp      = (_json_comp.loads(_ruta_m_comp.read_text(encoding="utf-8"))
+                        if _ruta_m_comp and _ruta_m_comp.exists() else {})
+        _f1_comp     = _m_comp.get("f1")
+        f1_val_comp  = f"{_f1_comp:.3f}".replace(".", ",") if _f1_comp is not None else "N/D"
+    except Exception:
+        f1_val_comp  = "0,827"  # fallback documentado
+
+    # KPI 1: alumnos totales (info neutra → azul)
+    html_c1 = _tarjeta_kpi(
+        icono="👥",
+        etiqueta="Alumnos totales",
+        valor=f"{n_alumnos_total:,}".replace(",", "."),
+        tooltip="Suma de alumnos de las titulaciones seleccionadas en el conjunto de test.",
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 2: abandono real medio (métrica crítica → rojo)
+    _abandono_txt = f"{abandono_real_medio:.1f}%".replace(".", ",")
+    html_c2 = _tarjeta_kpi(
+        icono="📉",
+        etiqueta="Abandono real medio",
+        valor=_abandono_txt,
+        tooltip="Tasa media de abandono real, ponderada por número de alumnos de cada titulación.",
+        color_barra=COLORES["abandono"],
+    )
+
+    # KPI 3: riesgo predicho medio del usuario (con delta vs real)
+    _delta_c3   = riesgo_pred_medio - abandono_real_medio
+    _delta_str  = f"{_delta_c3:+.1f}pp vs real".replace(".", ",")
+    _color_d_c3 = "red" if _delta_c3 > 0 else ("green" if _delta_c3 < 0 else "gray")
+    _riesgo_txt = f"{riesgo_pred_medio:.1f}%".replace(".", ",")
+    html_c3 = _tarjeta_kpi(
+        icono="🔮",
+        etiqueta="Riesgo predicho medio",
+        valor=_riesgo_txt,
+        delta=_delta_str,
+        delta_color=_color_d_c3,
+        tooltip=("Probabilidad media de abandono según el modelo, calculada con tu "
+                 "perfil sobre cada titulación seleccionada. El delta (pp = puntos "
+                 "porcentuales) compara con la tasa real."),
+        color_barra=COLORES["primario"],
+    )
+
+    # KPI 4: riesgo alto (alerta → ámbar, NO rojo, paridad p01/p02)
+    _pct_alto_txt = f"{pct_alto:.1f}%".replace(".", ",")
+    _delta_c4     = (f"{n_riesgo_alto_titulaciones} de {len(datos)} titulaciones"
+                     if datos else "")
+    html_c4 = _tarjeta_kpi(
+        icono="🚨",
+        etiqueta="Riesgo alto",
+        valor=_pct_alto_txt,
+        delta=_delta_c4,
+        delta_color="gray",
+        tooltip=(f"Porcentaje de titulaciones seleccionadas en las que tu riesgo "
+                 f"estimado supera el umbral de riesgo medio "
+                 f"({UMBRALES['riesgo_medio']:.0%})."),
+        color_barra=COLORES["advertencia"],
+    )
+
+    # KPI 5: F1 modelo (calidad del modelo → verde)
+    html_c5 = _tarjeta_kpi(
+        icono="🎯",
+        etiqueta="F1 modelo",
+        valor=f1_val_comp,
+        tooltip="F1-score del modelo Stacking sobre el conjunto de test completo.",
+        color_barra=COLORES["exito"],
+    )
+
+    # Renderizar las 5 tarjetas en una fila
+    cc1, cc2, cc3, cc4, cc5 = st.columns(5)
+    cc1.markdown(html_c1, unsafe_allow_html=True)
+    cc2.markdown(html_c2, unsafe_allow_html=True)
+    cc3.markdown(html_c3, unsafe_allow_html=True)
+    cc4.markdown(html_c4, unsafe_allow_html=True)
+    cc5.markdown(html_c5, unsafe_allow_html=True)
+
+    st.markdown("<br>", unsafe_allow_html=True)
 
     st.divider()
 
@@ -2064,16 +3332,21 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         else:
             col_hist = COLORES["exito"]
 
+        # Formatos en coma española (variables intermedias para evitar
+        # f-strings anidadas con comillas, que Python no admite).
+        _tasa_hist_txt = f"{d['tasa_hist']:.1f}".replace('.', ',')
+        _prob_txt      = f"{d['prob']*100:.1f}".replace('.', ',')
+
         cs = st.columns([3, 1.5, 1.2, 1.8, 1.2])
         cs[0].markdown(
             f"<p style='font-size:0.83rem; color:{COLORES['texto']}; "
-            f"margin:0.15rem 0;'>"
-            f"<span style='color:{d['color']};'>■</span> {d['nombre_40']}</p>",
+            f"margin:0.15rem 0; line-height:1.3;'>"
+            f"<span style='color:{d['color']};'>■</span> {d['nombre_corto']}</p>",
             unsafe_allow_html=True,
         )
         cs[1].markdown(
             f"<p style='font-size:0.92rem; font-weight:bold; "
-            f"color:{col_hist}; margin:0.15rem 0;'>{d['tasa_hist']:.1f}%</p>",
+            f"color:{col_hist}; margin:0.15rem 0;'>{_tasa_hist_txt}%</p>",
             unsafe_allow_html=True,
         )
         cs[2].markdown(
@@ -2088,7 +3361,7 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         )
         cs[4].markdown(
             f"<p style='font-size:0.83rem; font-weight:bold; "
-            f"color:{d['color_riesgo']}; margin:0.15rem 0;'>{d['prob']*100:.1f}%</p>",
+            f"color:{d['color_riesgo']}; margin:0.15rem 0;'>{_prob_txt}%</p>",
             unsafe_allow_html=True,
         )
         st.markdown(
@@ -2097,94 +3370,450 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
         )
 
     # ------------------------------------------------------------------
-    # 5. Gráfico de barras — abandono histórico por titulación
+    # 5. Comparativa visual (barras) + Histograma agregado (notas)
+    #    lado a lado en columnas.
     # ------------------------------------------------------------------
-    st.markdown(f"""
-    <h4 style="color:{COLORES['texto']}; margin:1.5rem 0 0.4rem 0;">
-        📊 Comparativa visual
-    </h4>""", unsafe_allow_html=True)
+    col_cv, col_hist = st.columns([1.4, 1])
 
-    fig = go.Figure()
-    for d in datos:
-        fig.add_trace(go.Bar(
-            x=[d["tasa_hist"]],
-            y=[d["nombre_40"]],
-            orientation="h",
-            marker_color=d["color"],
-            text=f"{d['tasa_hist']:.1f}%",
-            textposition="outside",
-            name=d["nombre_40"],
+    with col_cv:
+        st.markdown(f"""
+        <h4 style="color:{COLORES['texto']}; margin:1.5rem 0 0.4rem 0;">
+            📊 Comparativa visual
+        </h4>""", unsafe_allow_html=True)
+
+        fig = go.Figure()
+        for d in datos:
+            fig.add_trace(go.Bar(
+                x=[d["tasa_hist"]],
+                y=[d["nombre_corto"]],
+                orientation="h",
+                marker_color=d["color"],
+                text=f"{d['tasa_hist']:.1f}%",
+                textposition="outside",
+                name=d["nombre_corto"],
+                hovertemplate=(
+                    f"<b>{d['nombre']}</b><br>"
+                    f"Abandono histórico: {d['tasa_hist']:.1f}%<br>"
+                    f"Alumnos: {d['n_alumnos']:,}<br>"
+                    f"Tu riesgo personal: {d['prob']*100:.1f}%"
+                    "<extra></extra>"
+                ),
+                showlegend=False,
+            ))
+
+        # Línea vertical: media UJI histórica
+        media_uji_hist = float(df_ref["abandono"].mean() * 100)         if "abandono" in df_ref.columns else 29.2
+        # Auditoría p03 (Chat p03, 27/04/2026): añadido replace para coma decimal.
+        _media_uji_txt = f"{media_uji_hist:.1f}".replace(".", ",")
+        fig.add_vline(
+            x=media_uji_hist,
+            line_color=COLORES["texto_suave"], line_dash="dash", line_width=1.5,
+            annotation_text=f"Media UJI ({_media_uji_txt}%)",
+            annotation_font_size=10,
+            annotation_font_color=COLORES["texto_suave"],
+        )
+        # (línea de riesgo personal eliminada: cada titulación tiene su prob)
+        # En su lugar: marcadores de riesgo como scatter sobre las barras
+        fig.add_trace(go.Scatter(
+            x=[d["prob"] * 100 for d in datos],
+            y=[d["nombre_corto"] for d in datos],
+            mode="markers+text",
+            marker=dict(
+                symbol="diamond",
+                size=12,
+                color=[d["color_riesgo"] for d in datos],
+                line=dict(color="white", width=1.5),
+            ),
+            text=[f'{d["prob"]*100:.1f}%'.replace('.', ',') for d in datos],
+            # Texto arriba del diamante para evitar cortes por margen derecho
+            textposition="top center",
+            textfont=dict(size=10),
+            name="Tu riesgo estimado",
             hovertemplate=(
-                f"<b>{d['nombre']}</b><br>"
-                f"Abandono histórico: {d['tasa_hist']:.1f}%<br>"
-                f"Alumnos: {d['n_alumnos']:,}<br>"
-                f"Tu riesgo personal: {d['prob']*100:.1f}%"
+                "<b>Tu riesgo en %{y}</b><br>"
+                "Probabilidad estimada: %{x:,.1f}%"
                 "<extra></extra>"
             ),
             showlegend=False,
         ))
 
-    # Línea vertical: media UJI histórica
-    media_uji_hist = float(df_ref["abandono"].mean() * 100)         if "abandono" in df_ref.columns else 29.2
-    fig.add_vline(
-        x=media_uji_hist,
-        line_color=COLORES["texto_suave"], line_dash="dash", line_width=1.5,
-        annotation_text=f"Media UJI ({media_uji_hist:.1f}%)",
-        annotation_font_size=10,
-        annotation_font_color=COLORES["texto_suave"],
-    )
-    # (línea de riesgo personal eliminada: cada titulación tiene su prob)
-    # En su lugar: marcadores de riesgo como scatter sobre las barras
-    fig.add_trace(go.Scatter(
-        x=[d["prob"] * 100 for d in datos],
-        y=[d["nombre_40"] for d in datos],
-        mode="markers+text",
-        marker=dict(
-            symbol="diamond",
-            size=12,
-            color=[d["color_riesgo"] for d in datos],
-            line=dict(color="white", width=1.5),
-        ),
-        text=[f'{d["prob"]*100:.1f}%' for d in datos],
-        textposition="middle right",
-        textfont=dict(size=10),
-        name="Tu riesgo estimado",
-        hovertemplate=(
-            "<b>Tu riesgo en %{y}</b><br>"
-            "Probabilidad estimada: %{x:.1f}%"
-            "<extra></extra>"
-        ),
-        showlegend=True,
-    ))
+        # --- Rango dinámico del eje X: ajustado al máximo real + margen ---
+        # Incluye tasas históricas, probs personales y media UJI. Redondeo
+        # al múltiplo de 10 superior para escalar limpio (32 → 40, 44 → 50).
+        # Si hay probs altas (≥80) escalamos hasta 100 para dar aire al diamante.
+        _vals_eje = [d["tasa_hist"] for d in datos] \
+                    + [d["prob"] * 100 for d in datos] \
+                    + [media_uji_hist]
+        _max_real = max(_vals_eje) if _vals_eje else 30
+        _max_eje = int(np.ceil((_max_real + 10) / 10.0) * 10)
+        _max_eje = min(_max_eje, 100)  # cap absoluto
 
-    fig.update_layout(
-        xaxis=dict(range=[0, 105], ticksuffix="%",
-                   title="Tasa de abandono histórica (%)"),
-        yaxis=dict(autorange="reversed"),
-        plot_bgcolor="white", paper_bgcolor="white",
-        margin=dict(l=10, r=120, t=20, b=40),
-        height=max(220, len(datos) * 65),
-        bargap=0.3,
-        legend=dict(
-            orientation="h",
-            yanchor="bottom",
-            y=-0.28,
-            xanchor="left",
-            x=0,
-            font=dict(size=11),
-            bgcolor="rgba(255,255,255,0.8)",
-            bordercolor=COLORES["borde"],
-            borderwidth=1,
-        ),
-        showlegend=True,
-    )
-    fig.update_xaxes(showgrid=True, gridcolor=COLORES["borde"])
-    st.plotly_chart(fig, width='stretch')
-    st.caption(
-        "📊 Barras = tasa de abandono histórica real (2010–2020). "
-        "╌╌╌ Línea gris discontinua = media UJI. "
-        "◆ Diamante de color = tu riesgo estimado para este perfil (por titulación)."
-    )
+        fig.update_layout(
+            separators=",.",
+            xaxis=dict(range=[0, _max_eje], ticksuffix="%",
+                       title="Tasa de abandono histórica (%)"),
+            yaxis=dict(autorange="reversed"),
+            plot_bgcolor="white", paper_bgcolor="white",
+            margin=dict(l=10, r=30, t=20, b=40),
+            height=max(220, len(datos) * 65),
+            bargap=0.3,
+            showlegend=False,
+        )
+        fig.update_xaxes(showgrid=True, gridcolor=COLORES["borde"])
+        st.plotly_chart(fig, width='stretch', key='comparativa_visual')
+        st.caption(
+            "📊 Barras = tasa de abandono histórica real (2010–2020). "
+            "╌╌╌ Línea gris discontinua = media UJI. "
+            "◆ Diamante de color = tu riesgo estimado para este perfil (por titulación)."
+        )
+
+    # ------------------------------------------------------------------
+    # 5.bis — Histograma agregado de notas (col_hist)
+    # Histograma agregado: todas las notas de las titulaciones elegidas
+    # + línea vertical por titulación (color de la paleta de comparativa)
+    # + línea verde/rojo con la nota del usuario (si disponible).
+    # ------------------------------------------------------------------
+    with col_hist:
+        st.markdown(f"""
+        <h4 style="color:{COLORES['texto']}; margin:1.5rem 0 0.4rem 0;">
+            📊 Distribución de notas de acceso
+        </h4>
+        <p style="font-size:0.78rem; color:{COLORES['texto_suave']}; margin:0 0 0.3rem 0;">
+            Histograma agregado de las titulaciones seleccionadas. Cada línea
+            vertical marca la media de una titulación.
+        </p>
+        """, unsafe_allow_html=True)
+
+        # Recopilamos notas de todas las titulaciones elegidas
+        notas_all = []
+        medias_por_tit = []  # [(nombre_40, media, color), ...]
+        for d in datos:
+            df_tit_h = _filtrar_por_titulacion(df_ref, d["titulacion"]) \
+                if "titulacion" in df_ref.columns else df_ref.copy()
+            if "nota_acceso" in df_tit_h.columns:
+                notas_tit = df_tit_h["nota_acceso"].dropna()
+                if len(notas_tit) > 0:
+                    notas_all.extend(notas_tit.tolist())
+                    medias_por_tit.append((
+                        d["nombre_40"], float(notas_tit.mean()), d["color"],
+                    ))
+
+        if len(notas_all) < 3:
+            st.info("Sin notas de acceso suficientes en las titulaciones elegidas.")
+        else:
+            import plotly.graph_objects as _go
+            fig_h = _go.Figure()
+            fig_h.add_trace(_go.Histogram(
+                x=notas_all,
+                nbinsx=25,
+                marker=dict(color=COLORES['primario'], opacity=0.35),
+                hovertemplate='Nota %{x:,.1f}<br>%{y} alumnos<extra></extra>',
+                showlegend=False,
+            ))
+
+            # Líneas verticales: una por titulación con su color.
+            # Escalonado adaptativo de las etiquetas para evitar solape
+            # cuando las medias están próximas (caso típico: 4-5 titulaciones
+            # de notas similares agrupadas entre 6,5 y 8,5):
+            #   1) ordenamos por media para detectar vecinas próximas
+            #   2) cada etiqueta se pone por encima del gráfico, con un
+            #      yshift escalonado en 4 niveles (0, -16, -32, -48 px)
+            #   3) si dos medias están separadas >0,6 reseteamos el nivel
+            #   4) con ≥4 titulaciones reducimos fuente y truncamos nombre
+            # Separamos vline (sin texto) y annotation (con yshift) porque
+            # add_vline no acepta yshift en su annotation embebida.
+            n_tits = len(medias_por_tit)
+            font_sz = 8 if n_tits >= 4 else 9
+            trunc   = 14 if n_tits >= 4 else 16
+
+            # Ordenamos por media para escalonado coherente
+            medias_ord = sorted(enumerate(medias_por_tit), key=lambda t: t[1][1])
+
+            y_shift_px = [0, -16, -32, -48]   # 4 niveles escalonados
+            nivel = 0
+            media_prev = None
+            for _, (nombre_tit, media_tit, col_tit) in medias_ord:
+                # Si esta media está lejos de la anterior (>0,6 puntos),
+                # reiniciamos el escalón; si está cerca, subimos un nivel.
+                if media_prev is None or abs(media_tit - media_prev) > 0.6:
+                    nivel = 0
+                else:
+                    nivel = (nivel + 1) % len(y_shift_px)
+
+                # Línea vertical sin texto
+                fig_h.add_vline(
+                    x=media_tit,
+                    line=dict(color=col_tit, width=2, dash='dot'),
+                )
+                # Anotación independiente con yshift (en píxeles, yref paper)
+                etiqueta = f"{nombre_tit[:trunc]}: {media_tit:.1f}".replace(".", ",")
+                fig_h.add_annotation(
+                    x=media_tit, y=1.0, xref='x', yref='paper',
+                    text=etiqueta, showarrow=False,
+                    font=dict(size=font_sz, color=col_tit),
+                    bgcolor="rgba(255,255,255,0.9)",
+                    yshift=y_shift_px[nivel],
+                    yanchor='bottom',
+                )
+                media_prev = media_tit
+
+            # Línea vertical: nota del usuario
+            nota_user = None
+            if perfil.get('nota_acceso') is not None:
+                try:
+                    nota_user = float(perfil['nota_acceso'])
+                except Exception:
+                    nota_user = None
+            if nota_user is not None:
+                media_global = float(np.mean(notas_all))
+                # Auditoría p03 (Chat p03): hex → COLORES.
+                col_user = (COLORES['exito']
+                            if nota_user >= media_global
+                            else COLORES['abandono'])
+                fig_h.add_vline(
+                    x=nota_user,
+                    line=dict(color=col_user, width=3),
+                    annotation_text=f"Tu nota: {nota_user:.1f}".replace(".", ","),
+                    annotation_position="bottom",
+                    annotation_font=dict(size=10, color=col_user),
+                    annotation_bgcolor="rgba(255,255,255,0.9)",
+                )
+
+            x_min = max(0, float(min(notas_all)) - 0.5)
+            x_max = min(14, float(max(notas_all)) + 0.5)
+            # Margen superior generoso para que las etiquetas escalonadas
+            # (hasta 4 niveles, ~50 px) no se corten por encima.
+            fig_h.update_layout(
+                separators=",.",
+                xaxis_title=None,
+                yaxis_title="Nº alumnos",
+                paper_bgcolor='white',
+                plot_bgcolor='white',
+                height=max(260, len(datos) * 70),
+                margin=dict(l=40, r=20, t=80, b=40),
+                showlegend=False,
+                xaxis=dict(range=[x_min, x_max],
+                           showgrid=True, gridcolor=COLORES['borde']),
+                yaxis=dict(showgrid=True, gridcolor=COLORES['borde']),
+                bargap=0.1,
+            )
+            st.plotly_chart(fig_h, width='stretch',
+                             key='hist_notas_multi')
+
+    # ------------------------------------------------------------------
+    # 5b. Velocímetro unificado con aguja por titulación
+    # ------------------------------------------------------------------
+    st.markdown(f"""
+    <h4 style="color:{COLORES['texto']}; margin:1.2rem 0 0.3rem 0;">
+        🎯 Tu riesgo en cada titulación (velocímetro)
+    </h4>
+    <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0 0 0.4rem 0;">
+        Una aguja por titulación, con su color distintivo. Zona verde-amarilla-roja
+        según umbrales de riesgo del modelo.
+    </p>
+    """, unsafe_allow_html=True)
+    resultados_vel = [
+        {"titulacion": d["titulacion"], "pct": d["prob"]*100, "color_comp": d["color"]}
+        for d in datos
+    ]
+    _grafico_velocimetro_comparativa(resultados_vel)
+
+    # ------------------------------------------------------------------
+    # 5c. Scatter (hist vs tu riesgo) + Box plot con rug plot
+    #     lado a lado en columnas.
+    # ------------------------------------------------------------------
+    col_sc, col_box = st.columns([1, 1])
+
+    with col_sc:
+        st.markdown(f"""
+        <h4 style="color:{COLORES['texto']}; margin:1.2rem 0 0.3rem 0;">
+            📈 Histórico vs tu riesgo personal
+        </h4>
+        <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0 0 0.4rem 0;">
+            Eje horizontal: abandono histórico de cada titulación.
+            Eje vertical: tu riesgo predicho. La diagonal marca la igualdad:
+            <strong>por encima</strong>, peor que la media; <strong>por debajo</strong>, mejor.
+        </p>
+        """, unsafe_allow_html=True)
+        import plotly.graph_objects as _go
+        fig_sc = _go.Figure()
+        # Diagonal de referencia (igualdad)
+        _max = max([max(d["tasa_hist"], d["prob"]*100) for d in datos] + [50]) + 15
+        fig_sc.add_trace(_go.Scatter(
+            x=[0, _max], y=[0, _max], mode='lines',
+            line=dict(color=COLORES['texto_suave'], dash='dash', width=1),
+            name='Igualdad (histórico = tu riesgo)',
+            hoverinfo='skip',
+            showlegend=False,  # explicación en la caption debajo del gráfico
+        ))
+        # Un marcador por titulación, SIN texto sobre el punto.
+        # La identificación pasa a la leyenda horizontal inferior. Esto evita
+        # el solape cuando las etiquetas de los puntos están próximas entre sí
+        # (p.ej. 5 titulaciones con riesgos similares en el rango 65-75%).
+        for d in datos:
+            fig_sc.add_trace(_go.Scatter(
+                x=[d["tasa_hist"]], y=[d["prob"]*100],
+                mode='markers',
+                marker=dict(size=18, color=d["color"],
+                            line=dict(color='white', width=2)),
+                # Nombre sin prefijo "Grado en " → entra en la leyenda de forma
+                # compacta pero legible al completo.
+                name=d["nombre"],
+                # Auditoría p03 (Chat p03, 27/04/2026): hover usaba
+                # d['titulacion'] (con "Grado en "), ahora usa d['nombre']
+                # para coherencia con el name/leyenda. También :,.1f para
+                # coma decimal española (con separators=",.", del layout).
+                hovertemplate=(
+                    f"<b>{d['nombre']}</b><br>"
+                    f"Histórico: %{{x:,.1f}}%<br>"
+                    f"Tu riesgo: %{{y:,.1f}}%<extra></extra>"
+                ),
+                showlegend=True,
+            ))
+        fig_sc.update_layout(
+            separators=",.",
+            xaxis_title="Abandono histórico (%)",
+            yaxis_title="Tu riesgo personal (%)",
+            xaxis=dict(range=[0, _max], showgrid=True, gridcolor=COLORES['borde']),
+            yaxis=dict(range=[0, _max], showgrid=True, gridcolor=COLORES['borde']),
+            paper_bgcolor="white",
+            plot_bgcolor="white",
+            height=420,
+            # Margen inferior amplio para la leyenda horizontal; márgenes
+            # laterales normales ya que los nombres no viven sobre el plot.
+            margin=dict(l=60, r=30, t=30, b=110),
+            showlegend=True,
+            # Leyenda horizontal debajo del gráfico. x=0.5 + xanchor='center'
+            # la centra; y negativo la coloca fuera del área del plot.
+            legend=dict(
+                orientation="h",
+                yanchor="top",
+                y=-0.18,
+                xanchor="center",
+                x=0.5,
+                font=dict(size=10),
+                bgcolor="rgba(255,255,255,0.8)",
+            ),
+        )
+        st.plotly_chart(fig_sc, width='stretch', key='scatter_hist_vs_tu_riesgo')
+        st.caption(
+            "💡 Si un punto está por encima de la diagonal, tu perfil es más "
+            "vulnerable que la media de esa titulación. Si está por debajo, estás mejor."
+        )
+
+    # ------------------------------------------------------------------
+    # 5d. Box plot + rug plot: distribución real por titulación
+    # ------------------------------------------------------------------
+    with col_box:
+        st.markdown(f"""
+        <h4 style="color:{COLORES['texto']}; margin:1.2rem 0 0.3rem 0;">
+            📦 Tu posición vs distribución por titulación
+        </h4>
+        <p style="font-size:0.82rem; color:{COLORES['texto_suave']}; margin:0 0 0.4rem 0;">
+            Caja con cuartiles + rug plot con puntos individuales del
+            conjunto de test. Si el diamante cae <strong>dentro</strong> de
+            la caja, tu perfil es típico; si cae <strong>fuera</strong>, eres atípico.
+        </p>
+        """, unsafe_allow_html=True)
+
+        fig_bx = _go.Figure()
+
+        # Para cada titulación: recopilamos las probs reales del test
+        hay_datos_box = False
+        for d in datos:
+            df_tit_box = _filtrar_por_titulacion(df_ref, d["titulacion"]) \
+                if "titulacion" in df_ref.columns else df_ref.copy()
+
+            # Probs del test de esa titulación
+            if 'prob_abandono' in df_tit_box.columns:
+                probs_tit = df_tit_box['prob_abandono'].dropna().values * 100
+            else:
+                # Fallback: usamos tasa histórica como aproximación binaria
+                if 'abandono' in df_tit_box.columns:
+                    probs_tit = df_tit_box['abandono'].dropna().astype(float).values * 100
+                else:
+                    probs_tit = np.array([])
+
+            if len(probs_tit) < 5:
+                continue
+            hay_datos_box = True
+
+            fig_bx.add_trace(_go.Box(
+                y=probs_tit,
+                x=[d["nombre_corto"]] * len(probs_tit),
+                name=d["nombre_corto"],
+                marker=dict(color=d["color"], opacity=0.55, size=3),
+                fillcolor=_hex_a_rgba(d["color"], 0.18),
+                line=dict(color=d["color"], width=1.5),
+                boxpoints='all',
+                pointpos=1.8,
+                jitter=0.4,
+                hovertemplate='%{y:,.1f}%<extra></extra>',
+                showlegend=False,
+            ))
+
+        if not hay_datos_box:
+            st.info("Sin probabilidades de test suficientes por titulación para el box plot.")
+        else:
+            # Diamante con tu riesgo personal por titulación.
+            # Sin etiqueta de texto para evitar que se salga del eje cuando
+            # el riesgo es muy alto (>85%). El valor está en hover y en la tabla.
+            fig_bx.add_trace(_go.Scatter(
+                x=[d["nombre_corto"] for d in datos],
+                y=[d["prob"]*100 for d in datos],
+                mode='markers',
+                marker=dict(
+                    symbol='diamond',
+                    size=18,
+                    color=[d["color"] for d in datos],
+                    line=dict(color=COLORES['texto'], width=2),
+                ),
+                # cliponaxis=False: garantía de que el diamante nunca se
+                # convertirá en triángulo rojo "fuera de rango" aunque la
+                # prob del usuario coincida con un extremo del eje Y.
+                cliponaxis=False,
+                showlegend=False,
+                hovertemplate='Tu riesgo: %{y:,.1f}%<extra></extra>',
+            ))
+
+            # Rango Y dinámico: calculamos el extremo entre (a) las probs
+            # reales del test que ya están en los boxes (implícito en datos
+            # de las trazas) y (b) los diamantes del usuario. Como no
+            # tenemos acceso directo a probs_tit fuera del bucle, usamos
+            # el max de los diamantes + un colchón. El box siempre está en
+            # [0, 100] porque son probabilidades, así que [0, 100] cubre
+            # los puntos del test. Los diamantes pueden estar hasta 99,99%
+            # con el fix logit → añadimos +3 de colchón superior.
+            _probs_user = [d["prob"] * 100 for d in datos]
+            _y_max = min(105, max(100, max(_probs_user) + 3))
+            _y_min = max(-5, min(0, min(_probs_user) - 3))
+
+            fig_bx.update_layout(
+                separators=",.",
+                yaxis=dict(title="Probabilidad de abandono (%)",
+                           range=[_y_min, _y_max], ticksuffix="%",
+                           showgrid=True, gridcolor=COLORES['borde']),
+                xaxis=dict(showgrid=False,
+                           # tickangle=0: nombres horizontales. Con
+                           # nombre_corto en 2 líneas caben sin diagonal.
+                           tickangle=0),
+                paper_bgcolor='white',
+                plot_bgcolor='white',
+                height=420,
+                # Márgenes: derecha generosa para que la 5ª caja no se
+                # corte; inferior amplia para los nombres en 2 líneas.
+                margin=dict(l=60, r=60, t=20, b=80),
+                showlegend=False,
+                # boxgap: separación entre cajas (0 = pegadas, 1 = muy
+                # separadas). Con 5 titulaciones + rug al lado, 0.45
+                # deja aire suficiente.
+                boxgap=0.45,
+            )
+            st.plotly_chart(fig_bx, width='stretch', key='boxplot_rug_titulaciones')
+            st.caption(
+                "◆ Diamante = tu riesgo · Caja = Q1-Q3 · Línea = mediana · "
+                "Puntos al lado = cada alumno del test."
+            )
 
 
     # ------------------------------------------------------------------
@@ -2202,26 +3831,57 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
     for idx_d, d in enumerate(datos):
         col_hist_nivel = COLORES["abandono"] if d["tasa_hist"] >= 40 \
             else COLORES["advertencia"] if d["tasa_hist"] >= 25 else COLORES["exito"]
+        # Variables intermedias para coma española en el label y título del
+        # expander (f-strings anidadas con comillas dobles no válidas en Py).
+        _hist_lbl = f"{d['tasa_hist']:.1f}".replace('.', ',')
+        _prob_lbl = f"{d['prob']*100:.1f}".replace('.', ',')
         label = (
             f"<span style='color:{d['color']};'>■</span> "
             f"{d['nombre_40']} — "
-            f"Histórico: {d['tasa_hist']:.1f}% · "
-            f"Tu riesgo: {d['prob']*100:.1f}% · "
+            f"Histórico: {_hist_lbl}% · "
+            f"Tu riesgo: {_prob_lbl}% · "
             f"{d['n_alumnos']:,} alumnos"
         )
-        with st.expander(f"{d['nombre_40']} — Hist: {d['tasa_hist']:.1f}% · Tu riesgo: {d['prob']*100:.1f}%", expanded=False):
+        with st.expander(
+            f"{d['nombre_40']} — Histórico: {_hist_lbl}% · Tu riesgo: {_prob_lbl}%",
+            expanded=False,
+        ):
             ctx_tit = {
                 "tipo":        "titulacion",
                 "valor":       d["titulacion"],
-                "df_contexto": df_ref[df_ref["titulacion"] == d["titulacion"]]
+                "df_contexto": _filtrar_por_titulacion(df_ref, d["titulacion"])
                                if "titulacion" in df_ref.columns else df_ref.copy(),
             }
             c1, c2 = st.columns([1, 1])
             with c1:
-                _grafico_radar(perfil, df_ref, ctx_tit, d['prob'])
+                # Bug fix (Chat p03, 27/04/2026): key_suffix con idx_d para
+                # diferenciar este radar (dentro de expander de comparativa)
+                # del radar principal cuando el contexto tiene la misma
+                # titulación. Antes daba StreamlitDuplicateElementKey.
+                _sfx_radar = f"exp{idx_d}"
+                _grafico_radar(perfil, df_ref, ctx_tit, d['prob'],
+                               key_suffix=_sfx_radar)
             with c2:
-                df_tit_exp = df_ref[df_ref['titulacion'] == d['titulacion']].copy() if 'titulacion' in df_ref.columns else df_ref
-                _grafico_cascada(perfil, df_tit_exp, d['prob'], modelo, pipeline)
+                df_tit_exp = _filtrar_por_titulacion(df_ref, d['titulacion']).copy() if 'titulacion' in df_ref.columns else df_ref
+                # key_suffix único por titulación para evitar colisión con
+                # otras cascadas que tengan la misma prob (p.ej. 0.99 en 2 titulaciones).
+                _suf_key = f"{idx_d}_{d['titulacion'][:20].replace(' ', '_')}"
+                # La comparativa siempre se invoca desde modo prospecto (p03).
+                _grafico_cascada(perfil, df_tit_exp, d['prob'], modelo, pipeline,
+                                 key_suffix=_suf_key, modo="prospecto")
+
+    # ------------------------------------------------------------------
+    # 6bis. ¿Dónde estás respecto a otros alumnos? — agregado sobre
+    #       las titulaciones elegidas (sin selector, un solo contexto)
+    # ------------------------------------------------------------------
+    st.divider()
+    # prob representativa = media de las probs por titulación elegida
+    prob_agregada = float(np.mean([d['prob'] for d in datos])) if datos else 0.0
+    _seccion_donde_estas_multi(
+        prob_agregada,
+        [d['titulacion'] for d in datos],
+        df_ref, modelo, pipeline,
+    )
 
     # ------------------------------------------------------------------
     # 7. Recomendaciones personalizadas basadas en el perfil
@@ -2234,13 +3894,35 @@ def _mostrar_comparativa(perfil: dict, titulaciones: list,
 # RECOMENDACIONES PERSONALIZADAS
 # =============================================================================
 
-def _recomendaciones(perfil: dict, prob: float, modo: str):
+def _recomendaciones(perfil: dict, prob: float, modo: str,
+                      df_ctx: pd.DataFrame = None):
     """
     Genera recomendaciones concretas basadas en el perfil y el nivel de riesgo.
     Las recomendaciones son distintas para prospecto (antes de entrar) y
     en_curso (ya matriculado): el alumno en curso necesita orientación
     inmediata y acciones concretas, no consejos de acceso.
     """
+    # Nota metodológica — transparencia sobre cómo se generan las recomendaciones
+    # Estilo coherente con otras notas metodológicas de la app (p02, etc.)
+    # Auditoría p00 (28/04/2026): #f0f9ff → rgba derivado de primario.
+    _bg_nota = _hex_a_rgba(COLORES['primario'], 0.06)
+    st.markdown(f"""
+    <div style="
+        background:{_bg_nota};
+        border-left:3px solid {COLORES['primario']};
+        border-radius:4px;
+        padding:0.6rem 1rem;
+        font-size:0.78rem;
+        color:{COLORES['texto_suave']};
+        margin:0.5rem 0 1rem 0;
+    ">
+        <strong>ℹ️ Nota metodológica:</strong> las recomendaciones se generan
+        a partir de <strong>reglas heurísticas</strong> basadas en los factores
+        del perfil (nota de acceso, situación laboral, beca, etc.), no del modelo
+        de machine learning. Sirven como orientación, no como diagnóstico.
+    </div>
+    """, unsafe_allow_html=True)
+
     st.markdown(f"""
     <h4 style="color:{COLORES['texto']}; margin-bottom:0.5rem;">
         💡 Recomendaciones personalizadas
@@ -2258,7 +3940,11 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
 
         nota_1er = perfil.get('nota_1er_anio', 10)
         cred_1er = perfil.get('cred_superados_anio_1er', 40)
-        trabaja  = perfil.get('situacion_laboral', 11) != 11
+        # Traducir string → código si hace falta (viene del formulario crudo)
+        _sl = perfil.get('situacion_laboral', 1)
+        if isinstance(_sl, str):
+            _sl = OPCIONES_LABORAL_UI.get(_sl, 1)
+        trabaja  = _sl in (2, 3)
         beca     = perfil.get('n_anios_beca', 0)
 
         if nota_1er < 5:
@@ -2267,9 +3953,9 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
                 'titulo': 'Contacta con tu tutor ahora',
                 'texto': (
                     'Una nota media del primer año por debajo de 5 es una '
-                    'señal de alerta importante. El Servicio de Orientación '
-                    'Universitaria (SAE) de la UJI ofrece atención personalizada '
-                    'y puede ayudarte a reorganizar tu carga lectiva.'
+                    'señal de alerta importante. La Unidad de Soporte Educativo '
+                    '(USE) de la UJI ofrece orientación durante los estudios. '
+                    'Habla también con tu tutor/a de titulación.'
                 ),
             })
         elif nota_1er < 7:
@@ -2302,9 +3988,9 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
                 'titulo': 'Compatibiliza trabajo y estudio',
                 'texto': (
                     'Combinar trabajo y estudios aumenta el riesgo de abandono. '
-                    'La UJI ofrece modalidades semipresenciales y horarios '
-                    'adaptados. Consulta con tu facultad las opciones '
-                    'disponibles para tu titulación.'
+                    'Consulta con tu facultad las opciones disponibles para '
+                    'organizar tu carga lectiva (matrícula parcial, horarios, '
+                    'etc.).'
                 ),
             })
 
@@ -2338,7 +4024,14 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
     # ------------------------------------------------------------------
     else:
 
-        trabaja = perfil.get('situacion_laboral', 11) != 11
+        # El perfil viene del formulario como STRING ("Trabaja a tiempo parcial").
+        # Usamos OPCIONES_LABORAL_UI para obtener el código numérico y luego
+        # aplicar la lógica por códigos (1=no trabaja, 2=parcial, 3=completo).
+        sit_lab_raw = perfil.get('situacion_laboral', 1)
+        if isinstance(sit_lab_raw, str):
+            cod_lab = OPCIONES_LABORAL_UI.get(sit_lab_raw, 1)
+        else:
+            cod_lab = sit_lab_raw
         beca    = perfil.get('n_anios_beca', 0)
         nota    = perfil.get('nota_acceso', 10)
         edad    = perfil.get('edad_entrada', 19)
@@ -2354,18 +4047,44 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
                 ),
             })
 
-        if trabaja:
+        # Texto dinámico según el tipo de trabajo declarado
+        # Solo aplica si el usuario marcó tiempo parcial (2) o completo (3).
+        # No aplica para "No trabaja" (1) ni "Prefiero no indicarlo" (0).
+        if cod_lab in (2, 3):
+            tipo_jornada = "tiempo parcial" if cod_lab == 2 else "tiempo completo"
+            tasa_uji_pct = 29.2  # tasa media UJI desde metricas_modelo.json
             recomendaciones.append({
                 'icono': '⏰',
-                'titulo': 'Planifica tu carga desde el inicio',
+                'titulo': f'Trabajas a {tipo_jornada} — planifica',
                 'texto': (
-                    'Combinar trabajo y estudios aumenta el riesgo de abandono. '
-                    'La UJI ofrece modalidades semipresenciales y horarios '
-                    'adaptados. Consulta con tu facultad las opciones disponibles.'
+                    f'Has indicado que trabajas a {tipo_jornada}. Combinar '
+                    f'trabajo y estudios aumenta el riesgo de abandono. '
+                    f'Consulta con tu facultad las opciones disponibles para '
+                    f'organizar tu carga lectiva.'
                 ),
             })
 
-        if nota < 7:
+        # Recomendación de refuerzo académico: comparamos nota del usuario
+        # vs media histórica del contexto (titulación o rama si la hay,
+        # o toda UJI si el usuario eligió "Todas las titulaciones").
+        media_ctx = None
+        if df_ctx is not None and 'nota_acceso' in df_ctx.columns and len(df_ctx) > 0:
+            media_ctx = float(df_ctx['nota_acceso'].mean())
+
+        if media_ctx is not None and nota < media_ctx:
+            recomendaciones.append({
+                'icono': '📚',
+                'titulo': 'Refuerzo académico desde el inicio',
+                'texto': (
+                    f'Tu nota de acceso ({nota:.2f}) está por debajo de la media '
+                    f'histórica de tu contexto ({media_ctx:.2f}). '
+                    f'Esto se puede compensar con buena organización desde el primer '
+                    f'cuatrimestre. Los servicios de tutoría de la UJI están a tu '
+                    f'disposición desde el primer día.'
+                ),
+            })
+        elif media_ctx is None and nota < 7:
+            # Fallback al criterio fijo si no hay contexto
             recomendaciones.append({
                 'icono': '📚',
                 'titulo': 'Refuerzo académico desde el inicio',
@@ -2383,12 +4102,16 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
                 'titulo': 'Aprovecha tu experiencia',
                 'texto': (
                     'Los estudiantes maduros tienen más responsabilidades pero '
-                    'también más motivación y experiencia vital. La UJI tiene '
-                    'programas específicos de acompañamiento para este perfil.'
+                    'también más motivación y experiencia vital. Visita el '
+                    '<a href="https://www.uji.es/perfils/estudiantat/v2/nou-estudiantat/" '
+                    'target="_blank">Portal Nuevo Estudiantado</a> para '
+                    'información sobre acogida y orientación inicial.'
                 ),
             })
 
-        if nivel == 'Bajo' or not recomendaciones:
+        # "Buen perfil de entrada" SOLO si no hay otras recomendaciones
+        # (antes salía siempre con nivel=Bajo, contradiciendo otras alertas)
+        if not recomendaciones:
             recomendaciones.append({
                 'icono': '✅',
                 'titulo': 'Buen perfil de entrada',
@@ -2411,16 +4134,16 @@ def _recomendaciones(perfil: dict, prob: float, modo: str):
                 border:1px solid {COLORES['borde']};
                 border-top:3px solid {color};
                 border-radius:8px;
-                padding:1rem;
-                min-height:180px;
+                padding:0.7rem 0.9rem;
+                min-height:auto;
             ">
-                <div style="font-size:1.5rem;">{rec['icono']}</div>
-                <div style="font-weight:bold; font-size:0.9rem;
-                            color:{COLORES['texto']}; margin:0.3rem 0;">
+                <div style="font-size:1.1rem; margin-bottom:0.1rem;">{rec['icono']}</div>
+                <div style="font-weight:500; font-size:0.85rem;
+                            color:{COLORES['texto']}; margin:0.1rem 0;">
                     {rec['titulo']}
                 </div>
-                <div style="font-size:0.78rem; color:{COLORES['texto_suave']};
-                            line-height:1.4;">
+                <div style="font-size:0.74rem; color:{COLORES['texto_suave']};
+                            line-height:1.35;">
                     {rec['texto']}
                 </div>
             </div>
@@ -2448,32 +4171,11 @@ def _mostrar_instrucciones():
 
 
 # =============================================================================
-# HELPER: clasificar nivel de riesgo
+# REFACTOR p03 (Chat p03, 27/04/2026): _clasificar_riesgo ELIMINADA.
+# Sustituida por _clasificar_riesgo de utils/ui_helpers.py.
+# Importada al principio del fichero. Antes había 4 implementaciones
+# (esta + _color_tasa en p01 + lógica inline en p01:408 + lógica inline en p02).
 # =============================================================================
-
-def _clasificar_riesgo(prob: float) -> tuple[str, str, str, str]:
-    """
-    Devuelve (nivel, color, emoji, mensaje) según la probabilidad.
-    Usa UMBRALES y COLORES_RIESGO de config_app para coherencia global.
-    """
-    if prob < UMBRALES['riesgo_bajo']:
-        return (
-            'Bajo', COLORES_RIESGO['bajo'], '✅',
-            'Tu perfil muestra factores protectores importantes. '
-            'El riesgo de abandono es reducido según el modelo.',
-        )
-    elif prob < UMBRALES['riesgo_medio']:
-        return (
-            'Medio', COLORES_RIESGO['medio'], '⚠️',
-            'Hay algunos factores de riesgo en tu perfil. '
-            'Con el apoyo adecuado y buena planificación, es muy manejable.',
-        )
-    else:
-        return (
-            'Alto', COLORES_RIESGO['alto'], '🔴',
-            'Tu perfil presenta varios factores de riesgo. '
-            'Te recomendamos consultar con el servicio de orientación de la UJI.',
-        )
 
 
 # =============================================================================
